@@ -1,0 +1,240 @@
+- Referendum solo >=AIDE
+- Sondaggio  o room aide o chi uo` nella stanza
+
+==Creazione di una nuova urna.==
+
+Il client manda la stringa 
+SRNB  0  (o nulla) per la richiesta d'un sondaggio
+SRNB  1  per la richiesta d'un referendum
+Server:
+       chiama init_urna, dove controlla il tempo passato ed altro
+
+ 	Il server risponde OK URNA_NON_AIDE TROPPI_SOND
+
+quindi il client manda i seguenti dati:
+
+PARM voce-nvoce|valore
+PARM voce-nvoce|valore
+PARM voce-nvoce|valore
+PARM voce-nvoce|valore
+PARM voce-nvoce|valore
+(se nvoce si ripete piu` volte allora -> di seguito)
+
+PARM titolo|titolo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+
+ed infine il comando
+
+SRNE tipo|modo|termine|num_voci|max_voci|num_prop|max_len_prop|bianca|astensione|criterio|val_criterio
+
+il server risponde con
+OK num | lettera
+
+Oss... tipo viene passato due volte per semplicita`. il Server non fa
+alcun controllo che i due tipi siano gli stessi, ma ovviamente
+rifiuta un referendum da chi non puo` farlo
+
+================================================================================
+
+SLST n
+ chiede l'invio dei sondaggi in corso:
+
+ *invia la lista
+ *dei referendum
+ *ora fa anche le funzioni di SCVL
+ * 
+ * SLST n|t 
+ *
+ * n=0 manda i ref delle stanze non zappate (--vedi livello)
+ * n=1 manda tutti i ref/urne (--vedi livello)
+ * n=2 manda i ref votabili delle stanza non zappate, indica se
+ *     sono da votare
+ * n=4 manda tutti i ref/sond nelle room _NON_ zappate creati
+ *     dall'utente. 
+ *
+ * n=12 manda tutti i ref/sondaggi nelle room _NON_ zappate
+ *     modificabili dall'utente
+ *
+ * ----il codice si basa su 2%2=0%2=0   
+ *
+ * Restituisce 
+ * numero, tipo, titolo, modo, termine, lettera, stanza, zappata,
+ * votabile, votato, posticipabile, proponente
+ *
+ * se n=0,1,4: votabile, votato sono non prevedibili
+ * se n=2 o n=4 manda solo i ref nelle  stanze non zappate
+ * (ovvero non c'e` modo di sapere se ho votato se non 
+ * unzappo la room!)
+ */
+
+ n=0 tutti
+ n=1 room non zappate,
+
+ n=2 room non zappate, votabile|votato
+
+il server risponde sempre:
+
+cprintf(t, "%d\n", SEGUE_LISTA);
+
+OK|progressivo|tipo|titolo|modo|stop|lettera|name|room_zap|votabile|votato|posticipabile
+
+per ogni sondaggio (name=nome della stanza, room_zap=1 se la room e`
+zappata)
+
+ma non necessariamente fornisce tutti i dati.
+(...)
+termina con 000
+ 
+  
+================================================================================
+==================OBSOLETO====================
+========= vedi SLST =============
+SCVL n
+invia i sondaggi votabili dall'utente. Se n=0 invia solo quelli da
+votare, con n=1 tutti
+  
+Risponde:
+cprintf(t, "%d\n", SEGUE_VOTABILI);
+             OK progressivo|havotato|titolo|tipo|lettera
+termina con 000
+
+================================================================================
+
+SINF n 
+invia informazioni sul sondaggio n
+
+risponde
+OK str_per_client
+dove str_per_client e` l'elenco separato da | dei dati. Per
+l'elenco si veda in urna_comune.h i POS_....)
+
+PARM havotato|havotato
+PARM titolo|titolo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+PARM testo|testo
+...	
+PARM voce-1|voce1
+... 
+================================================================================
+
+SRIS numeroref
+invia i voti 
+seguono 
+seguono i 
+PARM proposta1|.... (se ci sono)
+
+infine
+SREN numeroref|voto1|voto2|voto3|....|voton
+
+se numeroref=-1: non vota
+
+il client deve comunque inviare SREN
+
+
+se voto1 e` A il resto viene ignorato, e viene votaa scheda bianca
+= vuol dire astensione per la singola voce
+0 toce non votata (o 0 nel caso votazione)
+'' voce non votata (o 0 nel caso votazione)
+1-9 voce votata (o voto nel caso votazione)
+
+================================================================================
+
+SDEL n 
+cancella un sondaggio 
+
+================================================================================
+
+SPST n|stop
+posticipa un sondaggio
+stop e` la nuova data 
+
+================================================================================
+
+SSTP n
+interrompe un sondaggio
+
+================================================================================
+
+
+per i votanti
+mi pare inutile usare u->votanti,
+perche' tanto c'e` gia` votanti.
+certo, nel primo caso e` immediato
+vedere se qualcuno sta votando,
+ma comunque o si salva anche la struttura
+(ma non e` detto che funzioni) o
+qaundo bisogna diminuire di 1 bisogna
+comunque fare uno scan (questa volta
+delle urne).
+
+Mi chiedo se non sia invece meglio salvare
+la sessione invece della matricola...
+
+/* 
+ * cerca il primo parametro
+ * successivo a p (compreso)
+ * 0 se l'ha trovato
+ * (o magari quanti par si sono passati)
+ * p e` il parametro trovato nel caso ci sia,
+ * altrimenti rimane quello chiamato
+ */
+int cercapar(struct parameter *p,  char *id);
+
+
+/*
+ * copia il primo (=ultimo)
+ * parametro con id=id
+ * in (max_char)
+ * dopo p (compreso)
+ * p punta al val trovato
+ * 0 se tutto ok
+ * -1 se non c'e`
+ * 1 se c'e` >max
+ */
+int par2str(char *s, struct parameter *p,  char *id, int max);
+
+
+/*
+ * copia tutti i parametri con id=id successivi a p (compreso) in ss,
+ * che e` vettore di stringhe, fino ad un massimo di
+ * max_par e ad un massimo di char_max ciascuna.
+ * torna 
+ *** -(par_copiati+1) (l'ultimo non viene copiato) e p==ultimo da
+ *    copiare al primo parametro che supera max_char
+ ***  il numero di par copiati con par=successivo se ce
+ *    ne sono ancora, p=NULL altrimenti,
+ *** 0 se non l'ha trovato( p rimane lo stesso)
+ */
+int pars2strs(char **s, struct parameter *p,  char *id, int max_char,
+              int max_par);
+
+
+/*
+ * copia tutti i parametri con id=id
+ * successivi a p (compreso)
+ * in s, che e` un unica stringa, separati da
+ * sep
+ * fino ad un massimo di max_par
+ * e ad un massimo di char_max
+ * se max_char viene raggiunto
+ * torna -(par_copiati+1) (l'ultimo non viene copiato)
+ * e p==ultimo da copiare
+ *
+ *  torna il numero di par copiati
+ * con par=successivo se ce ne sono ancora
+ * p=NULL altrimenti
+ * 0 se non l'ha trovato
+ * p rimane lo stesso
+ */
+int pars2str(void *s, struct parameter *p,  char *id, int max_par,
+             int max_len, char *sep)
+
