@@ -1,0 +1,204 @@
+#############################################################################
+# Cittadella/UX client                   (C) M. Caldarelli and R. Vianello  #
+#                                                                           #
+# File : Makefile                                                           #
+# Targets : all, cittaclient, clean, mrproper, install, uninstall           #
+#                                                                           #
+#############################################################################
+
+#remove the hash mark below if compiling under Linux
+OSFLAGS = -DLINUX
+
+#remove the hash mark below if compiling under MacOS/X:
+#OSFLAGS = -DMACOSX
+
+#remove the hash mark below if compiling under Windows with Cygwin:
+#OSFLAGS = -DWINDOWS
+
+# Remove the hash mark to compile for terminals with white background.
+#BGCOL = -DWHITEBG
+
+#############################################################################
+
+SHELL = /bin/sh
+
+#compiler name
+CC = gcc
+
+PROGRAM = cittaclient
+VERSION = 0.3
+
+prefix = /usr/local
+bindir = $(prefix)/bin
+libdir = .
+mandir = $(prefix)/man
+man6dir = $(mandir)/man6
+
+VPATH = $(libdir)
+
+#compiler flags you want to use (other than profiling, such as -Wall)
+# Flag DEBUG per tenere le parti di codice dedicate al debugging
+# Se definisco UTMPLIB uso utmp.h, altrimentu utmpx.h (sono equivalenti)
+#MYFLAGS = -g -Wall -pedantic -Wstrict-prototypes -Wmissing-prototypes
+#		  -Wconversion
+MYFLAGS = -g -Wall -DUTMPLIB
+
+#flags for profiling (see hacker.doc for more information)
+#PROFILE = -pg
+PROFILE = 
+
+#remove the hash marks below if compiling under AIX
+#CC = cc
+#COMMFLAGS = -D_BSD
+
+#remove the hash mark below if compiling under SVR4
+#OSFLAGS = -DSVR4
+#LIBS = -lsocket -lnsl
+
+#remove the has mark below if compiling under IRIX
+#LIBS = -lmalloc
+
+#remove the hash mark below if compiling with compression support enabled
+LZ = -lz
+
+#############################################################################
+CFLAGS = $(MYFLAGS) $(PROFILE) $(OSFLAGS) $(BGCOL) -DLOCAL
+override CFLAGS += $(patsubst %,-I%,$(subst :, ,$(VPATH)))
+LFLAGS = -L$(libdir) -lncurses $(LIBS) $(LZ)
+
+COMMONOBJ = aide.o ansicol.o argz.o blog_cmd.o cml.o configurazione.o \
+	    cterminfo.o edit.o editor.o errore.o floor_cmd.o friends.o \
+	    generic_cmd.o inkey.o login.o memkeep.o messaggi.o \
+	    metadata_ops.o name_list.o pager.o parm.o prompt.o room_cmd.o \
+	    signals.o sysconf_client.o sysop.o tabc.o urna-crea.o \
+	    urna-gestione.o urna-leggi.o urna-servizio.o \
+	    urna-vota.o utente_client.o utility.o
+
+LIBFILES = cml_entities.o extract.o histo.o metadata.o terminale.o text.o \
+	   versione.o
+
+OBJFILES = cittaclient.o cittacfg.o cmd_da_server.o comandi.o comunicaz.o \
+		conn.o decompress.o local.o $(COMMONOBJ) $(LIBFILES)
+
+all :  cittaclient
+
+cml_entities.o : cml_entities.c cml_entities.h
+	$(CC) -c $(CFLAGS) cml_entities.c
+argz.o : argz.c argz.h
+	$(CC) -c $(CFLAGS) argz.c
+extract.o : extract.c extract.h
+	$(CC) -c $(CFLAGS) extract.c
+histo.o : histo.c histo.h
+	$(CC) -c $(CFLAGS) histo.c
+terminale.o : terminale.c terminale.h
+	$(CC) -c $(CFLAGS) terminale.c
+text.o : text.c text.h
+	$(CC) -c $(CFLAGS) text.c
+versione.o : versione.c versione.h
+	$(CC) -c $(CFLAGS) versione.c
+
+cittaclient : $(OBJFILES)
+	$(CC) $(CFLAGS) $(OBJFILES) $(LFLAGS) -o ./cittaclient
+
+cittaclient.o : cittaclient.c cittaclient.h versione.h
+	$(CC) -c $(CFLAGS) $(COMMFLAGS) cittaclient.c 
+conn.o : conn.c
+	$(CC) -c $(CFLAGS) conn.c
+ansicol.o : ansicol.c
+	$(CC) -c $(CFLAGS) ansicol.c
+aide.o : aide.c
+	$(CC) -c $(CFLAGS) aide.c
+blog_cmd.o : blog_cmd.c
+	$(CC) -c $(CFLAGS) blog_cmd.c
+cittacfg.o : cittacfg.c cittacfg.h
+	$(CC) -c $(CFLAGS) cittacfg.c
+cml.o : cml.c cml.h
+	$(CC) -c $(CFLAGS) cml.c
+comandi.o : comandi.c
+	$(CC) -c $(CFLAGS) comandi.c
+comunicaz.o : comunicaz.c
+	$(CC) -c $(CFLAGS) comunicaz.c
+configurazione.o : configurazione.c configurazione.h
+	$(CC) -c $(CFLAGS) configurazione.c
+cmd_da_server.o :cmd_da_server.c
+	$(CC) -c $(CFLAGS) cmd_da_server.c
+cterminfo.o : cterminfo.c cterminfo.h
+	$(CC) -c $(CFLAGS) cterminfo.c
+edit.o : edit.c
+	$(CC) -c $(CFLAGS) edit.c
+editor.o : editor.c editor.h
+	$(CC) -c $(CFLAGS) editor.c
+errore.o : errore.c errore.h
+	$(CC) -c $(CFLAGS) errore.c
+floor_cmd.o : floor_cmd.c
+	$(CC) -c $(CFLAGS) floor_cmd.c
+friends.o : friends.c friends.h
+	$(CC) -c $(CFLAGS) friends.c
+generic_cmd.o : generic_cmd.c
+	$(CC) -c $(CFLAGS) generic_cmd.c
+inkey.o : inkey.c inkey.h
+	$(CC) -c $(CFLAGS) inkey.c
+local.o : local.c local.h
+	$(CC) -c $(CFLAGS) local.c
+login.o : login.c login.h
+	$(CC) -c $(CFLAGS) login.c
+messaggi.o : messaggi.c
+	$(CC) -c $(CFLAGS) messaggi.c
+metadata.o : metadata.c
+	$(CC) -c $(CFLAGS) metadata.c
+metadata_ops.o : metadata_ops.c
+	$(CC) -c $(CFLAGS) metadata_ops.c
+name_list.o : name_list.c name_list.h
+	$(CC) -c $(CFLAGS) name_list.c
+pager.o : pager.c pager.h
+	$(CC) -c $(CFLAGS) pager.c
+parm.o : parm.c parm.h
+	$(CC) -c $(CFLAGS) parm.c
+prompt.o : prompt.c prompt.h
+	$(CC) -c $(CFLAGS) prompt.c
+room_cmd.o : room_cmd.c
+	$(CC) -c $(CFLAGS) room_cmd.c
+signals.o : signals.c
+	$(CC) -c $(CFLAGS) signals.c
+sysconf_client.o : sysconf_client.c
+	$(CC) -c $(CFLAGS) sysconf_client.c
+sysop.o : sysop.c sysop.h
+	$(CC) -c $(CFLAGS) sysop.c
+tabc.o : tabc.c tabc.h
+	$(CC) -c $(CFLAGS) tabc.c
+urna-crea.o : urna-crea.c
+	$(CC) -c $(CFLAGS) urna-crea.c
+urna_errori.o : urna_errori.c
+	$(CC) -c $(CFLAGS) urna_errori.c
+urna-gestione.o : urna-gestione.c
+	$(CC) -c $(CFLAGS) urna-gestione.c
+urna-leggi.o : urna-leggi.c
+	$(CC) -c $(CFLAGS) urna-leggi.c
+urna-servizio.o : urna-servizio.c
+	$(CC) -c $(CFLAGS) urna-servizio.c
+urna-vota.o : urna-vota.c
+	$(CC) -c $(CFLAGS) urna-vota.c
+utente_client.o : utente_client.c
+	$(CC) -c $(CFLAGS) utente_client.c
+utility.o : utility.c
+	$(CC) -c $(CFLAGS) utility.c
+
+
+.PHONY :clean mrproper strip
+install :
+	cp cittaclient $(bindir)
+	cp cittaclient.6 $(man6dir)
+
+uninstall :
+	-rm -f $(bindir)/cittaclient
+	-rm -f $(man6dir)/cittaclient.6
+
+clean :
+	-rm -f $(OBJFILES) $(LIBFILES) *~
+
+mrproper : clean
+	-rm -f $(bindir)/cittaclient
+	-rm -f libcitta.a
+
+strip :
+	-strip $(bindir)/*
