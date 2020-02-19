@@ -1,0 +1,55 @@
+/*
+ *  Copyright (C) 1999-2000 by Marco Caldarelli and Riccardo Vianello
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ */
+/****************************************************************************
+* Cittadella/UX client                   (C) M. Caldarelli and R. Vianello  *
+*                                                                           *
+* File : inkey.h                                                            *
+*        gestione input da utente                                           *
+****************************************************************************/
+#ifndef _INKEY_H
+#define _INKEY_H   1
+
+#include "iso8859.h"
+
+#define IF_ISMETA(c) if (((c) >= Key_META) && ((c) < Key_META + 0xff))
+
+/* Valori di ritorno inkey */
+#define INKEY_KEY    (0x1)
+#define INKEY_SERVER (0x2)
+#define INKEY_EXEC   (0x4)
+#define INKEY_QUEUE  (0x8)
+#define INKEY_EXIT   (INKEY_KEY | INKEY_SERVER)
+
+/* Caratteri estesi */
+
+#define Key_UP          300
+#define Key_DOWN        301
+#define Key_RIGHT       302
+#define Key_LEFT        303
+#define Key_HOME        304
+#define Key_INS         305
+#define Key_DELETE      306
+#define Key_END         307
+#define Key_PAGEUP      308
+#define Key_PAGEDOWN    309
+#define Key_META        400
+#define Key_F0          700
+
+#define META(C)  (Key_META + C)
+#define Key_F(n)    (Key_F0 + (n))
+
+/* Prototipi funzioni in inkey.c */
+int inkey_sc(int esegue);
+int inkey_pager(int esegue, char *str, int *c);
+int inkey_elenco(const char *elenco);
+int inkey_elenco_def(const char *elenco, int def);
+
+
+#endif /* inkey.h */
