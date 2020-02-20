@@ -1,0 +1,17 @@
+Stato dell'utente:
+==================
+Il server associa agli utenti collegati uno stato, che descrive il tipo di
+azione che stanno svolgendo. Lo stato viene visualizzato quando si digita il
+comando <w>ho tramite un simbolo, nel modo seguente
+
+'.'    l'utente e` idle da piu' di un minuto
+'+'    l'utente sta editando un testo
+'&'    l'utente sta comunicando (Xmsg, Chat o Broadcast)
+'^'    l'utente sta compilando/modificando la configurazione
+'_'    l'utente sta compilando/modificando la registrazione
+'#'    l'utente sta editando un file (profile o info)
+'$'    l'utente e' entrato nella subshell
+(nome) Il nome dell'utente e' tra parentesi se ha lockato il terminale
+
+Per il significato della maggior parte di queste parole vai a leggere il file
+corrispondente. (e quindi servirebbe un piccolo file per $ e per %).

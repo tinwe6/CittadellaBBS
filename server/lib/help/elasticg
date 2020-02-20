@@ -1,0 +1,52 @@
+ELASTIC GAME
+============
+  Elastic Games (EG) e` il piu` bel gioco dopo Civilization, 
+Diplomacy e tressette.
+ 
+In elastic game un utente della BBS, il ??gestore??, sceglie un opera famosa,
+libro, film, quadro, spettacolo teatrale, disco e un oggetto che vi compare.
+
+ Lo scopo degli altri utenti (non gli AIDE, vedremo perche') e` quello di
+indovinare il titolo dell'opera e successivamente il nome dell'oggetto.
+
+Il gioco sfrutta l'esistenza di stanze nella BBS a cui si puo` accedere
+solo se si indovina il loro nome per intero: vengono infatti create
+due stanze i cui nomi sono il titolo dell'opera e il nome dell'oggetto
+da indovinare.
+
+I giocatori fanno domande, nella stanza Elastic Game>, all'utente che ha
+proposto il gioco.  Le risposte alle domande possono essere solo si`/no
+(eventualmente non so).
+Il gestore puo`, a sua scelta, mettere indizi vari per aiutare gli utenti.
+E` costume metterne uno all'inizio, oltre ad indicare di che tipo di opera 
+si tratta.
+
+ Se pensi d'aver indovinato, fai un <j> e dai come nome della stanza
+il titolo dell'opera. (Regole su come comportarsi con articoli, congiunzioni,
+preposizioni e vari segni ortografici sono nelle info della room).
+
+Se hai azzeccato il titolo entri nella stanza Titolo> e qui devi il
+nome dell'oggetto che compare nell'opera, nello stesso modo in cui hai
+indovinato il titolo dell'opera.  Fai attenzione che a questo punto
+non tutti i giocatori conoscono il nome della stanza, e quindi evita di
+parlarne in Elastic Game>.
+
+Se indovini anche l'oggetto entri nello stesso modo nella stanza Oggetto>,
+a questo punto hai vinto l'EG, una bambolina e diventi tu il nuovo
+gestore dell'EG. Vantati pure in tutta la BBS, ma ricordati di mettere
+un messaggio qualunque (sbruffoneggia pure) nella stanza Oggetto>, cosi`
+come nella stanza Titolo> se non l'hai ancora fatto, in modo da lasciare
+una traccia del tuo passaggio.
+
+ L'attuale gestore dell'EG, che e` anche RA delle due stanze 
+ Titolo> ed Oggetto> te le cedera`, cosi` che puoi iniziare tu un
+ nuovo Elastic Game.
+ 
+Quando sei gestore dell'EG vai nella stanza Titolo> e usa i comandi
+<.aer> (aide enter room) per modificare il titolo della stanza. Ricordati di
+dire che la stanza e` una (Guess Room)
+Fai lo stesso con la stanza Oggetto>.
+ Poi vai in Elastic Game> e annuncia il nuovo EG. 
+
+ Quando qualcuno indovina il nome modifica il Room Aide (non si puo` fare da
+ RA....).

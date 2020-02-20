@@ -1,0 +1,68 @@
+
+PARAMETRI DI UNA STANZA
+=======================
+Il room aide d'una stanza, puo` modificare, con il comando 
+<.aer> i suoi parametri.
+ Dando invio mantiene il parametro gia` inserito.
+ Il comando <.aer> chiede i parametri:
+
+Nome della Room [     ]:
+        Il nome della stanza puo` essere quello che vuoi. La lunghezza
+	massima e` 16 caratteri.
+	Di solito il nome della stanza e` stabile. L'eccezione 
+	piu` importante riguarda il nome delle stanze dell'ELASTIC GAME
+
+Livello minimo per lettura: e il successivo
+Livello minimo per scrittura:
+        Sono i livelli minimi che devono avere gli utenti per leggere
+	e rispettivamente scrivere nella stanza.
+	Tipicamente sono i livelli 1 e 4
+
+Subject (s/n):
+        Abilita il Subject. Ci sono stanze (Chiacchiere>) in cui il 
+	Subject non ha molto senso.
+
+Reply (s/n):
+    	Abilita il Reply. Se e` anche abilitato il Subject il nuovo 
+	Subject e` 
+	Reply: Subject del post precedente.
+	Se il Subject non e` abilitato e` solo un modo comodo per
+	inserire un messaggio senza fare <s> e poi <e>.
+	Si noti che un Reply ad un reply lascia il Subject invariato
+	e non accumula Reply: all'inizio.
+
+Invito (s/n):
+	Se la room e` a invito ci possono entrare solo gli
+	utenti invitati (vedi i DOT COMMANDS <.aiu>).
+
+Guess Room (s/n):
+	La stanza e` sconosciuta a tutti gli utenti (tranne che
+	agli Aide). Pero` se l'utente indovina il nome completo
+	della stanza e ci fa un <j> la stanza diventa conosciuta.
+
+Messaggi anonimi:
+ 	Tutti i messaggi sono anonimi.
+
+Post anonimo facoltativo:
+	Chiede all'utente se vuole lasciare un messaggio anonimo.
+
+Attivata (s/n):
+	Attiva la stanza.
+
+Alla fine viene chiesto se si vogliono rendere effettive le modifiche
+fatte con la domanda:
+
+Vuoi mantenere le modifiche (s/n)? Si
+
+Il room Aide dovrebbe anche inserire una breve descrizione della stanza, 
+per indicare qual e` l'argomento di discussione e quali le regole da
+rispettare.
+ Questo si ottiene con il comando (modo comandi) <.aei>.
+ 
+Il room aide puo` anche inserire dei messaggi in qualita` di room
+Aide, per distinguerli da messaggi messi da utente normale.
+ I messaggi vanno inseriti con il comando <.aem>.
+
+Se un utente si e` rivelato particolarmente fastidioso o inopportuno il Room
+Aide puo` cacciarlo dalla stanza cosi` da impedirgli di mettere messaggi
+(? come funziona?). 

@@ -1,0 +1,55 @@
+Lettura e Immissione di Messaggi - Movimenti in una singola Stanza
+==================================================================
+L'occupazione principale nella BBS e` la lettura e la ?scrittura?
+dei messaggi, la maggior parte dei comandi e` dedicata a queste due
+attivita`. 
+
+Questi comandi sono tutti in ==MODO MESSAGGI==
+Alcuni di essi hanno dei sinonimi tra i dot commands.
+
+< > successivo:	Lo spazio legge il messaggio successivo. Se non ce ne sono 
+    		piu` entra in modo "Comandi".
+    		BUG?: se stai leggendo al contrario e arrivi al primo messaggio
+    		della stanza, continui a leggere lo stesso messaggio.
+    		Leggi anche il suo significato in modo Comandi.
+<a>ncora	Rilegge il messaggio appena letto (<a>gain)
+<b> inverte	Inverte la direzione di lettura; sia < > che <n> proseguono 
+    		la lettura dei messaggi nella direzione scelta.
+
+<c>opia		Copia il messaggio appena letto in un'altra stanza.
+      		BUG? non chiede dove copiarlo 
+
+<d>cancella	Cancella il messaggio che stai leggendo, sempre che sia tuo.
+  (<d>elete)	I room aide possono cancellare nelle stanze che gestiscono un 
+    		qualunque messaggio.
+    		Gli Aide e i Sysop possono cancellare tutti i messaggi.
+<e>samina 	Esamina il buffer delle citazioni.(Leggi la sezione sul Buffer).
+<f> riinizia	Va al primo messaggio nella stanza. (<f>irst)
+<m>uove 	Sposta un messaggio da questa stanza ad un altra.
+    		Puoi farlo solo se hai scritto tu il messaggio o se sei 
+		Room-Aide della stanza, Aide o Sysop.
+<n>uovo		sinonimo di < >: legge il messaggio successivo.(?????) 
+		Se non ce ne sono piu` entra in modo "Comandi".
+		Leggi il significato anche nel Modo Comandi.
+<q> cita	Copia nel buffer il messaggio che stai leggendo.
+		Leggi la sezione sui Buffer.
+<r>isponde      Risponde al messaggio precedente; si entra nell'editor 
+		e il subject e` il subject del messaggio a cui si risponde 
+		preceduto da Reply:. Se i messaggi non possono avere subject
+		e` un modo comodo per inserire un messaggio mentre si e`
+		in modo Messaggi.
+<s>metti	Smette di leggere i messaggi, rimane nella stessa stanza 
+		ma in modo Comandi. <n> prosegue con la lettura dei messaggi
+		non letti (?e < >).
+<-> 		Per leggere gli ultimi n messaggi. 
+		Cittadella presto indovinera` quanti messaggi vuoi leggere. 
+		Per ora devi scriverlo.
+<?> Come <h>
+<D> salva	Salva il messaggio che stai leggendo sul file ~/cittadump. 
+		Se questo esiste gia` il messaggio viene aggiunto alla sua 
+		fine.
+
+Se sei Sysop, Aide, Room Aide o Room Helper oltre a poter cancellare o
+spostare messaggi non tuoi come e` scritto sopra, puoi lasciare messaggi
+nella tua funzione di S/A/RA/RH. Devi pero` andare in modo comandi.
+Leggi la parte in Modo Comandi, la parte sulle Stanze o sui dot-commands.

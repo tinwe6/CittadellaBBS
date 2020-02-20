@@ -1,0 +1,61 @@
+Modi di lettura
+===============
+(QUESTA PARTE INIZIALE MI FA SCHIFO... VA CAMBIATA!).
+In Cittadella puoi essere in diversi Modi. 
+ Ovviamente c'e` il Modo editor, quando stai usando il tuo editor (o l'editor
+di linea della BBS), il modo scelta, che ti si presenta quando hai davanti
+una scelta limitata a tre o quattro opzioni tra cui devi decidere, ad
+esempio dopo aver scritto un messaggio o quando devi scegliere quale parte
+della cofigurazione vuoi modificare.
+
+E` necessario distinugere i modi perche' in Cittadella ad ogni comando
+e` associata una lettera, ma ad ogni lettera e` pero` associato piu`
+di un comando, a seconda del modo in cui ci si trova.
+
+Puoi facilmente distinguere i modi dal prompt che Cittadella ti presenta 
+(se non hai disabilitato i prompt, ovviamente).
+Mettiamo qui i 3 modi principali; per gli altri la scelta tra le possibilita`
+si ottiene premendo <?>.
+[[ Ci vorrebbe anche una parte qui sull'editor di linea per gli x-mgs e chat]]
+
+-----Modo comandi------
+Il modo comandi e` quello in cui ti trovi se sei in una stanza 
+ma non stai scorrendo i messaggi. E` il modo in cui ti trovi appena 
+sei entrato in Cittadella.
+(Per i pedanti, appena hai premuto un tasto al prompt <premi un tasto>)
+			
+In questo caso Cittadella mostra il nome della stanza in cui ti trovi
+seguito immediatamente da ">", ad esempio
+Cinema>
+
+
+-----modo Messaggi----- 
+Mentre scorri i messaggi di una stanza ti trovi nel modo messaggi, 
+il prompt di Cittadella indica, oltre al nome della stanza, anche 
+il numero del messaggio che stai leggendo e quanti messaggi mancano 
+alla fine, ad esempio:
+
+Chiacchiere> msg #852 (Da leggere: 3)] ->
+				
+
+-----modo Lettura-----
+Sei nel modo lettura se il messaggio che stai leggendo eccede il numero
+di righe dello schermo
+Cittadella mostra una riga simile a:
+-- more (<Space>, <Enter>, <s>top, <?> help) linea 23/41 56% --
+In questo caso hai a dispozione alcuni comandi per muoverti all'interno del
+testo: < >pagina avanti 
+       <b>pagina indietro
+       <enter> riga avanti
+       <r>riga indietro
+       <s>finisci di leggere
+       <?>help
+       <r>rivisualizza tutto.
+
+Inoltre puo` capitare che ti si presenti un prompt che ti chiede che azione
+vuoi fare dopo aver scritto un messaggio, ad esempio appena hai finito di
+editare un testo.
+ 
+In ciascuno di questi modi premendo il tasto <h> o <?> si ottiene una lista
+dei comandi disponibili seguiti da una breve descrizione.
+

@@ -1,0 +1,19 @@
+	ALTRI COMANDI
+	=============
+Qui sono elencati i comandi che non rientrano in nessuna delle precedenti
+categorie.
+
+<%> Lock del terminale- Sia modo Comandi che Messaggi.
+    Ti permette di bloccare l'accesso al client per un breve periodo,
+    se ti deve assentare, senza interrompere la connessione al server. 
+    Per sbloccare il terminale devi digitare correttamente la password.
+
+<$> Subshelli-  Solo modo Comandi 
+	    Funziona solo sei collegato col client locale.
+	    Apre una subshell (/bin/sh di default) e sospende cittaclient. 
+	    La sessione viene ripresa appena si esce dalla subshell 
+	    con 'exit'.
+
+<t> (<t>ime) Ora&Data- Sia in modo Comandi che Messaggi 
+	   da` la data e l'ora della BBS. 
+

@@ -1,0 +1,18 @@
+
+                  Cittadella BBS E` STATA TRASFERITA!!
+                  ------------------------------------
+Cittadella BBS non gira pi&ugrave; qui, e` stata trasferita in blocco
+all'indirizzo
+                            212.97.39.38
+
+In attesa di associargli un hostname comodo da ricordare, puoi collegarti
+digitando il comando:
+                                       telnet 212.97.39.38 4001
+oppure, se usi il client locale, con
+                                       cittaclient -h 212.97.39.38
+
+In ogni caso, ti consigliamo di scaricare il nuovo client, versione 0.2.2,
+dalla home page http://ping.science.unitn.it:8080/~bbs/ , che si collega
+automaticamente al nuovo indirizzo.
+
+Ti aspettiamo sul nuovo server!! :-)

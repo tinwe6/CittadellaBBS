@@ -1,0 +1,31 @@
+GUARDARSI INTORNO
+================-
+CI sono un po' di comandi che ti permettono di guardarti intorno:
+Sono tutti disponibili sia in modo Messaggi che in modo Comandi, tranne
+<u> e <W>.
+
+<p> Profile utente. Chiede il nome di un utente e mostra i suoi dati.
+    Di default mostra dati dell'autore dell'ultimo post letto
+    o dell'ultimo X-msg ricevuto. Altrimenti devi scrivere il nick
+    dell'utente che ti interessa (Vedi Tab Completion).
+    In un primo blocco appaiono i dati personali dell'utente se questo
+    li ha resi pubblici. 
+    Un secondo blocco si trovano le informazioni sull'uso del sistema
+    (#chiamate, #post, #Xmg, data e ora del primo collegamento, etc.).
+    Infine c'e' la parte personalizzata del profile, che consiste in un
+    piccolo testo di presentazione fornito dall'utente. (vedi Profile,
+    e il comando <.ep>)
+<t> Ora e data di Cittadella.
+<u> Lista di tutti gli utenti, solo in modo Comandi.
+    Questo comando permette di vedere la lista di tutti gli utenti della BBS
+    (connessi o meno) con qualche informazione. Appaiono nell'ordine:
+    a) Nome dell'utente
+    b) Livello di accesso
+    c) data dell'ultimo collegamento
+    d) Numero di chiamate totali effettuate
+    e) Numero di messaggi lasciati nelle room
+<w> Who. Mostra l'elenco degli utenti connessi in quel momento alla BBS
+<W> Who in chat. Solo modo Comandi. Elenca gli utenti collegati nei i
+    vari canali di Chat. Non serve essere collegati a qualche canale
+    per usare il comando.
+

@@ -1,0 +1,75 @@
+Configurazione dell'utente:
+===========================
+L'utente puo` configurare il comportamento di Cittadella; durante la
+registrazione si introduce la propria configurazione, successivamente 
+la si puo` modificare con il dot command (in modo comandi): <.ec>
+ 
+ Ci sono 5 sezioni differenti:
+
+   1. Variabili generiche
+   2. Apparenza
+   3. Comunicazione (Xmsg e Notifiche)
+   4. Scansione room e lettura messaggi
+   5. Dati personali visibili a tutti
+   
+Cittadella presenta anche l'opzione 0 per modificare tutte le sezioni.
+  In ogni caso alla fine viene chiesto se si vogliono confermare od 
+  abbandonare le modifiche fatte.
+	1) Variabili generiche 
+		si chiede
+		- Utente esperto: (modificabile anche con <X>, modo 
+		    Comandi). Se si risponde no, ad ogni comando eseguito
+		    viene presentata una schermata che riporta il significato
+		    dei comandi principali
+		- Uso dell'editor esterno: e` possibile solo col
+		    client. Se si risponde si` si usa il proprio editor
+		    preferito in maniera locale, altrimenti si usa l'editor
+		    di linea della bbs (vedi Editor di linea)
+		- Uso dell'editor esterno per X: discorso uguale al
+		    precedente. E` l'editor da usare nel caso si sia
+		    sotto X.
+	2) Apparenza
+	    	- Niente prompt dopo i messaggi: non so
+		- Usa prompt che spariscono:idem
+		- Pausa ad ogni schermata: chiede se la visualizzazione
+		    del messaggio debba fare una pausa se la lunghezza
+		    supera le linee dello schermo
+		- Beep abilitato: l'altra opzione anti-boss. Se rispondi
+		    no Cittadellla non fara` mai rumori molesti.
+	3) Comunicazione
+		- Accetto X-mgs: be'... si spiega da sola. L'unica cosa
+		    di cui tener conto e` il seguente
+		- Accetto X-msg da amici: Se il precedente Accetto X-msgf
+		    e` stato disabilitato, permette di ricevere messaggi
+		    (solo) dagli amici (Vedi Amici)
+		- Accetto X mentre leggo post: Se non vuoi essere disturbato
+		     mentre leggi i messaggi rispondi no. Cittadella terra`
+		     da parte il messaggio (o i messaggi) per quando avrai 
+		     finito (??? non so cosa vuol dire. Mentre leggi un
+		     messaggio o mentre sei in modo Messaggi??)
+		- Follow-up automatico: Se rispondi si`, appena ricevi
+		    un messaggio entri nello speditore di messaggi-x,
+		    ovviamente il destinatario sara` chi ti ha mandato
+		    il messaggio (vedi anche il comando <v>)>
+		- Notifica l'arrivo dei mail: Ti avvisa appena ti arrivano
+		    mail.
+		- Notifica i login/logout: Ti avvisa quando entra o esce
+		    un utente.
+          4) Scansione Room e lettura messaggi
+	  	- Ultimo letto prima dei nuovi messaggi: Ti permette
+		     di vedere "dove eravamo arrivati". Se rispondi no
+		     parti subito dai nuovi messaggi.
+		- Ristampa un messaggio dopo un Reply (boh devo provarlo)
+		- Notifica un nuovo post nella Room: se sei in una stanza
+		     e vi arriva un nuovo messaggio ti avvisa (e` cosi`?)
+          5) Dati personali visibili a tutti:
+	      Ti chiede, di ciascuno dei seguenti campi, se deve essere 
+	          visibile o meno agli altri utenti
+		    -Nome e Cognome
+		    -Indirizzo
+		    -Telefono
+		    -Email
+		    -Home page
+		    -Sesso
+		    -Profilo personalizzato
+

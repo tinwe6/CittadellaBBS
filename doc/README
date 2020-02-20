@@ -1,0 +1,524 @@
+
+                          CITTADELLA/UX BBS
+                          =================
+
+ATTENZIONE: Alcuni parti di questo file non sono ancora state aggiornate.
+            Aspettiamo volontari per aiutarci a mantenere questo file!!!
+
+Descrizione:
+============
+Cittadella/UX e' una BBS scritta per sistemi unix. Il progetto e' nato dopo
+diversi anni di gestione da parte degli autori della Emperor's BBS, basata
+su software Citadel/UX e evoluta con il tempo. L'esigenza di riscrivere il
+codice da zero e' emersa per avere una maggiore flessibilita' nella gestione
+delle sessioni e per incrementarne le possibilita' di sviluppo e la sua
+affidabilita'.
+
+Caratteristiche di Cittadella/UX:
+=================================
+
+Opzioni di linea di comando del client locale:
+==============================================
+cittaclient [-hHlnpuv] [--host HOST] [--port PORT] [--username NICK]
+            [--localhost] [--help] [--version]
+Opzioni
+ -h, --host HOST 
+    Connect to the host HOST instead of the default host.
+ -l, --localhost 
+    Connect to localhost instead of the default host.
+ -n, --no-banner
+    Ask Cittadella/UX not to show the login and logout
+    banners. Useful as anti-boss option :-)
+ -p, --port PORT
+    Listen on the port PORT instead of the default port.
+ -u, --username NICK
+    Connect as the user NICK and skip the login.
+ -H, --help
+    Print a short help text and then exit.
+ -v, --version
+    Print the version number to standard output and exit.
+
+
+Sistema di validazione automatica per gli utenti:
+=================================================
+Ai nuovi utenti che si collegano per la prima volta viene richiesto di
+compilare una scheda di dati personali ('registration'). Questi non sono
+visibili agli altri utenti a meno che l'utente in questione non voglia
+pubblicarli. Di particolare importanza e' l'indirizzo di Email fornito,
+l'unico che viene verificato attraverso la procedura di
+validazione. Infatti il server di Cittadella genera automaticamente una
+chiave di validazione che viene poi inviata all'indirizzo di Email fornito
+durante la registrazione. La volta successiva che l'utente si collega puo'
+procedere alla validazione inserendo la chiave, e accedere cosi'
+istantaneamente a tutti i servizi forniti dalla BBS (gli utenti non
+validati non possono lasciare messaggi nelle bacheche ne' usare gli eXpress
+message e la chat). La validazione deve avvenire nelle 48 ore successive
+al primo collegamento, altrimenti l'account viene cancellato.
+
+Password:
+=========
+La password e' una parola chiave nota solo all'utente necessaria per
+accedere al proprio account. Questo permette di difendere la privacy 
+dell'utente, impedendo a persone estranee di accedere alle informazioni
+contenute nell'account. La password ti viene richiesta la prima volta che
+ti collegghi, subito dopo aver digitato il tuo nome. Viene richiesta due
+volte di seguito per assicurarsi che non hai fatto errori digitandola, in
+quanto non appare sullo schermo quando la immetti. E' buona regola
+scegliere una password che nessuno possa indovinare, formata da carattere
+alfanumerici (a..z,A..Z,0..9) e speciali (come !,@,#, etc.). Inoltre, se
+dovessi sospettare che qualcuno sia a conoscenza della tua password,
+cambiala immediatamente utilizzando il comando <P>. L'unica limitazione
+nella scelta della password e' l'impossibilita' di utilizzare il carattere
+'|'. 
+Se smarrisci la tua password, devi semplicemente inviare una Email ai
+sysop, che chiederanno a Cittadella/UX di generare una nuova password
+casuale per il tuo account. La nuova password ti verra' immediatamente
+recapitata all'indirizzo Email che hai fornito al momento della
+registrazione. La volta successiva che ti colleghi, abbi cura di cambiare
+nuovamente la tua password.
+
+Livelli di accesso degli utenti:
+================================
+Ad ogni utente viene associato un 'livello di accesso' che decide le
+operazioni che puo' eseguire l'utente. I livelli di accesso sono i
+seguenti:
+
+Livello 0:  Utente da buttare
+            Gli account di livello 0 vengono automaticamente eliminati dal
+            server quando fa le operazioni di crash_save_perfavore().
+            Non e' possibile connettersi alla BBS utilizzando questi account.
+Livello 1:  Utente Ospite
+            Sono gli utenti che si collegano come 'Ospite' o 'Guest'. Gli
+            utenti di questo livello non hanno a disposizione un vero e
+            proprio account, e' solo un modo per visitare la BBS senza
+            doversi registrare ufficialmente. Chiaramente le possibilita'
+            sono molto ridotte, in quanto l'Ospite non puo' comunicare
+            mediante Xmsg o chat, ma solamente leggere le room (se un giorno
+            ci saranno...)
+Livello 2:  Utente non validato
+            Questo e' il livello dei nuovi utenti. Hanno un account ma non
+            possono usare Xmsg, chat o lasciare messaggi nelle room finche'
+            non passano la validazione (Vedi sezione 'Sistema di validazione
+            automatica'). Se non vengono validati entro 48 ore il loro 
+            account viene eliminato.
+Livello 3:  Utente rompiballe
+            Sono utenti validati, ma che si sono dimostrati particolarmente
+            indisciplinati dando fastidio ad altri utenti. A questi utenti
+            sono state temporaneamente disabilitati Xmgs, Chat e la
+            possibilita' di lasciare messaggi nelle room.
+Livello 4:  Utente validato
+            Questo e' il livello 'normale' degli utenti, al quale si accede
+            appena viene eseguita la validazione. Gli utenti di livello 4
+            possono usufruire di tutti i servizi offerti dalla BBS.
+	    Alcuni di questi utenti possono aiutare i Room Aide a gestire
+	    la propria room, e vengono definiti Room Helper.
+Livello 5:  Helping Hand (Da implementare)
+            Gli 'Helping Hand' sono utenti normali, disponibili pero' ad
+	    aiutare gli utenti novizi ad usare la BBS. Gli utenti inesperti
+	    possono chiedere un aiuto, che viene mandato automaticamente
+	    da Cittadella a un Helping Hand, il quale risponde alle domande
+	    dell'utente. Anche utenti di livello superiore al 5 possono
+	    offrire questo servizio se lo desiderano.
+Livello 6:  Room Aide
+            Sono utenti che oltre ad accedere normalmente ai servizi della
+            BBS si impegnano a curare una o piu' room, moderandone le
+            discussioni. Possono modificare la configurazione di queste
+            room e hanno comandi particolari per gestire i messaggi presenti.
+Livello 7:  Floor Aide (da implemetare)
+            Si occupano della gestione dei floor (quando verranno
+	    implementati).
+Livello 8:  Aide
+            Sono degli utenti che hanno il compito di gestire il
+            funzionamento della BBS. Hanno privilegi di Room Aide su tutte
+            le room della BBS e possono inoltre gestire gli account degli
+            utenti.
+Livello 10: System Operator (sysop)
+            Sono gli Aide che si occupano inoltre del funzionamento del
+            sistema. Hanno accesso ai sorgenti della BBS per correggere i
+            bachi, intervengono in caso di crash e si occupano della sicurezza.
+Il livello 9 attualmente non e' definito.
+
+Profile:
+========
+Il 'profile' e' una breve descrizione degli utenti. Per avere informazioni
+su un utente, e' sufficiente digitare <p> al prompt del client, e poi
+specificare il nome dell'utente che ci interessa. Se il nome digitato
+corrisponde effettivamente a un utente di Cittadella/UX, appaiono
+nell'ordine le seguenti informazioni:
+1. Generali: Nome, livello di accesso, se e' collegato o meno.
+2. Dati personali: sono i dati della registrazione: Nome reale, indirizzo,
+   numero di telefono, Email, URL della Home Page. Questi dati sono privati
+   e di default non appaiono. Sta all'utente decidere quali di questi vuole
+   rendere pubblici, attraverso la propria "configurazione dell'utente".
+3. Numero di matricola dell'utente.
+4. Dati riguardanti le connessioni: numero di chiamate, di Xmsg inviati,
+   di messaggi lasciati nei forum di discussione, data del primo
+   collegamento, tempo trascorso in collegamento e percentuale della vita
+   dal primo collegamento; data, ora e provenienza della chiamata
+   dell'ultimo collegamento effettuato (o di quallo in corso se l'utente
+   e' presente).
+5. Profile personalizzato: questo e' un breve testo di presentazione che
+   ogni utente puo' allegare al profile, utilizzando il comando <M>.
+
+Stato dell'utente:
+==================
+Il server associa agli utenti collegati uno stato, che descrive il tipo di
+azione che stanno svolgendo. Lo stato viene visualizzato quando si digita il
+comando <w>ho tramite un simbolo, nel modo seguente
+'.'  l'utente e' idle da piu' di un minuto
+'+'  l'utente sta editando un testo
+'&'  l'utente sta comunicando (Xmsg, Chat o Broadcast)
+'^'  l'utente sta compilando/modificando la configurazione
+'_'  l'utente sta compilando/modificando la registrazione
+'#'  l'utente sta editando un file (profile o info)
+'$'  l'utente e' entrato nella subshell
+(nome) Il nome dell'utente e' tra parentesi se ha lockato il terminale
+
+Lista degli amici:
+==================
+Nella lista degli amici (o friend-list) si possono inserire 20 altri utenti
+di Cittadella/UX con i quali comunichiamo piu' frequentemente, per
+semplificare le operazioni. La lista degli amici e' personale e non e'
+accessibile agli altri utenti. Essa viene utilizzata per varie cose:
+1. Comunicazione tramite X-msg: E' possibile rifiutare automaticamente gli
+   eXpress-message tranne quelli provenienti dagli utenti nella lista.
+2. Notifiche di LogIn/LogOut: allo stesso modo, oltre alla possibilita' di
+   disabilitare le notifiche di tutti gli utenti che entrano ed escono dalla
+   BBS, e' possibile chiedere a Cittadella/UX di avvertirci solamente quando
+   e' un utente in lista che si collega o si sconnette dalla BBS.
+3. Per riferirsi agli utenti nella lista, si possono abbreviare i loro nomi
+   digitando '&n' al posto del nome completo, dove 'n' sta per il numero
+   dell'utente come appare nella lista.
+
+Gestione dell'idle:
+===================
+L'idle e' il periodo di tempo in cui l'utente e' rimasto inattivo (e il
+server non ha ricevuto segnali da parte del client). Cittadella/UX
+contabilizza il tempo di idle di ogni utente e se questo supera un minuto,
+lo rende noto mettendo un punto accanto al nick dell'utente nella lista
+degli utenti connessi <w>, e scrivendo il tempo di idle nel profile
+dell'utente ozioso.
+Inoltre, per minimizzare il carico della rete e del server, se l'utente
+e' idle per un lungo tempo (attualmente 15 minuti) viene avvertito due volte
+e successivamente viene chiusa la sua connessione se non risponde agli
+avvertimenti.
+
+Configurazione dell'utente:
+===========================
+
+Tab Completion:
+===============
+Visto che siamo tutti dei pigroni e che c'e' gente che si sceglie dei nomi
+complicatissimi di cui azzeccheremmo la corretta ortografia solo
+all'undicesimo tentativo, e' stata implementata la 'tab completion', che
+permette mediante una semplice pressione del tasto <TAB> (quello un po' piu'
+lungo a sinistra del tasto <Q>) di completare il nome di un utente o di una
+room. Ad esempio, per vedere il profile dell'utente DasKleinchen, dopo aver
+premuto <p> per vedere il profile, alla richiesta del nome dell'utente,
+invece di digitarlo per esteso ne digiteremo le prime lettere, ad esempio
+'Da'. Una successiva pressione del tasto <TAB> completa il nome e appare
+sullo schermo il nome'DasKleinchen'. Se piu' di un utente ha il nome che
+inizia con le lettere 'Da', successive pressioni del tasto <TAB> permettono
+di scorrerli tutti nell'ordine. I comandi che prevedono la presenza
+dell'utente per essere eseguiti, come <X> per mandare un Xmsg ad esempio,
+eseguono il completamento considerando solo i nomi degli utenti collegati in
+quel momento. Il <TAB> puo' essere usato per completare il nome di una room,
+esattamente nello stesso modo. Il completamento viene effettuato in questo
+caso solo con le room alle quali abbiamo l'accesso e che non sono state
+zappate.
+
+Messaggi di Amministrazione:
+============================
+Per amministrare meglio la BBS e moderare le room, Room Helper, Room Aide,
+Aide e Sysop possono lasciare dei post 'ufficiali' di amministrazione. In
+questo caso il loro nome viene preceduto dalla loro qualifica, che puo'
+variare a seconda del contesto:
+Room Helper: Possono postare in qualita' di Room Helper nelle room di loro
+             competenza.
+Room Aide  : Possono postare in qualita' di Room Aide nelle loro room.
+Aide       : Possono postare in qualita' di Room Helper in tutte le room
+             e in qualita' di Aide se il post riguarda la gestione della
+	     BBS.
+Sysop      : Possono postare in qualita' di Room Helper in tutte le room,
+             in qualita' di Aide se il post riguarda la gestione della BBS
+	     e in qualita' di System Operator se il post riguarda il
+	     software o la gestione del sistema.
+NB: In Cittadella BBS i Sysop non si considerano Aide e si tengono fuori
+    dalla gestione della BBS e delle room in cui non hanno ricevuto un
+    incarico di Room Aide o Room Helper.
+
+Quote:
+======
+
+Comandi per postare messaggi di amministrazione:
+------------------------------------------------
+<.><e><a>   : inserisce un post in qualita' di Room Aide o di Room Helper
+              a seconda del ruolo ricoperto dall'utente.
+<.><a><e><m>: inserisce un post in qualita' di Aide.
+<.><s><e>   : inserisce un post in qualita' di System Operator.
+
+Descrizione dei comandi del client:
+===================================
+Ad ogni comando di cittaclient e' associato un tasto della tastiera
+(attenzione, l'interprete e' sensibile alle maiuscole). Premendo il tasto si
+esegue il comando, che in seguito puo' richiedere altre informazioni (ad
+esempio, se premo <p> per vedere il profile di un utente, il client mi
+chiede il nome dell'utente che ci interessa). La lista dei comandi attivati
+al momento e' riportata qui sotto, divisa per tipo di comando.
+Inoltre, a causa del limitato numero di tasti e per comodita', e' possibile
+eseguire gli stessi comandi mediante i 'dot commands'; questi sono comandi
+composti dalla pressione di due o piu' tasti, il primo dei quali e' un punto
+o 'dot': <.>. Questi sono descritti nella sezione _7. Dot Commands_ .
+
+1. Comandi Generali
+-------------------
+<e> Visualizza la configurazione dell'utente.
+    Visualizza le variabili configurabili dall'utente (Generiche,
+    Apparenza, Dati personali pubblici e Comunicazione).
+<f> Friends: Visualizza la lista degli amici
+    Visualizza la lista dei 20 amici, con il loro numero di riferimento.
+    Per riferirsi a un utente nella lista degli amici, invece di dover
+    digitare interamente il suo nome ci si puo' riferire a lui digitando
+    '&n' al prompt, dove 'n' e' il numero corrispondente all'amico.
+    (Per ora funziona solo per mandare un Xmsg)
+<p> Profile: Informazioni su un utente
+    Permette di vedere le informazioni riguardanti un utente della BBS. In
+    un primo blocco appaiono i dati personali dell'utente se questo li ha resi
+    pubblici. Un secondo blocco si trovano le informazioni sull'uso del
+    sistema (#chiamate, #post, #Xmg, data e ora del primo collegamento, etc.).
+    Infine c'e' la parte personalizzata del profile, che consiste in un
+    piccolo testo di presentazione fornito dall'utente.
+<u> Lista di tutti gli utenti
+    Questo comando permette di vedere la lista di tutti gli utenti della BBS
+    (connessi o meno) con qualche informazione. Appaiono nell'ordine:
+    a) Nome dell'utente
+    b) Livello di accesso
+    c) data dell'ultimo collegamento
+    d) Numero di chiamate totali effettuate
+    e) Numero di messaggi lasciati nelle room
+<w> Who: Lista degli utenti connessi al server
+    Digitando <w> si vede la lista degli utenti attualmente collegati.
+    Attualmente vengono fornite le seguenti informazioni (ma cambiera' presto)
+    a) descrittore del file
+    b) nome dell'utente
+    c) host dal quale si collega
+<t> Time & Date
+    Visualizza l'ora e la data locale del client.
+<E> Modifica le variabili di configurazione dell'utente.
+    Permette di modificare le variabili di configurazione rispondendo 'si'
+    o 'no' mediante i tasti s/n alle domande fatte dal client.
+<F> Modify Friend-list: Modifica la lista di amici.
+    Permette di aggiungere, rimuovere un amico, scambiare di posto due
+    amici, uscire e salvare i nuovi amici o lasciar perdere le modifiche.
+<M> Modifica il Profile
+    Permette di inserire/modificare un piccolo testo di presentazione da
+    parte dell'utente, che viene visualizzato in fondo al profile.
+<P> Modifica la Password
+    Questo comando permette all'utente di modificare la propria password.
+    Per farlo deve prima digitare la sua vecchia password, poi inserire due
+    volte la nuova password che vuole usare.
+<Q> Quit: Esci dalla BBS
+    Permette di uscire dalla BBS. L'uscita di un utente viene notificata
+    agli altri utenti presenti.
+<R> Registrazione: Modifica la registrazione
+    Permette di modificare i dati personali di un utente (domicilio, Email,
+    etc.)
+    Il nome 'vero' non e' modificabile, se un errore e' stato fatto durante
+    la compilazione del modulo la sua modifica va chiesta via mail a sysop.
+    Se viene modificato l'indirizzo di Email, una nuova chiave di
+    validazione viene generata, e va inserita entro 48 ore. Presto verra'
+    implementata la possibilita' per gli utenti di rendere pubblici i loro
+    dati personali.
+<%> Lock del terminale
+    Permette all'utente di bloccare l'accesso al client per un breve periodo
+    se si deve assentare, senza interrompere la connessione al server. Per
+    sbloccare il terminale, l'utente deve digitare correttamente la password.
+<$> Subshell (solo client locale)
+    Apre una subshell (/bin/sh di default) e sospende cittaclient. La
+    sessione viene ripresa appena si esce dalla subshell con 'exit'.
+
+2. Comandi di comunicazione (eXpress-message / chat)
+----------------------------------------------------
+Cittadella /UX permette agli utenti di comunicare fra loro in modo rapido e
+semplice attraverso due sistemi diversi, gli eXpress-message (Xmsg) e le chat. 
+<x> Invia un eXpress message a un utente
+    Chiede il nome dell'utente destinatario del Xmsg, poi aspetta un breve
+    testo (4 righe max.) da inviare all'utente. Premendo <Enter> in una riga
+    vuota si termina il messaggio, altrimenti il messaggio finisce quando
+    viene conclusa la quarta riga del testo. Il messaggio viene poi
+    immediatamente inviato al destinatario, che lo riceve con un *beep*.
+    Se quest'ultimo e' occupato, il messaggio viene mantenuto in memoria,
+    e viene poi mostrato al destinatario appena e' in grado di leggerlo.
+    In questo caso, l'utente che ha inviato l'Xmsg viene avvertito che il
+    destinatario leggera il messaggio appena possibile. Se il messaggio e'
+    vuoto, l'Xmsg viene abortito.
+<C> Ascolta un canale di chat
+    Mediante questo comando ci si collega a un canale della chat. Viene
+    richiesto il numero del canale. Se si era precedentemente connessi a
+    un altro canale, si lascia automaticamente il vecchio canale e si entra
+    nel nuovo. Cittadella/UX notifica a tutti gli utenti gia' presenti nel
+    canale che l'utente <nome> li ha raggiunti.
+<c> Invia un messaggio nella chat
+    L'utente immette un breve messaggio da inviare nella chat, come nel caso
+    degli Xmsg. Quando viene terminato, il messaggio viene inviato
+    immediatamente a tutti gli utenti che in quel momento erano collegati
+    allo stesso canale della chat.
+<A> Lascia la Chat
+    Per smettere di ascoltare il canale chat. Cittadella notifica agli altri
+    utenti collegati allo stesso canale della chat che l'utente li ha
+    lasciati.
+<W> Who in Chat 
+    Lista degli utenti collegati alla chat, canale per canale.
+
+3. Comandi riservati agli Aide e Sysop per la gestione del sistema
+------------------------------------------------------------------
+Questi comandi servono agli aide e ai sysop di gestire il funzionamento
+della BBS.
+<b> Broadcast: Invia un messaggio a tutti gli utenti (aide only)
+    Permette di inviare un messaggio tipo eXpress-message che viene visto
+    da tutti gli utenti connessi.
+<c> Visualizza la configurazione del sistema (aide only)
+    Permette di esaminare le variabili di configurazione del sistema
+    editabili direttamente dal client. Questi si dividono nelle seguenti
+    sezioni:
+    1) Configurazione generale del sistema
+    2) Informazioni sul server
+    3) Path dei files
+    4) Gestione dell'idle
+    5) Nomi delle principali room
+<C> Modifica la configurazione del sistema (sysop only)
+    Permette di modificare le variabili di configurazione del sistema
+    descritte sopra direttamente dal client.
+<k> Caccia un utente dalla BBS (aide only)
+    Permette di cacciare (kick out) un particolare utente dalla BBS,
+    digitando il suo nome. Se al posto del nome si fornisce 'Ospite',
+    vengono cacciati tutti gli ospiti. L'operazione viene loggata.
+<K> Kill user: Elimina definitivamente un utente (sysop only)
+    Permette di eliminare tutti i dati di un utente dal file degli utenti.
+    L'operazione viene loggata.
+<O> Cambia la passwOrd di un utente (aide only)
+    Permette agli aide e sysop di modificare la password di un utente,
+    generalmente perche' quest'ultimo l'ha dimenticata. Per eseguire il
+    comando, l'aide deve prima inserire la propria password, poi immettere
+    il nome dell'utente al quale va cambiata la password. La nuova password
+    viene generata in modo casuale dal server di Cittadella/UX e inviata
+    all'indirizzo Email dell'utente.
+<s> Statistiche sul server (sysop only)
+    Visualizza delle statistiche sull'uso del server che servono alla gestione
+    della BBS. Attualmente visualizza il numero di run del server, l'ultima
+    matricola assegnata a un utente, il numero totale di connessioni, numero
+    di login effettuati da ospiti, nuovi utenti e utenti gia' registrati,
+    numero di validazioni effettuate e numero di connessioni effettuate con
+    il client locale e con quello remoto, numero totale di X inviati e di
+    messaggi postati.
+<S> Shutdown del server (sysop only)
+    Permette di eseguire uno shutdown del server direttamente dal client.
+    Chiede quanti minuti deve attendere prima dello shutdown e notifica
+    agli utenti ogni minuto il tempo rimanente. Subito prima dello shutdown
+    tutti gli utenti vengono cacciati. Si consiglia di lasciare almeno 10
+    minuti di tempo agli utenti, per permettergli di terminare quello che
+    stanno facendo. Il server viene poi automaticamente riavviato dallo
+    script ./autorun .
+<U> Edit User (aide only)
+    Permette di modificare la registrazione e il livello di accesso di un
+    utente. Non e' possibile fornire a un utente un livello di accesso
+    superiore al proprio. L'operazione viene loggata.
+<Y> sYslog: Visualizza il file di log del sistema (sysop only)
+    Permette di visualizzare i log di sistema effettuati dall'ultimo
+    reboot. (Vedi sezione `Log di sistema')
+
+4. Comandi di Help, informazione sul sistema e di bug report
+------------------------------------------------------------
+Questi comandi permettono di accedere a dei files che descrivono il
+funzionamento di Cittadella/UX e aiutano l'utente ad usarlo. E' in
+progetto inoltre un comando <Y>ell per chiedere aiuto a qualcuno disponibile
+a spiegare il funzionamento della BBS. I comandi implementati attualmente
+sono: 
+<h>, <?> Help: Lista dei comandi disponibili.
+<H> Leggi un file di Help
+    Digitando <H> appare una lista di files di aiuto, di informazioni sul
+    sistema, sul comportamento da adottare, etc. Se ne puo' scegliere uno
+    mediante un prompt e il testo viene visualizzato.
+<B> Bug Report
+    Questo comando serve a semplificare lo sviluppo di Cittadella/UX. Se un
+    utente riscontra un errore del programma o comunque un comportamento
+    strano, puo' segnalarlo ai sysop premendo <B>. In questo modo puo'
+    scrivere una descrizione del problema, che verra' poi spedita
+    automaticamente ai sysop. La descrizione dovrebbe essere il piu'
+    completa possibile; bisogna riportare il tipo di client usato (client
+    locale oppure telnet alla BBS), il tipo di terminale che si e' usato,
+    se il client e' locale tutte le informazioni sul hardware e sistema
+    operativo utilizzato, e una descrizione dettagliata delle operazioni
+    compiute nella BBS prima di riscontrare il baco.
+
+5. Comandi di gestione delle room
+---------------------------------
+
+6. Comandi di gestione dei messaggi
+-----------------------------------
+
+7. Dot Commands
+---------------
+
+Log di sistema:
+===============
+il server tiene un diario in ./syslog delle operazioni che esegue. Queste
+vengono poi smistate in diversi files in ./log a seconda del tipo di
+evento. Questo aggiornamento avviene ad ogni reboot del server.
+./log/aide    : log dei comandi per aide/sysop (AIDE).
+./log/carico  : carico di Cittadella/UX
+./log/connessioni : log delle connessioni al server.
+./log/kickout : log degli utenti cacciati (KO).
+./log/kill    : log degli utenti eliminati (KILL).
+./log/login   : log delle login.
+./log/nuovi_utenti : connessioni da parte di nuovi utenti.
+./log/rusage  : log dell'uso di risorse di sistema. Appaiono nell'ordine:
+                * User time used
+                * System time used
+                * Maximum resident set size
+                * Integral shared memory size
+                * Integral unshared data size
+                * Integral unshared stack size
+./log/secure  : le righe SECURE del syslog, con tentativi di accesso a
+                comandi non permessi al livello dell'utente.
+./log/syserr  : log degli errori di sistema.
+./log/system  : log degli eventi di sistema.
+./log/validate: log delle valkeys e validazioni.
+
+Portabilita':
+=============
+Cittadella/UX e' scritto su Linux con glibc 2.1, compilato con gcc egcs-2.91
+con architettura i386.
+Tuttavia il codice e' scritto cercando di aderire alle convenzioni ansi.
+La compilazione del client e' avvenuta con successo su:
+* Digital Server 2100 modello A500MP, CPU ALPHA DEC 21064a con sistema
+  operativo OSF/1 versione 3.0
+ma non dovrebbe creare problemi su altre piattaforme UNIX.
+
+Files:
+======
+COPYRIGHT  Copyright di Cittadella/UX
+FILES      Descrizione dei files in ./  
+INSTALL    Istruzioni di Installazione
+
+Directories:
+============
+./client   files per il client
+./server   files per il server
+
+Ringraziamenti
+==============
+A tutti gli utenti della Emperor's BBS che hanno contribuito a migliorare e
+a eliminare i bachi della vecchia BBS di Linuz, e che ci hanno fatto capire
+l'esigenza di riscrivere da capo il codice. Il concetto che ci siamo
+formato di come essere costruita Cittadella/UX e' nato dal confronto con
+loro.
+
+Mantainer:  LePetit
+==========
+
+Contributi di: Marco Caldarelli e Riccardo Vianello (per ora)
+==============
+
+
+[Ultimo aggiornamento a questo file: 22/06/2000]

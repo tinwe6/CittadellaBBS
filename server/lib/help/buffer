@@ -1,0 +1,33 @@
+Buffer dei messaggi
+===================
+  Cittadella ti da` la possibilita` di citare il messaggio che stai leggendo
+con il comando <q> (<q>uote). (Ovviamente in modo messaggi).
+e tenuto in un buffer. Quando entrerai nell'editor esterno apparira` il
+messaggio citato. (Ogni riga sara` preceduta da il segno di citazione 
+">").
+
+In maniera simile, se stai usando l'editor esterno e vuoi postare (???) il
+messaggio in un momento successivo, Cittadella ti permette di tenerlo in
+memoria: esci dall'editor e invece di premere <s>alva, premi <h> (<h>old).
+La volta successiva che entri nell'editor esterno continuerai a scrivere
+il messaggio.
+
+Infine c'e` un'altra possibilita`: 
+<D> (<D>ump) in modo messaggi salva nel file locale ~/cittadump il messaggio appena letto.
+Se il file cittadump non era vuoto il messaggio viene aggiunto in coda.
+
+
+Bisogna fare alcune osservazioni:
+   -Il comando <q> cancella il messaggio  <q>uotato precedentemente, invece
+   -se hai sia un <h>old che un <q>uote attivi, alla prossima scrittura
+ di un post con editor esterno, apparira` nell'editor prima il testo
+ memorizzato con <h>old, seguito dal testo quotato.
+ Ripetendo alternativamente i due comandi, e' possibile quotare piu'
+ di un messaggio alla volta.
+
+ NB: L'hold e il quote funzionano solo se si scrive il nuovo messaggio con l'editor esterno.
+Inoltre se esci dalla BBS perdi sia i messaggi <q>uotati sia quelli in <h>.
+
+Al comando <q>uote sono associati anche i due comandi:
+  <f> (<f>ree), in modo messaggi, che libera completamente il buffer del <q> 
+  <e>samina, in modo messaggi, che esamina il buffer del quote.

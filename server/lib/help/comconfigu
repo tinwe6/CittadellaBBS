@@ -1,0 +1,26 @@
+	LETTURA E MODIFICA DELLE CONFIGURAZIONI
+	=======================================
+Questi comandi vengono usati soprattutto dai Sysop, dagli Aide e dai Room
+Aide.
+ Qualcuno puo` essere usato dagli utenti normali.
+
+Si usano tutti in modo Comando 
+
+<C> Modifica la configurazione del sistema. Solo se sei Sysop e gli altri
+    Sysop non ti stanno guardando.
+<E> Modifica le variabili di configurazione dell'utente.
+    Permette di modificare le variabili di configurazione rispondendo 'si'
+    o 'no' mediante i tasti s/n alle domande fatte dal client.
+    Vedi anche la sezione =Configurazione dell'utente=
+<F> Modify Friend-list: Modifica la lista di amici.
+    Permette di aggiungere, rimuovere un amico, scambiare di posto due
+    amici, uscire e salvare i nuovi amici o lasciar perdere le modifiche.
+    <.f> Mostra o modifica la friend list. (vedi <F> e dot-commands) 
+<P> Modifica la Password
+    Questo comando permette all'utente di modificare la propria password.
+    Per farlo deve prima digitare la sua vecchia password, poi inserire due
+    volte la nuova password che vuole usare.
+
+
+
+

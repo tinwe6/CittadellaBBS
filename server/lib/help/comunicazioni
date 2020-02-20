@@ -1,0 +1,70 @@
+Comandi di comunicazione
+=========================
+Permettono di comunicare con gli altri utenti in modo rapido ma volatile.
+ I messaggi espressi vengono mandati ad un singolo utente, la chat premette 
+agli utenti collegati alla chat di chiacchierare.
+ In entrambe i casi i messaggi che si ricevono, che possono essere lunghi al
+piu` 4 righe vengono visualizzati sullo schermo.
+ [[ma non sono memorizzati da nessuna parte (---modifica per il
+ client!?---).]]
+
+Per inviare un messaggio si usa il comando <x> per gli x-message e <c> per la
+chat, negli x-msg viene anche chiesto il nome del destinatario,
+e poi deve essere inserito il testo, che termina con una riga vuota o con il 
+massimo di righe disponibile.
+ Se non si vuole piu` mandare il messaggio e` sufficiente scrivere
+all'inizio di una riga la scritta 
+ABORT (da sola) e premere invio. 
+Se per caso non si vuole piu` mandare il messaggio 
+
+	=Chat --- questi comandi funzionano solo in modo COMANDI
+	Ci sono piu` canali di chat, ciascuno indipendente (per ora 2 canali pubblici
+	piu` uno riservato ai Sysop).
+	  Quando si e` collegati ad un canale si ricevono, accompagnati da un beep,
+	 i messaggi degli altri utenti e si e` avvisati quando un utente si collega o esce dalla chat.
+	 Il beep puo` essere disabilitato, leggi la sezione sulla configurazione.
+	I comandi sono (Solo modo COMANDI):
+	<C> Ascolta un canale di chat. Viene richiesto il numero del canale.
+	    Se sei gia` collegato ad un'altro canale ti chiede conferma prima 
+	    di cambiarlo.
+	    Cittadella avverte gli utenti gia` collegati che ti sei connesso.	
+	<A> Abbandona la chat a cui sei collegato.
+	    Avvisa gli altri utenti collegati al canale che sei uscito.
+	<W> Elenca gli utenti nelle chat (anche in Syschat????). Puoi anche 
+	    non essere collegato ad alcuna chat.
+
+	E ovviamente
+	<c> Manda un breve messaggio agli altri utenti collegati al tuo stesso
+	canale.
+	   Ti ricordo che puoi mandare fino a 4 linee, per cancellare un messaggio
+	   basta scrivere ABORT (maiuscolo!) da solo all'inizio di una linea e
+	   andare a capo.
+
+	=X-messages ---Tutti i comandi funzionano sia in modo Comandi che 
+		      in modo Messaggi
+	<x> manda un x-msg ad un utente.
+	Ti chiede il nome dell'utente destinatario del Xmsg, poi aspetta un breve
+	testo (4 righe max.) da inviare all'utente. Premendo <Enter> in una riga
+	vuota si termina il messaggio, altrimenti il messaggio finisce quando
+	viene conclusa la quarta riga del testo. Il messaggio viene poi
+	immediatamente inviato al destinatario, che lo riceve con un *beep*.
+	 Se quest'ultimo e' occupato, il messaggio viene mantenuto in memoria,
+	e viene poi mostrato al destinatario appena e' in grado di leggerlo.
+	In questo caso, l'utente che ha inviato l'Xmsg viene avvertito che il
+	destinatario leggera il messaggio appena possibile. Se il messaggio e'
+	vuoto, l'Xmsg viene abortito.
+	Se vuoi interrompere l'invio di un messaggio scrivi ABORT all'inizio di i
+	una linea vuota e premi invio
+
+	<v> risponde all'x-message: e` come <x>, ma il destinatario e`
+	automaticamente l'ultimo utente che ti ha mandato un x-msg. 
+
+	Inoltre ci sono i seguenti comandi (solo in modo COMANDI)
+	<.tu> toggle follow-up. Inverte l'opzione follow-up. Se attivata 
+		entra nel sender di X-msg appena se ne riceve uno.
+	<.ec>  Nella configurazione, 3^ sezione (Comunicazione) si puo`
+	       decidere se ricevere X-msg, e se solo da amici o da tutti. 
+
+
+
+

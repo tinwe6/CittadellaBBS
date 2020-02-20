@@ -1,0 +1,28 @@
+Profile:
+========
+Il 'profile' e` una breve descrizione degli utenti. Per avere informazioni
+su un utente, e` sufficiente digitare <p> al prompt del client, e poi
+specificare il nome dell'utente che ci interessa. 
+CIttadella presenta come possibilita` di default il nome dell'utente
+dell'ultimo messaggio che hai letto o dell'ultimo x-msg che hai ricevuto
+(e che potrebbero averti incuriosito...).
+Se il nome digitato corrisponde effettivamente a un utente di
+Cittadella/UX, appaiono nell'ordine le seguenti informazioni:
+
+1. Generali: Nome, livello di accesso, se e` collegato o meno.
+2. Dati personali: sono i dati della registrazione: Nome reale, indirizzo,
+   numero di telefono, Email, URL della Home Page. Questi dati sono privati
+   e di default non appaiono. Sta all'utente decidere quali di questi vuole
+   rendere pubblici, attraverso la propria "configurazione dell'utente".
+3. Numero di matricola dell'utente.
+4. Dati riguardanti le connessioni: numero di chiamate, di Xmsg inviati,
+   di messaggi lasciati nei forum di discussione, data del primo
+   collegamento, tempo trascorso in collegamento e percentuale della vita
+   dal primo collegamento; data, ora e provenienza della chiamata
+   dell'ultimo collegamento effettuato (o di quallo in corso se l'utente
+   e` presente).
+5. Profile personalizzato: questo e` un breve testo di presentazione che
+   ogni utente puo' allegare al profile, utilizzando il comando <.ep> 
+   in modo comandi.
+   
+

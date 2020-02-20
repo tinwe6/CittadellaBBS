@@ -1,0 +1,16 @@
+Sistema di validazione automatica per gli utenti:
+=================================================
+Ai nuovi utenti che si collegano per la prima volta viene richiesto di
+compilare una scheda di dati personali ('registration'). I dati non sono
+visibili agli altri utenti a meno che l'utente in questione non voglia
+pubblicarli. Di particolare importanza e` l'indirizzo di Email fornito,
+l'unico che viene verificato attraverso la procedura di convalidazione. 
+  Il server di Cittadella genera infatti automaticamente una chiave di 
+convalidazione che viene poi inviata all'indirizzo di Email fornito
+durante la registrazione. La volta successiva che si collega, l'utente puo`
+procedere alla convalidazione inserendo la chiave, e accedere cosi`
+istantaneamente a tutti i servizi forniti dalla BBS (gli utenti non
+convalidati non possono lasciare messaggi nelle bacheche ne' usare gli eXpress
+message e la chat). La convalidazione deve avvenire nelle 48 ore successive
+al primo collegamento, altrimenti l'account viene cancellato.
+

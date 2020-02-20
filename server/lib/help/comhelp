@@ -1,0 +1,36 @@
+	4. Comandi di Help, informazione sul sistema e di bug report
+	------------------------------------------------------------
+Questi comandi ti permettono di accedere a dei files che descrivono il
+funzionamento di Cittadella/UX e ti aiutano ad usarla. 
+E` in progetto inoltre un comando <Y>ell per chiedere aiuto a qualcuno
+disponibile a spiegare il funzionamento della BBS. I comandi implementati
+attualmente, da eseguire in modo Comandi, sono:
+
+<h> o l'equivalente
+<?> Help: Lista dei comandi disponibili, si puo` usare anche in modo
+    Messaggi e in modo Lettura.
+<H> Leggi un file di Help
+    Digitando <H> appare una lista di files di aiuto, di informazioni sul
+    sistema, sul comportamento da adottare, etc. Se ne puo` scegliere uno
+    mediante un prompt e il testo viene visualizzato.
+<B> Bug Report
+    Questo comando serve a semplificare lo sviluppo di Cittadella/UX. Se un
+    utente riscontra un errore del programma o comunque un comportamento
+    strano, puo' segnalarlo ai sysop premendo <B>. In questo modo puo`
+    scrivere una descrizione del problema, che verra' poi spedita
+    automaticamente ai sysop. La descrizione dovrebbe essere il piu`
+    completa possibile; bisogna riportare il tipo di client usato (client
+    locale oppure telnet alla BBS), il tipo di terminale che si e` usato,
+    se il client e' locale tutte le informazioni sul hardware e sistema
+    operativo utilizzato, e una descrizione dettagliata delle operazioni
+    compiute nella BBS prima di riscontrare il baco.
+    Il messaggio verra` anche messo nella stanza Bug Cittadella>, leggi
+    le sue info info per maggiori informazioni.
+    Se premi <B> per sbaglio non scrivere "scusate, mi sono sbagliato,
+    non volevo, perdonatemi" o messaggi di insulti come "Bisogna essere
+    dei babbei per associare il comando di bug Report a una sola lettera";
+    invece non scrivete nulla, premi due volte invio a vuoto e il
+    messaggio non verra` spedito. Se hai gia` scritto qualcosa e vuoi
+    interrompere il Bug report scrivi su una riga a se' 
+    ABORT
+    e premi invio.

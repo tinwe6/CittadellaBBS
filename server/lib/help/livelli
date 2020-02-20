@@ -1,0 +1,62 @@
+
+Livelli di accesso degli utenti:
+================================
+Ad ogni utente viene associato un 'livello di accesso' che decide le
+operazioni che puo' eseguire l'utente. I livelli di accesso sono i
+seguenti:
+
+Livello 0:  Utente da buttare
+            Gli account di livello 0 vengono automaticamente eliminati dal
+            server quando fa le operazioni di crash_save_perfavore().
+            Non e` possibile connettersi alla BBS utilizzando questi account.
+Livello 1:  Utente Ospite
+            Sono gli utenti che si collegano come 'Ospite' o 'Guest'. Gli
+            utenti di questo livello non hanno a disposizione un vero e
+            proprio account, e` solo un modo per visitare la BBS senza
+            doversi registrare ufficialmente. Chiaramente le possibilita`
+            sono molto ridotte, in quanto l'Ospite non puo` comunicare
+            mediante Xmsg o chat, ma solamente leggere le room.
+Livello 2:  Utente non convalidato
+            Questo e` il livello dei nuovi utenti. Hanno un account ma non
+            possono usare Xmsg, chat o lasciare messaggi nelle room finche'
+            non passano la convalidazione (Vedi sezione 'Sistema di 
+	    convalidazione automatica'). Se non vengono convalidati entro 48
+	    ore il loro account viene eliminato.
+Livello 3:  Utente rompiballe
+            Sono utenti convalidati, ma che si sono dimostrati particolarmente
+            indisciplinati dando fastidio ad altri utenti. A questi utenti
+            sono state temporaneamente disabilitati Xmgs, Chat e la
+            possibilita` di lasciare messaggi nelle room.
+Livello 4:  Utente convalidato
+            Questo e` il livello 'normale' degli utenti, al quale si accede
+            appena viene eseguita la convalidazione. Gli utenti di livello 4
+            possono usufruire di tutti i servizi offerti dalla BBS.
+	    Alcuni di questi utenti possono aiutare i Room Aide a gestire
+	    la propria room, e vengono definiti Room Helper.
+Livello 5:  Helping Hand (Da implementare)
+            Gli 'Helping Hand' sono utenti normali, disponibili pero` ad
+	    aiutare gli utenti novizi ad usare la BBS. Gli utenti inesperti
+	    possono chiedere un aiuto, che viene mandato automaticamente
+	    da Cittadella a un Helping Hand, il quale risponde alle domande
+	    dell'utente. Anche utenti di livello superiore al 5 possono
+	    offrire questo servizio se lo desiderano.
+Livello 6:  Room Aide
+            Sono utenti che oltre ad accedere normalmente ai servizi della
+            BBS si impegnano a curare una o piu` room, moderandone le
+            discussioni. Possono modificare la configurazione di queste
+            room e hanno comandi particolari per gestire i messaggi presenti.
+Livello 7:  Floor Aide (da implementare)
+            Si occupano della gestione dei floor (quando verranno
+	    implementati).
+Livello 8:  Aide
+            Sono degli utenti che hanno il compito di gestire il
+            funzionamento della BBS. Hanno privilegi di Room Aide su tutte
+            le room della BBS e possono inoltre gestire gli account degli
+            utenti.
+Livello 10: System Operator (sysop)
+            Sono gli Aide che si occupano inoltre del funzionamento del
+            sistema. Hanno accesso ai sorgenti della BBS per correggere i
+            bachi, intervengono in caso di crash e si occupano della sicurezza.
+
+Il livello 9 attualmente non e` definito.
+

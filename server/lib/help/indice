@@ -1,0 +1,35 @@
+LEGGIMI|120|LEGGIMI! (importante)
+introduzione|153|Introduzione alla BBS
+galateo-regole|121|Regole di comportamento in una BBS
+clientlocale|122|Collegarsi con il Client Locale
+dawin|123|Collegarsi da Windows
+damac|124|Collegarsi da Mac
+validazione|125|Procedura di validazione
+password|126|Passwords
+guardarsiintorno|127|Guardarsi intorno
+livelli|130|Livelli degli utenti
+profile|131|Informazioni su un utente
+stato|132|Stato degli utenti
+idle|133|Idle
+configutente|134|Configurazione dell'utente
+amici|135|Lista degli amici
+modi|136|Modi di Lettura
+tabcompl|137|Tab Completion
+stanze|138|Le stanze (o room) della BBS
+paramstanza|139|Parametri delle stanze
+letturamov|140|Lettura e immissione dei messaggi
+pager|141|Paginatore dei messaggi
+admin-msg|142|Messaggi di amministrazione
+buffer|143|Buffer dei messaggi
+comunicazioni|144|Comunicazione con altri utenti
+referendum|145|Referendum e sondaggi
+elasticg|146|Elastic Game
+comhelp|147|Comandi di aiuto
+comgestione|150|Comandi Room
+comconfigu|148|Comandi di configurazione
+comaltri|149|Comandi Generici
+comsysop|151|Comandi per Aide e Sysop
+comdot|152|'Dot Commands'
+lista_comandi|100|Lista dei comandi
+dot_commands|101|Lista dei 'Dot Commands'
+manuale|113|Manuale di Cittadella/UX (Attenzione, e' lunghetto)

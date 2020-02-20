@@ -1,0 +1,183 @@
+	7. Dot Commands
+	--------------
+Questi comandi, possibili solo in modo Comandi, ripetono in gran parte i
+comandi visti in predecenza e in parte servono ad ampliare il numero di
+comandi disponibili; ma soprattutto riuniscono le funzioni simili 
+sotto lo stesso nome.
+
+
+Il primo livello e` diviso in: 
+	<.a>ide, comandi riservati ai SysOp, agli Aide e in parte ai RA
+	<.c>hat, comandi per la chat, 
+	<.e>nter, per inserire messaggi "speciali" o per modificare
+		 la registrazione o la configurazione
+	<.f>riend, per modificare la friend list 
+	<.h>elp,   i file di help
+	<.k>nown rooms, per vedere le stanze della BBS 
+	<.s>ysop,  comandi per il sysop
+	<.t>oggle, per modificare alcuni parametri
+	<.u>rna, per i sondaggi e i referendum (vedi). 
+
+1) <.a>ide Solo per Aide/Sysop. (e Room Aide se indicato) 
+           Dove si dice che il comando e` per Room Aide (RA), si intende che
+	   la persona che se ne occupa e` il room aide della stanza;
+	   all'occorrenza anche i Sysop e gli Aide possono usare quel
+	   comando.
+	
+	<.aa> new room aide   Assegna un Room Aide alla stanza corrente
+	<.ab> broadcast       Comando di Broadcast: manda un messaggio
+			      tipo x-mgs a tutti gli utenti.
+	<.ae>dit commands     Si divide in altri sottocomandi (vedi dopo).
+	                      Serve a modificare la configurazione
+			      di Cittadella, delle stanze e degli utenti.
+			      Alcuni comandi sono anche per RA
+	<.ah> crea un RH      Crea un room helper, per RA
+	<i>nvite user         Per invitare un utente nella stanza, per RA
+	<k>ill commands       Cancella utenti e stanze. Si divide in
+			      sottocomandi. La descrizione completa e` piu`
+			      avanti.
+	create <n>ew room     Crea una nuova stanza. (*mai visto* qualche
+				Aide completi).
+	<r>ead commands       Per leggere i dati di Cittadella (Solo Sysop??)
+	<s>wap rooms 	      Per scambiare due stanze. (*?*)
+
+------------------
+Il comando <.ae> aide enter (ricordo: per Aide e Sysop/Room Aide) si divide
+in:
+	 			 
+	<.aec>configurazione: 	Configurazione del sistema (*?*)
+	<.aei> room info:     	Inserisce le info della stanza, per RA. 
+			      	(Vedi anche  la sezione sulle Stanze)
+	<.aem>message:        	Inserisce un messaggio come Aide
+	 		      	(o Sysop)?????	
+	<.aep>password:       	Se un utente si e` dimenticato
+			      	la password, questo comando ne
+			      	crea una nuova e gliela spedisce
+		    	      	per e-mail
+	<.aer> room:	      	edita la configurazione di una room,
+			      	per RA. Per i dettagli, leggi la 
+			      	sezione sui parametri delle stanze.
+	                     	
+	<.aeu>usr registration  Modifica la registrazione di un utente
+			        (Vedi??)
+------------------------
+Il comando <.ak> aide kill, solo per Aide e Sysop ha le seguenti funzioni:
+
+	<.akc> disconetti	Disconnette un utente connesso.
+	<.ake> elimina		Elimina definitivamente un utente dalla BBS
+	<.akr> room		la stanza in cui si e` (e si finisce nel limbo?)
+--------------------------
+Il comando <a>ide  <r>ead legge (solo Aide e Sysop): 
+	<.arc> Configurazione	La configurazione del sistema
+	<.arr> Room		L'elenco di tutte le stanze della BBS
+			
+
+ 2) <.c>hat  Sono comandi per la chat. Per ora sono implementati
+?nonva??<.ca> Ascolta		Ascolta un canale di chat (come <C>)
+	<.ce> Esci		Esci dalla chat. (come <A>)
+	<.cw> Who		Elenca gli utenti nei canali di chat	
+
+
+3) <.e> enter 
+
+4) <.f>riends list: Permette di modificare o di leggere la lista degli amici:
+	<.fm> modifica		Modifica la lista degli amici. Come <F>
+				(per l'elenco delle opzioni, vedi 
+				la sezione AMICI.
+	<.fr> leggi (read)	Mostra la lista degli amici.
+
+
+5) <.h>elp e` come <H>: presenta una lista di file di help, si puo` scegliere
+	    		il file per leggerlo.
+
+6)  <.k>nown rooms. Si divide in
+	      <.ka> all		elenc tutte le stanze
+	      <.kf> floor	elenca le stanze a questo piano (vedi Piani)
+	      <.kn> nuove	elenca solo quelle con nuovi messaggi
+	      <.ko> old 	elenca quelle con solo vecchi messaggi
+	   ?? <.kz> zappate	Quelle zappate (vedi Stanze). 
+	   			Le stanze accessibili su invito che sono 
+				state zappate NON compaiono nella lista.
+
+7)  <.e> enter Serve a scrivere vari tipi di messaggi
+		<.ea> aide	Mette un messaggio come Room Aide o
+				Room Helper nella stanza. Ovviamente
+				si deve essere RA o RH.
+		<.eb> bug	Bug report. Manda un bug report.
+				Leggi la parte sui Bug Report nella
+				sezione di Help, prima di mandarne uno.
+		<.ec> config	Cambia la tua configurazione. Fa scegliere
+				tra il seguente elenco
+				 1. Variabili generiche
+				 2. Apparenza
+				 3. Comunicazione (Xmsg e Notifiche)
+				 4. Scansione room e lettura messaggi
+				 5. Dati personali visibili a tutti
+				 0. Tutto
+				Per una descrizione piu` accurata leggi
+				la sezione sulla Configurazione.
+		<.ee> editor	Posta un messaggio scritto con l'editor
+				esterno. come <e>.
+				Vedi anche la sezione sui messaggi
+		<.em> message	Posta un messaggio scritto con l'editor
+				di Cittadella. Per finire lascia una 
+				linea bianca. 
+		<.ep> profile	Modifica il tuo profilo (Vedi la sezione
+				profile). 
+		<.er> registrazione
+				Modifica i dati della tua registrazione.
+				Alla fine ti chiede se vuoi confermare
+				i cambiamenti. Leggi la parte sulla
+				registazione.
+
+
+8) <.t>oggle. Permette di alternare la scelta (vedi anche Configurazione) 
+		tra alcune opzioni. 
+	
+		<.tb> bell:	 Sono le 16:45, il capo se n'e` andato 
+				 e finalmente puoi farti avvertire dalla i
+				 campanella quando arrivano x-mesg, messaggi
+				 da chat e cosi` via.
+		<.tf>riends: 	 boh...(non va) credo sia il toggle x-msg
+				 da amici.
+		<.th>hyperterm:  Se vuoi i messaggi pieni di colori e fuochi 
+				 artificiali (vedi sezione Hyperterminal)
+		<.tn> notifiche login/logout
+				 Se sei un po' autistico e non te ne frega 
+				 nulla di sapere chi arriva o di chi se ne va.
+		<.tx> expert 	 Se sei in modo esperto, compare solo il
+				 prompt delle stanze. Altrimenti ad ogni
+				 schermata Cittadella ti ricorda quali
+				 sono i comandi piu` importanti.
+		 
+		<.tu> follow-up  Se il modo follow-up e` abilitato, quando ti 
+				 arriva un x-msg entri immediatamente
+				 nell'editor degli x-msg, con destinatario
+				 chi ti ha mandato l'x-msg.
+				 Associato a questo c'e` il comando <v>
+				 Leggi anche la sezione Comunicazione.
+
+8) <.u>rna  	Per creare, leggere e votare sondaggi e referendum 
+    		(vedi Sondaggi e referedum).
+		Alcuni di questi comandi sono riservati agli Aide e Sysyop,
+		altri solo ai Room Aide e altri a tutti.
+		Tutti i comandi, a parte <.un> e <.ul> chiedono a quale
+		consultazione deve essere applicato il comando.
+		(? ci sara` differenza nei comandi tra sondaggi e referendum?
+		boh...  per ora lascio cosi`?)
+
+		<.uc> chiude:    Chiude la consultazione che viene indicata. 
+			         (solo Aide/RA)
+		<.ud> cancella:  Cancella la consultazione indicata.
+				 (Solo Aide/RA)
+		<.ul> lista:     Mostra un elenco delle consultazioni in corso 
+		                 (col numero di consultazione a cui ci si
+				 deve riferire negli altri comandi). Per
+				 tutti gli utenti.
+		<.un> nuova	 Crea una nuova consultazione. Solo
+				 Aide/RA.
+		<.ur> leggi      Leggi il testo d'una consultazione. Per
+				 gli utenti che hanno diritto a votare la 
+				 consultazione (?o per tutti?)
+		<.uv> vota       Vota per una consultazione
+

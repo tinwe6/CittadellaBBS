@@ -1,0 +1,115 @@
+
+                             +--------------+
+                             | DOT COMMANDS |
+                             +--------------+
+
+-------------+---------------------------------------------------------+-----+
+  Sequenza   |  Descrizione                                            | Key |
+-------------+---------------------------------------------------------+-----+
+<.><a><a>    | <.> <a>ide new room <a>ide                              |     |
+<.><a><b>    | <.> <a>ide <b>roadcast                                  | <b> |
+<.><a><e><c> | <.> <a>ide <e>dit <c>onfigurazione del sistema          |     |
+<.><a><e><h> | <.> <a>ide <e>nter <h>elping Hands                      |     |
+<.><a><e><i> | <.> <a>ide <e>dit room <i>nfo                           |     |
+<.><a><e><m> | <.> <a>ide <e>nter <m>essage                            |     |
+<.><a><e><n> | <.> <a>ide <e>dit <n>ews                                |     |
+<.><a><e><p> | <.> <a>ide <e>dit <p>assword di un utente               | <O> |
+<.><a><e><r> | <.> <a>ide <e>dit <r>oom                                |     |
+<.><a><e><s> | <.> <a>ide <e>dit room <s>ize                           |     |
+<.><a><e><u> | <.> <a>ide <e>dit <u>tente                              |     |
+<.><a><h>    | <.> <a>ide new room <h>elper                            |     |
+<.><a><i>    | <.> <a>ide <i>nvita utente in questa room               |     |
+<.><a><k><c> | <.> <a>ide <k>ill <c>accia utente connesso              | <k> |
+<.><a><k><e> | <.> <a>ide <k>ill <e>limina definitivamente un utente   | <K> |
+<.><a><k><o> | <.> <a>ide <k>ill <o>spiti         * DA FARE *          |     |
+<.><a><k><r> | <.> <a>ide <k>ill <r>oom corrente                       |     |
+<.><a><n>    | <.> <a>ide <n>ew room                                   |     |
+<.><a><r><c> | <.> <a>ide <r>ead <c>onfigurazione del sistema          | <c> |
+<.><a><r><r> | <.> <a>ide <r>ead <r>oom list                           |     |
+<.><a><r><u> | <.> <a>ide <r>ead configurazione <u>tente * DA FARE *   | <e> |
+<.><a><s>    | <.> <a>ide <s>wap rooms                                 |     |
+-------------+---------------------------------------------------------+-----+
+<.><c><a><#> | <.> <c>hat <a>scolta canale <#>        * DA FARE *      | <C> |
+<.><c><e>    | <.> <c>hat <e>sci                                       | <A> |
+<.><c><w>    | <.> <c>hat <w>ho                                        | <W> |
+-------------+---------------------------------------------------------+-----+
+<.><e><a>    | <.> <e>nter message as room <a>ide or helper            |     |
+<.><e><b>    | <.> <e>nter <b>ug report                                | <B> |
+<.><e><c>    | <.> <e>nter <c>onfiguration                             |     |
+<.><e><d>    | <.> <e>nter <d>oing                                     |     |
+<.><e><e>    | <.> <e>nter message with <e>xternal editor              |     |
+<.><e><i>    | <.> <e>nter <i>nvitation request for a room             |     |
+<.><e><m>    | <.> <e>nter <m>essage                                   |     |
+<.><e><P>    | <.> <e>nter <P>assword                                  |     |
+<.><e><p>    | <.> <e>nter <p>rofile                                   |     |
+<.><e><r>    | <.> <e>nter <r>egistration                              |     |
+<.><e><t>    | <.> <e>nter <t>erminal                                  |     |
+-------------+---------------------------------------------------------+-----+
+<.><f><m>    | <.> <f>riend List <m>odify                              | <F> |
+<.><f><r>    | <.> <f>riend List <r>ead                                |     |
+-------------+---------------------------------------------------------+-----+
+<.><F><a>    | <.> <F>loor <a>ide                                      |     |
+<.><F><c>    | <.> <F>loor <c>reate                                    |     |
+<.><F><d>    | <.> <F>loor <d>elete                                    |     |
+<.><F><l>    | <.> <F>loor <l>ist                                      |     |
+<.><F><m>    | <.> <F>loor <m>ove room                                 |     |
+-------------+---------------------------------------------------------+-----+
+<.><k><a>    | <.> <k>nown rooms <a>ll                                 | <k> |
+<.><k><f>    | <.> <k>nown rooms in <f>loor                            |     |
+<.><k><n>    | <.> <k>nown rooms with <n>ew messages                   |     |
+<.><k><o>    | <.> <k>nown rooms with <o>ld messages only              |     |
+<.><k><z>    | <.> <k>nown rooms <z>apped                              |     |
+-------------+---------------------------------------------------------+-----+
+<.><m><p>    | <.> <m>odifica <p>assword                               | <P> |
+<.><m><r>    | <.> <m>odifica <r>egistrazione                          |     |
+<.><m><t>    | <.> <m>odifica <t>erminale                              |     |
+-------------+---------------------------------------------------------+-----+
+<.><r><b>    | <.> <r>ead <b>rief                (Not implemented yet) |     |
+<.><r><c>    | <.> <r>ead <c>onfigurazione                             |     |
+<.><r><f>    | <.> <r>ead <f>orward                                    | <f> |
+<.><r><i>    | <.> <r>ead <i>nfo dettagliate room corrente             | <I> |
+<.><r><n>    | <.> <r>ead <n>ew                                        | <n> |
+<.><r><N>    | <.> <r>ead <N>ews                                       |     |
+<.><r><p>    | <.> <r>ead <p>rofile                                    | <p> |
+<.><r><r>    | <.> <r>ead <r>everse                                    | <r> |
+<.><r><u>    | <.> <r>ead <u>ser list                                  | <u> |
+<.><r><w>    | <.> <r>ead <w>ho is online                              | <w> |
+-------------+---------------------------------------------------------+-----+
+<.><s>       | <.> <s>kip to specific room                             |     |
+-------------+---------------------------------------------------------+-----+
+<.><S><b><m> | <.> <S>ysop <b>anners <m>odify                          |     |
+<.><S><e>    | <.> <S>ysop <e>nter message                             |     |
+<.><S><f><c> | <.> <S>ysop <f>ile Message <c>reate                     |     |
+<.><S><f><d> | <.> <S>ysop <f>ile Message <d>elete Post                |     |
+<.><S><f><e> | <.> <S>ysop <f>ile Message <e>xpand                     |     |
+<.><S><f><h> | <.> <S>ysop <f>ile Message <h>eaders                    |     |
+<.><S><f><i> | <.> <S>ysop <f>ile Message <i>nfo                       |     |
+<.><S><f><k> | <.> <S>ysop <f>ile Message <k>ill                       |     |
+<.><S><f><r> | <.> <S>ysop <f>ile Message <r>ead post                  |     |
+<.><S><f><s> | <.> <S>ysop <f>ile Message <s>tatistics                 |     |
+<.><S><r><l> | <.> <S>ysop <r>ead System <l>ogs                        | <Y> |
+<.><S><r><s> | <.> <S>ysop <r>ead <s>erver statistics                  |     |
+<.><S><s><b> | <.> <S>ysop <s>hutdown <b>egin                          |     |
+<.><S><s><f> | <.> <S>ysop <s>hutdown <f>orce script execution         |     |
+<.><S><s><k> | <.> <S>ysop <s>hutdown with <k>illscript                |     |
+<.><S><s><n> | <.> <S>ysop <s>hutdown <n>ow                            |     |
+<.><S><s><s> | <.> <S>ysop <s>hutdown <s>top                           |     |
+-------------+---------------------------------------------------------+-----+
+<.><t><b>    | <.> <t>oggle <b>ell                                     |     |
+<.><t><e>    | <.> <t>oggle <e>xpert mode                              | <E> |
+<.><t><f>    | <.> <t>oggle <f>riends                                  |     |
+<.><t><g>    | <.> <t>oggle <g>rassetto                                |     |
+<.><t><m>    | <.> <t>oggle <m>ail automatic dump                      |     |
+<.><t><n>    | <.> <t>oggle <n>otifiche                                |     |
+<.><t><X>    | <.> <t>oggle <X>-msg automatic dump                     | <X> |
+<.><t><x>    | <.> <t>oggle <x>-msg reception                          | <X> |
+<.><t><u>    | <.> <t>oggle follow-<u>p automatico per Xmsg            |     |
+-------------+---------------------------------------------------------+-----+
+<.><u><c>    | <.> <u>rna <c>ompleta                                   |     |
+<.><u><d>    | <.> <u>rna <d>elete                                     |     |
+<.><u><n>    | <.> <u>rna <n>uovo sondaggio                            |     |
+<.><u><r>    | <.> <u>rna <r>ead                                       |     |
+<.><u><v>    | <.> <u>rna <v>ota                                       |     |
+-------------+---------------------------------------------------------+-----+
+
+ ***  <H> per accedere al menu di help. ***

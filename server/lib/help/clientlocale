@@ -1,0 +1,73 @@
+ 
+Client locale o server Remoto?
+==============================
+Potresti chiederti:
+Cosa mi conviene usare, il client locale o il telnet per collegarmi a
+Cittadella BBS?
+
+La risposta semplice e` di usare il client locale.
+
+Collegandosi con telnet, parte un client sulla macchina remota, che fa da
+interfaccia tra il terminale e il server della BBS. Ogni volta che viene
+eseguito un comando, questo viene mandato al client remoto, trattato, e la
+risposta viene mandata indietro sul terminale. Inoltre, quando si edita un
+testo (post, Xmsg, etc.), l'editor gira sulla macchina remota. Se si
+verifica una situazione di lag, la risposta sul terminale a quello che
+richiedi puo` subire del ritardo, che puo` rivelarsi molto fastidioso (in
+particolare se stai editando un post e le lettere appaiono sullo schermo
+qualche secondo dopo che hai premuto il tasto...)
+
+Il client locale, al contrario, gira direttamente sulla tua macchina, e
+quando 'parli' con il client non hai la rete di mezzo. Ovviamente questo non
+elimina il lag; quando fai una richiesta al server devi comunque aspettare
+la risposta del server. In compenso, quando editi dei testi, lo fai usando
+un programma che gira sulla tua macchina; in questo modo non vedi il lag, la
+scrittura e` piu` piacevole e perdi meno tempo. Puo` perfino sembrare che
+stai scrivendo quella relazione che il capo aspetta da due settimane!
+Il lag si verifica solo quando hai finito di scrivere e spedisci il
+testo al server.
+
+Inoltre, usando il client locale, puoi usare come editor esterno il tuo
+editor preferito (vi? emacs? pico?...) inserendo il suo path nella variabile
+di ambiente EDITOR. Questo ti permette ad esempio di inserire nel post che
+stai scrivendo dei testi che tieni nella tua home directory, etc.
+
+Il client locale ti permette inoltre di fare un dump del messaggio che stai
+leggendo sul file ./cittadella.dump del tuo computer, mediante la semplice
+pressione del tasto <D> dal prompt dei messaggi.
+
+Bisogna osservare pero` che in un caso la connessione via telnet e` migliore
+di quella con client locale: quando si interrompe la lettura di un post
+lungo digitando <s> al pager. Questo perche` il client deve ricevere tutto
+il testo prima di poter proseguire; se c'e` lag e interrompo la lettura,
+devo aspettare la fine della trasmissione del testo prima di poter fare
+altro. Al contrario, il client remoto gira sulla stessa macchina del server
+della BBS, e percio` riceve il testo in modo quasi istantaneo; il lag e`
+solo dovuto al ritardo nella trasmissione delle sole righe che leggo al
+terminale. Se quindi interrompo la lettura di un post con <s>, il client
+remoto e` subito pronto ad eseguire un nuovo comando.
+
+I sorgenti del client locale 'cittaclient' sono rilasciati sotto la licenza
+GPL, e si possono scaricare dalla pagina web
+http://ping.science.unitn.it/~impe/download/
+Attualmente girano solamente in ambiente UNIX (e sono state testate su
+linux).
+Altri client locali sono in fase di sviluppo, ma non sono ancora disponibili.
+
+Infine ci sono i Proxy Cittaclient. Questi sono a tutti gli effetti dei
+client locali, che pero' girano su macchine diverse dalla macchina dove gira
+il server della BBS. Permettono a chi non puo' far girare un client locale
+sulla prossima macchina di collegarsi a un host con il quale ha una buona
+connessione per far girare il client, che mantiene parte dei suoi vantaggi
+rispetto al problema del lag.
+
+ Attualmente non e` disponibile alcun proxy:
+ 
+ Client locali  (vedete voi se mettervi o no, per ora siete gli unici)
+==============
+Per Un*x:
+   Cittaclient-0.1.16, licenza GPL
+          http://ping.science.unitn.it/~impe/download/
+	  Sviluppatori
+	  	Marco Caldarelli-  Ping
+		Riccardo Vianello  Ric

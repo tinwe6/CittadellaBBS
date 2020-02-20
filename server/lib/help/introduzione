@@ -1,0 +1,109 @@
+ 
+ Questa e' una introduzione alla Emperor's BBS e alle BBS Citadel in
+ genere. E' dedicato ai nuovi utenti cosi' che possano piu' 
+ facilmente acquisire praticita' col sistema.
+ 
+ Per ulteriori informazioni potete leggere anche il file FAQ
+ (frequently asked questions)
+ 
+ 
+ Rooms
+ ---
+ 
+ BBS sta per Bullettin Board System (un sistema di bacheche per messaggi).
+ L'analogia e' appropriata: un utente lascia (in gergo posta) un
+ messaggio cosi' che altri possano leggerlo. Al fine di organizzare i
+ messaggi per argomento si puo' postare in aree distinte della BBS,
+ chiamate rooms.
+ 
+ Per postare in una certa room dovete essere "in" quella room. Il vostro 
+ prompt e' in genere la room in cui siete, seguito da un ">", come ad
+ esempio "Lobby>". Ci sono diversi modi per selezionare una room (? al 
+ prompt della room permette di vedere i vari comandi).
+ 
+ Esistono diverse rooms, cosi' che ogni argomento ha uno spazio in cui 
+ puo' essere discusso, ma se vorreste vedere creata una nuova room 
+ lasciate un messaggio in Suggerimenti> e se questo generera' un certo 
+ interesse fra gli utenti la room verra' probabilmente aggiunta.
+ 
+ Scanlist
+ -----
+ 
+ Tutti nomi delle rooms sono immagazzinati in una lista (scanlist).
+ Quando usate i comandi <G>oto o <S>kip venite trasferiti alla prossima
+ room nella lista CHE CONTIENE MESSAGGI NUOVI. Se non avete messaggi
+ nuovi in nessuna delle rooms della lista continuerete ad andare alla
+ Lobby>.
+ Quando usate <Z>ap la room corrente viene eliminata dalla scanlist cosi'
+ che se un argomento non vi interessa non vi verrete portati quando ci
+ dovessero essere messaggi nuovi.
+ Un <J>ump alla stessa room permettera' di reinserirla nella scanlist.
+ L'ordine delle room nella lista non puo' essere cambiato ed e' lo stesso
+ per tutti.
+ 
+ Rooms speciali
+ ----------
+ 
+ Esistono alcune rooms particolari di cui dovete conoscere l'esistenza.
+ 
+ La prima e' la Lobby>. Solo gli operatori (in gergo sysops o Aides) 
+ possono scrivere nella Lobby> e questa e' riservata ad annunci e 
+ comunicazioni relativi al funzionamento della BBS. Ad ogni login
+ l'utente e' posto nella Lobby>.
+ 
+ La seconda e' Mail>. In Mail> nel momento in cui si lascia un messaggio
+ vi viene richiesto il nome dell'utente al quale volete lasciare il post.
+ All'interno della BBS _solo_ il destinatario ed il mittente possono 
+ leggere il messaggio (neppure gli Aides possono). 
+ 
+ La Gogna> e' dove vengono reindirizzati i messaggi degli utenti che sono
+ stati portati a livello 2 (vedi il file twit) ed e' una room di sola 
+ lettura.
+ 
+ Allo scopo di descrivere le ultime due rooms speciali e' necessario dire
+ qualcosa sui 4 differenti tipi di room esistenti:
+ 
+ - Pubblica : accessibile a tutti
+ - Guessname: accessibile solo con un <J> e fornendo il nome completo.
+ - Password : si entra soo conoscendo una password
+ - Su invito: invisibile all'utente finche' non espressamente invitato.
+ 
+ Aides (o Sysops)
+ ------------
+ 
+ Queste persone, assieme ai Room Aides (questi ultimi in misura minore,
+ vedi i files aide e roomaide) gestiscono il funzionamenti della BBS.
+ Fra le varie cose che gli aide fanno ci sono: creare e cancellare rooms,
+ definire i livelli di accesso, invitare gli utenti, controllare le
+ registrazioni, fornire lo status di room aide.
+ 
+ Aide> e' una room alla quale possono accedere in modo esclusivo. In 
+ questa room resta traccia di operazioni gestite in modo piu' o meno
+ automatico dalla BBS e vi vengono reindirizzati i mail lasciati a sysop.
+ 
+ Gli Aide non possono utilizzare il comando <Z>ap. Ogni room e' quindi,
+ sempre, nella scanlist degli aide. 
+ 
+ Room Aides
+ ------
+ 
+ Ai room aides sono concessi alcuni speciali privilegi nelle rooms che 
+ hanno in gestione. Non sono dei sistemisti veri e propri. I loro 
+ privilegi si estendono solo alle rooms che controllano e rispondono nel 
+ loro operato agli Aide.
+ Il lavoro del RA consiste nel mantenere l'argomento della discussione a
+ quanto stabilito dalla descrizione della room. Essi possono inoltre 
+ spostare o cancellare un qualsiasi post qualora lo ritenessero opportuno.
+ Inoltre i RAs possono modificare la configurazione della room (tipo), il
+ nome, l'eventuale password e invitare o cacciare gli utenti.
+ 
+ Se una room manca del RA e se ne avverte la necessita' chiedete e, a 
+ discrezione degli Aide, potreste averla in gestione.
+ Essere un RA richiede una certa fiducia da parte dei sistemisti in
+ virtu' dei privilegi che comporta. I room aides dovrebbero inoltre
+ cercare di connettersi con una certa regolarita' al fine di mantenere
+ il controllo della room.
+ 
+ Questo manualetto e' stato vergognosamente scopiazzato da quello di
+ Prism BBS.
+ 

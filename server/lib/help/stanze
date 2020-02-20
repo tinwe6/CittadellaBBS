@@ -1,0 +1,49 @@
+STANZE
+======
+Le stanze, o Room, solo il cuore della BBS. Nelle stanze si leggono i
+messaggi e si risponde.
+La maggior parte dei comandi della BBS serve a muoversi all'interno 
+d'una stanza o tra stanze diverse. Ricordiamo qui solo quelli indispensabili
+< > o <n>: legge il messaggio successivo, se i messaggi sono finiti prima
+           entri in modo comandi, e poi passa alla stanza successiva conosciuta
+           che ha ancora messaggi da leggere.(Se non ce ne sono va in Lobby).
+ <->       Torna indietro di n (un numero che Cittadella ti chiede) messaggi
+ <s>       smette di leggere i messaggi e va in modo comandi
+ <j>       In modo comandi, salta in un altra stanza
+ <k>       Elenca le stanze conosciute
+   
+   
+Se l'argomento di una stanza non ti interessa, puoi toglierla dall'elenco
+delle stanze che conosci.
+Questo vuol dire che non ci capiterai dentro per caso se ci sono messaggi
+nuovi. 
+In gergo questa operazione si chiama zappare, e si ottiene semplicemente
+con il comando <z> in modo COMANDI.
+
+Se improvvisamente decidi che la stanza ti interessa di nuovo, 
+basta un <j> con il nome completo e torna tra le stanze conosciute 
+(questo non e` vero per le stanze ad invito).
+
+
+Se invece pensi che debba esserci una stanza che invece non e` presente, 
+metti la tua proposta in (come si chiama?). Se c'e` un interesse comune
+degli utenti (o quando?) la stanza verra` creata, e magari puoi diventarne
+Room Aide.
+Le stanze ad invito sono stanze non conosciute dall'utente che si e` 
+appena registrato, a differenza delle stanze zappate pero` non ci 
+si puo` (???potrebbe???BUG) entrare con un <j>ump. 
+
+I motivi della loro esistenza sono vari, principalmente si tratta di
+stanze in cui si discutono argomenti che potrebbero urtare la sensibilita`
+di un nuovo utente. 
+  Per accedervi (---servirebbe un elenco?????--) manda un mail al Room Aide. 
+Se non ti accetta deve spiegarti il perche' 
+ 	(----o no?-- stiamo diventando una BBS seria?).
+Se per caso <z>appi una room ad invito devi chiedere di nuovo all'RA
+di invitarti. 
+
+Un discorso a parte meritano le stanze dell'ELASTIC GAME (vedi).
+
+Ci sono infine alcune stanze riservate a chi gestisce la BBS: ci sono
+stanze per i Sysop, per gli Aide, per i Room Aide. 
+Un utente normale (livello 4) non puo` accedervi.

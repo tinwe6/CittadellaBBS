@@ -1,0 +1,12 @@
+Gestione dell'idle:
+===================
+L'idle e` il periodo di tempo in cui l'utente e` rimasto inattivo (e il
+server non ha ricevuto segnali da parte del client). Cittadella/UX
+contabilizza il tempo di idle di ogni utente e se questo supera un minuto,
+lo rende noto mettendo un punto accanto al nick dell'utente nella lista
+degli utenti connessi <w>, e scrivendo il tempo di idle nel profile
+dell'utente ozioso.
+Inoltre, per minimizzare il carico della rete e del server, se l'utente
+e` idle per un lungo tempo (attualmente 15 minuti) viene avvertito due volte
+e successivamente viene chiusa la sua connessione se non risponde agli
+avvertimenti.

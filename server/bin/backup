@@ -1,0 +1,7 @@
+#! /bin/sh
+#
+# Cittadella/UX backup script
+#
+cd ../.. && tar cf - citta/server/lib citta/server/log | \
+   	 bzip2 -9 > backup/cittabackup-`date '+%y.%m.%d'`.tbz
+sync

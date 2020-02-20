@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Cittadella/UX log rotator
+#
+
+  fgrep "AIDE" syslog >> log/aide
+  fgrep "CACHE" syslog >> log/cache
+#  fgrep "carico" syslog >> log/carico
+  fgrep "HTTP" syslog >> log/http
+  fgrep "KILL" syslog >> log/kill
+  fgrep "KO" syslog >> log/kickout
+  fgrep "Login" syslog >> log/login
+  fgrep "Nuova connessione" syslog >> log/connessioni
+  fgrep "Nuovo utente" syslog >> log/nuovi_utenti
+#  fgrep "rusage" syslog >> log/rusage
+  fgrep "ROOM" syslog >> log/room
+  fgrep "SECURE" syslog >> log/secure
+  fgrep "SYSERR" syslog >> log/syserr
+  fgrep "SYSTEM" syslog >> log/system
+  fgrep "VALIDATE" syslog >> log/validate
+#  fgrep "" syslog >> log/
+
+  rm log/syslog.1
+  mv log/syslog.2 log/syslog.1
+  mv log/syslog.3 log/syslog.2
+  mv log/syslog.4 log/syslog.3
+  mv log/syslog.5 log/syslog.4
+  mv log/syslog.6 log/syslog.5
+  mv syslog       log/syslog.6
+  touch syslog

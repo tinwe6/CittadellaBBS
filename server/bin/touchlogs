@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+touch syslog
+touch log/aide
+touch log/cache
+touch log/carico
+touch log/connessioni
+touch log/http
+touch log/kickout
+touch log/kill
+touch log/login
+touch log/nuovi_utenti
+touch log/room
+touch log/rusage
+touch log/secure
+touch log/syserr
+touch log/syslog.1
+touch log/syslog.2
+touch log/syslog.3
+touch log/syslog.4
+touch log/syslog.5
+touch log/syslog.6
+touch log/system
+touch log/validate

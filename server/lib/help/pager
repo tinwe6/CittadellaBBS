@@ -1,0 +1,19 @@
+Pager Messaggi
+==============
+Se il messaggio che si sta leggendo e` troppo lungo, Cittadella (o il client
+locale di Cittadella) mostra solo le prime righe del messaggio e mette in
+fondo la scritta
+-- more (<Space>, <Enter>, <s>top, <?> help) linea 23/37 62% --
+(Ovviamente i numeri varieranno).
+
+Al prompt si hanno questi comandi a disposizione:
+
+   - < >   vai avanti di una pagina
+   - <Enter>   vai avanti di una riga
+   - <b>ack    vai indietro di una riga
+   - <u>p      vai indietro di una pagina
+   - <r>efresh ristampa la pagina
+   - <s>top    interrompi la lettura
+   - <?>       sommario dei comandi disponibili
+
+Il pager funziona anche per i profile e per le room info.

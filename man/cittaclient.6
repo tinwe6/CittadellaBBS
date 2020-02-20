@@ -1,0 +1,100 @@
+.\" Process this file with groff -man -Tascii cittaclient.6
+.TH CITTACLIENT 6 "October 30, 1999"
+.SH NAME
+cittaclient \- the client application for the Cittadella/UX BBS
+.SH SYNOPSIS
+.B cittaclient
+.RB [ "\-hHlnpuv" ]
+.RB [ "\-\-host " HOST]
+.RB [ "\-\-port " PORT]
+.RB [ "\-\-username " NICK]
+.RB [ "\-\-localhost" ]
+.RB [ "\-\-help" ]
+.RB [ "\-\-version" ]
+.SH DESCRIPTION
+.B cittaclient
+is the client application to connect to 
+.B Cittadella/UX
+, a multiuser Bulletin Board System.
+
+Cittadella/UX is multiuser Bulletin Board System, with a single server,
+under development. Up to now, the client/server comunication, the user
+management, the logging facilities and the comunication tools
+(eXpress-message, Chat) have been completed, but the room/message
+management is still missing.
+
+Once logged to Cittadella/UX, type
+.I h
+to display the list of commands, or
+.I H
+to access to the help files and the manual.
+
+See
+.BR cittaserver (6)
+for details on the Cittadella/UX server.
+.SH OPTIONS
+.TP
+.I "\-h, \-\-host HOST"
+Connect to the host
+.I HOST
+instead of the default host.
+.TP
+.TP
+.I "\-l, \-\-localhost"
+Connect to 
+.I localhost
+instead of the default host.
+.TP
+.I "\-n, \-\-no-banner"
+Ask  
+.I Cittadella/UX
+not to show the login and logout banners. Useful as anti-boss option :-)
+.TP
+.I "\-p, \-\-port PORT"
+Listen on the port 
+.I PORT
+instead of the default port.
+.TP
+.I "\-u, \-\-username NICK"
+Connect as the user
+.I NICK
+and skip the login.
+.TP
+.I "\-H, \-\-help"
+Print a short help text and then exit.
+.TP
+.I "\-v, \-\-version"
+Print the version number to standard output and exit.
+.SH FILES
+.TP
+.IP "./cittaclient"
+The local client to connect to
+.I Cittadella/UX
+.IP "./cittaclient.6"
+This man page.
+.IP "./manuale.txt"
+A short manual in italian (sorry :-) on the usage of Cittadella/UX, under
+construction.
+.SH BUGS
+Minor known bugs are present.
+.PP
+Please report any other bugs you find to <impe@ping.science.unitn.it>
+or using the
+.B <B>ug Report
+option of
+.B cittaclient
+.SH LICENCE
+Cittaclient/UX is copyrighted by M. Caldarelli and R. Vianello under
+the GPL. (See COPYING file).
+.SH AUTHOR
+Marco Caldarelli <caldarel@science.unitn.it>
+.br
+Riccardo Vianello <vianello@chim.sns.it>
+.PP
+Thanks to all people who contributed:
+.PP
+.br
+
+.br
+.SH "SEE ALSO"
+.BR cittaserver (6)

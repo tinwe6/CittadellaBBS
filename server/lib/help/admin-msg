@@ -1,0 +1,30 @@
+Messaggi di Amministrazione:
+============================
+Per amministrare meglio la BBS e moderare le room, Room Helper, Room Aide,
+Aide e Sysop possono lasciare dei post 'ufficiali' di amministrazione. In
+questo caso il loro nome viene preceduto dalla loro qualifica, che puo`
+variare a seconda del contesto:
+
+Room Helper: Possono postare in qualita` di Room Helper nelle room di loro
+             competenza, il comando e` (in modo comandi) <.ae>
+Room Aide  : Possono postare in qualita` di Room Aide nelle loro room.
+	     Il comando e` <.ae>	
+Aide       : Possono postare in qualita` di Room Helper in tutte le room
+             e in qualita` di Aide se il post riguarda la gestione della
+	     BBS. Comando <.aem>
+Sysop      : Possono postare in qualita` di Room Helper in tutte le room,
+             in qualita` di Aide se il post riguarda la gestione della BBS
+	     e in qualita` di System Operator se il post riguarda il
+	     software o la gestione del sistema.
+		Comando <????>
+NB: In Cittadella BBS i Sysop non si considerano Aide e si tengono fuori
+    dalla gestione della BBS e delle room in cui non hanno ricevuto un
+    incarico di Room Aide o Room Helper.
+
+Comandi per postare messaggi di amministrazione:
+================================================
+
+<.><e><a>   : inserisce un post in qualita`di Room Aide o di Room Helper
+              a seconda del ruolo ricoperto dall'utente.
+<.><a><e><m>: inserisce un post in qualita` di Aide.
+<.><s><e>   : inserisce un post in qualita` di System Operator.

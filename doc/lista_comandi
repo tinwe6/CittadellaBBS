@@ -1,0 +1,58 @@
+
+<A> Lascia la Chat
+<B> Bug Report
+<C> Ascolta un canale di chat
+<D> finger a un utente in rete (solo client locale)
+<E> Toggle Expert mode
+<F> Modifica la friend-list
+<H> Menu di help
+<I> Info dettagliate sulla room
+<K> list all Known rooms
+<L> Abbandona la room e vai in Lobby
+<M> Abbandona la room e vai in Mail
+<O> Modifica la passwOrd di un utente (aide only)
+<P> Modifica la Password
+<Q> Quit: Esci dalla BBS
+<R> Registrazione: Modifica la registrazione
+<S> Segna tutti i messaggi nuovi come letti
+<U> Unzap all rooms
+<V> entra nella cabina della Votazioni (Sondaggi & Referenum)
+<W> Who in chat: Lista degli utenti collegati alla chat
+<X> Toggle eXpress messagge reception
+<Y> sYslog: Visualizza il file di log del sistema (sysop only)
+<Z> Zap all rooms: Si dimentica di tutte le room.
+
+<a> Abbandona la room. (Lascia i messaggi come non letti)
+<b> Blog: Vai a casa di un utente
+<c> Chat: Invia un messaggio nel canale chat corrente
+<d> Doing: inserisce un 'doing' da visualizzare nel <w>ho
+<e> Enter message with default editor
+<f> Forward read: legge tutti i messaggi nella room dal piu' vecchio
+<g> Goto next room
+<h> Help: lista dei comandi disponibili
+<i> Room Info
+<j> Jump to
+<k> Known rooms
+<l> Logout
+<n> Read New messages in room
+<p> Profile: Informazioni su un utente
+<r> Reverse: legge i messaggi della room all'incontrario.
+<s> Skip room
+<t> Time & Date
+<u> Lista di tutti gli utenti
+<v> Risponde all'ultimo X ricevuto.
+<w> Who: Lista degli utenti connessi al server
+<x> Invia un eXpress message a un utente
+<z> Zap the room
+
+<@> C'e` posta?
+<$> Apri una subshell (solo client locale)
+<#> Read message # <N>
+<%> Lock del terminale
+<&> Diario dei messaggi
+<-> Legge gli ultimi n messaggi
+<;> Invia un 'emote'
+<?> Lista dei comandi disponibili (come <h>)
+<Ctrl-L> Cancella lo schermo
+
+ ***  <H> Help Menu  -  <.><h> lista Dot Commands  ***

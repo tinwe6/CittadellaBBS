@@ -1,0 +1,55 @@
+	3. Comandi riservati agli Aide e Sysop per la gestione del sistema
+	------------------------------------------------------------------
+
+<b> Broadcast: Invia un messaggio a tutti gli utenti (aide only)
+    Permette di inviare un messaggio tipo eXpress-message che viene visto
+    da tutti gli utenti connessi.
+<c> Visualizza la configurazione del sistema (aide only)
+    Permette di esaminare le variabili di configurazione del sistema
+    editabili direttamente dal client. Questi si dividono nelle seguenti
+    sezioni:
+    1) Configurazione generale del sistema
+    2) Informazioni sul server
+    3) Path dei files
+    4) Gestione dell'idle
+    5) Nomi delle principali room
+<C> Modifica la configurazione del sistema (sysop only)
+    Permette di modificare le variabili di configurazione del sistema
+    descritte sopra direttamente dal client.
+<k> Caccia un utente dalla BBS (aide only)
+    Permette di cacciare (kick out) un particolare utente dalla BBS,
+    digitando il suo nome. Se al posto del nome si fornisce 'Ospite',
+    vengono cacciati tutti gli ospiti. L'operazione viene loggata.
+<K> Kill user: Elimina definitivamente un utente (sysop only)
+    Permette di eliminare tutti i dati di un utente dal file degli utenti.
+    L'operazione viene loggata.
+<O> Cambia la passwOrd di un utente (aide only)
+    Permette agli aide e sysop di modificare la password di un utente,
+    generalmente perche' quest'ultimo l'ha dimenticata. Per eseguire il
+    comando, l'aide deve prima inserire la propria password, poi immettere
+    il nome dell'utente al quale va cambiata la password. La nuova password
+    viene generata in modo casuale dal server di Cittadella/UX e inviata
+    all'indirizzo Email dell'utente.
+<s> Statistiche sul server (sysop only)
+    Visualizza delle statistiche sull'uso del server che servono alla gestione
+    della BBS. Attualmente visualizza il numero di run del server, l'ultima
+    matricola assegnata a un utente, il numero totale di connessioni, numero
+    di login effettuati da ospiti, nuovi utenti e utenti gia' registrati,
+    numero di validazioni effettuate e numero di connessioni effettuate con
+    il client locale e con quello remoto, numero totale di X inviati e di
+    messaggi postati.
+<S> Shutdown del server (sysop only)
+    Permette di eseguire uno shutdown del server direttamente dal client.
+    Chiede quanti minuti deve attendere prima dello shutdown e notifica
+    agli utenti ogni minuto il tempo rimanente. Subito prima dello shutdown
+    tutti gli utenti vengono cacciati. Si consiglia di lasciare almeno 10
+    minuti di tempo agli utenti, per permettergli di terminare quello che
+    stanno facendo. Il server viene poi automaticamente riavviato dallo
+    script ./autorun .
+<U> Edit User (aide only)
+    Permette di modificare la registrazione e il livello di accesso di un
+    utente. Non e' possibile fornire a un utente un livello di accesso
+    superiore al proprio. L'operazione viene loggata.
+<Y> sYslog: Visualizza il file di log del sistema (sysop only)
+    Permette di visualizzare i log di sistema effettuati dall'ultimo
+    reboot. (Vedi sezione `Log di sistema')

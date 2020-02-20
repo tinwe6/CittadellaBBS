@@ -1,0 +1,11 @@
+Collegamento telnet a Cittadella da Windows:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Ebbene si, alla microzot non sono stati capaci neanche di creare
+una cosa semplice come un telnet. Infatti, se ti colleghi a Cittadella con
+un Windows pre-2000, non sarai in grado di usare il comodo editor esterno.
+Ti consigliamo percio' di collegarti mediante PuTTY, un programma
+OpenSource che puoi scaricare da:
+
+       http://www.chiark.greenend.org.uk/~sgtatham/putty/
+
+ 

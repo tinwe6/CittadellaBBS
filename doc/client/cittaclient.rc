@@ -1,0 +1,150 @@
+############################################################################
+# Cittadella/UX BBS                     (C) M. Caldarelli and R. Vianello  #
+#                                                                          #
+# cittaclient.rc :  File di configurazione di cittaclient                  #
+#                                                                          #
+# Il client cerca il file di configurazione nell'ordine in:                #
+# ~/.cittaclientrc, ~/.cittaclient/cittaclient.rc e /etc/cittaclient.rc    #
+# si puo' specificare una posizione diversa con l'opzione --rcfile         #
+#                                                                          #
+############################################################################
+
+# Host e porta alla quale connettersi:
+HOST            "bbs.cittadellabbs.it"
+PORT            4000
+
+# Nickname di default con il quale connettersi.
+# Commentare per lasciare il prompt:
+USER            "your nickname"
+
+# Se e` stato specificato USER, il client utilizza la seguente password.
+# ATTENZIONE: se decidete di mettere la password nel file di configurazione,
+#             assicuratevi che il file non venga letto da nessun altro!!!
+PASSWORD        "your password"
+
+# Scommentare per non visualizzare i banners di login e logout:
+#NO_BANNER
+
+# Numero di righe dello schermo.
+#NRIGHE	    	24
+
+# Editor esterno (prende da $EDITOR se commentato)
+EDITOR	 	"/usr/bin/emacs"
+
+# Autosave dell'editor interno.
+# File in cui viene salvato il messaggio:
+AUTOSAVE_FILE   "~/.cittaclient/autosave.cml"
+# Tempo (in secondi) tra due autosave:
+AUTOSAVE_TIME   120
+
+# Shell (prende da $SHELL se commentato)
+#SHELL	 	"/bin/sh"
+
+# Una piccola frase di 24 caratteri da visualizzare al posto dell'host
+# nel <w>ho.
+#DOING          "just looking around"
+
+# Scommentare la linea seguente per avere un dump automatico di tutti
+# gli X-msg che ricevete e spedite. Gli X-msg vengono salvati nel file
+# specificato dall'opzione LOG_FILE_X.
+#AUTO_LOG_X
+
+# Scommentare la linea seguente per avere un dump automatico di tutti
+# i mail che ricevete e spedite. I mail vengono salvati nel file specificato
+# dall'opzione LOG_FILE_MAIL.
+#AUTO_LOG_MAIL
+
+# Scommentare la linea seguente per avere un dump automatico delle
+# conversazioni che avvengono nei canali chat a cui siete connessi.
+# I messaggi vengono salvati nel file specificato dall'opzione LOG_FILE_CHAT.
+#AUTO_LOG_CHAT
+
+# Per specificare il file in cui vengono salvati i post quando eseguite
+# un <D>ump dal prompt dei messaggi.
+#DUMP_FILE       "~/.cittaclient/dump"
+
+# Per specificare il file in cui vengono salvati gli X-msg quando eseguite
+# un <D>ump dal diario degli X (o se AUTO_LOG_X e' settato).
+#LOG_FILE_X      "~/.cittaclient/log_x"
+
+# Per specificare il file in cui vengono salvati gli X-msg quando eseguite
+# un <D>ump dal prompt dei messaggi in Mail> (o se AUTO_LOG_MAIL e' settato).
+#LOG_FILE_MAIL   "~/.cittaclient/log_mail"
+
+# Per specificare il file in cui vengono trascritte le coversazioni in chat.
+# (AUTO_LOG_CHAT e' settato).
+#LOG_FILE_CHAT   "~/.cittaclient/log_chat"
+
+# Per specificare una directory per i file temporanei (default /tmp)
+#TMP_DIR        "~/tmp"
+
+# Numero massimo di X-msg memorizzati nel diario degli X. (Default = 20)
+#MAX_XLOG 20
+
+# Variabili configurazione colori:
+
+# Se scommentata, abilita l'uso dei colori, indipendentemente dalla
+# configurazione dell'utente.
+USE_COLORS
+
+# Distanza, in colonne dello schermo, tra due tabulazioni successive.
+# Di default e` uguale a 8.
+#TABSIZE   8
+
+# Se scommentata, abilita la compressione della comunicazione dal server
+# e il client.
+#COMPRESSIONE "z"
+
+# Directory per il download dei files
+DOWNLOAD_DIR   "~/"
+
+################################################################################
+# APPLICAZIONI ESTERNE per apertura di link, immagini, filmati, file audio.    #
+#                                                                              #
+# Va specificato il comando per eseguire il programma da utilizzare per aprire #
+# il file. Il comando deve accettare come primo argomento il link, o path del  #
+# file da aprire.                                                              #
+# Se il client gira sotto Mac OS X, e` sufficiente mettere "open" per tutte    #
+# queste variabili.                                                            #
+################################################################################
+
+# Comando browser per aprire un link http.
+#BROWSER         "/usr/bin/mozilla"
+BROWSER         "open"
+
+# Scommentare la prossima riga se il browser web e' testuale e funziona nella
+# finestra del client (come per esempio lynx o elinks)
+# (ancora non implementato)
+#TERMBROWSER
+
+# Comando per l'apertura di immagini
+#PICTUREAPP      "/usr/bin/gqview"
+PICTUREAPP      "open"
+
+# Comando per l'apertura di immagini
+#MOVIEAPP      "/usr/bin/mplayer"
+MOVIEAPP      "open"
+
+# Comando per l'apertura di immagini
+#AUDIOAPP      "/usr/bin/xmms"
+AUDIOAPP      "open"
+
+# Comando per l'apertura di file .pdf 
+#PDFAPP      "/usr/bin/xpdf"
+PDFAPP      "open"
+
+# Comando per l'apertura di file postscript
+#PSAPP      "/usr/bin/gv"
+PSAPP      "open"
+
+# Comando per l'apertura di file .dvi
+#DVIAPP      "/usr/bin/xdvi"
+DVIAPP      "open"
+
+# Comando per l'apertura di file .rtf
+#RTFAPP      "/usr/bin/ooo"
+RTFAPP      "open"
+
+# Comando per l'apertura di file .doc
+#DOCAPP      "/usr/bin/ooo"
+DOCAPP      "open"

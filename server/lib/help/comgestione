@@ -1,0 +1,39 @@
+	5. Comandi di gestione delle room
+	---------------------------------
+	 Questi comandi servono a spostarsi tra le varie stanze. Si
+	 eseguono tutti in
+	MODO COMANDI
+	 Sono elencati anche altri comandi che hanno a che vedere con le stanze.
+	--- non sono sicuro----
+< > Se ci sono ancora messaggi nuovi in questa stanza va al
+	primo messaggio
+	    non letto, altrimenti va alla prima stanza con messaggi non letti.
+	-----
+<a> Abbandona. Abbandona la stanza. (devo leggere la discussione)
+<f> Forward. Entra in modo messaggi e va al messaggio piu` vecchio (il primo) presente nella stanza. 
+<g> <goto> Va alla stanza successiva. I messaggi nuovi restano non letti (e quindi con < > ci si ricapitera` dentro).
+<i> Info Room. Da` informazioni sulla stanza: su chi e` il Room Aide
+     e sui Room helper ed altre amenita` del genere. Se il Room Aide non e`
+     troppo pigro da` anche una breve descrizione della stanza, sul genere
+     di messaggi presenti e sulle regole da rispettare.
+<j> <jump> come <g>, ma chiede il nome della stanza in cui si vuole andare.
+	    I messaggi non letti rimangono segnati come non letti.
+	    Si puo` usare la TAB COMPLETION. Inoltre e` sufficiente scrivere le prime
+	    lettere della stanza in cui si vuole andare. Se ce n'e` piu` d'una <j>
+	    ti manda nella stanza che per CITTADELLA viene prima. 
+<k> Elenca le stanze in cui hai accesso e che non hai zappato; le stanze sono
+	    divise tra quelle in ci sono messaggi non letti e le altre.
+<l> Non c'entra nulla qui, ma per ricordarti: ti chiede conferma e poi
+	    esce dalla bbs.
+<n> come < >
+<r> entra in modo messaggi e inizia a leggere dall'ultimo messaggio della
+	    stanza (o che hai letto???)
+<s> E` come <g>, esce dalla stanza e va alla successiva. Pero` segna tutti
+	    i messaggi come letti.
+<z> Zappa la room (vedi la sezione ROOM)
+<M> Va alla stanza mail.  I messaggi non letti restano non letti
+<@> Ti dice se hai nuovi messaggi in Mail> (Vedi anche nella sezione
+	    della configurazione la parte sulla notifica di nuove mail).
+<-> Legge gli ultimi n (Cittadella ti chiede quanti) messaggi. 
+	    
+

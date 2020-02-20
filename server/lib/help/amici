@@ -1,0 +1,34 @@
+Lista degli amici:
+==================
+Nella lista degli amici (o friend-list) puoi inserire 20 altri utenti
+di Cittadella/UX, con i quali comunichi piu` frequentemente, per
+semplificare le operazioni. La lista degli amici e` personale e non e`
+accessibile agli altri utenti. Essa viene utilizzata per le seguenti
+operazioni:
+
+1. Per riferirsi agli utenti nella lista, puoi abbreviare i loro nomi
+   digitando '&n' al posto del nome completo, dove 'n' sta per il numero
+   dell'utente come appare nella lista.
+2. Comunicazione tramite X-msg: puoi rifiutare automaticamente gli
+   eXpress-message tranne quelli provenienti dai tuoi amici nella lista;
+3. Notifiche di LogIn/LogOut: allo stesso modo, oltre alla possibilita` di
+   disabilitare le notifiche di tutti gli utenti che entrano ed escono dalla
+   BBS, e` possibile chiedere a Cittadella/UX di avvertirti solamente quando
+   e` un utente in lista che si collega o si sconnette dalla BBS.
+
+Queste due ultime opzioni si modificano con i comandi <.tf> <.ec>, vedi
+anche le sezioni sulla =Configurazione= e sui  =Comandi di comunicazione=.
+
+Per modificare la lista degli amici hai i comandi:
+
+<F> o <.fe>  in modo comandi 
+	     Ti viene presentata una lista di amici e una serie di comandi
+	     disponibili:
+	      <a>ggiungere un amico
+	      <r>imuoverlo dall'elenco 
+	      <s>cambiare di posto due amici
+ 	      <u>scire e salvare la nuova configurazione
+	      <l>asciare tutto come era prima ed uscire
+
+Inoltre puoi vedere la lista dei tuoi amici con il comando
+<.fe>   in modo comandi.

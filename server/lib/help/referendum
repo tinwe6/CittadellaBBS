@@ -1,0 +1,28 @@
+Referendum e sondaggi
+=====================
+In Cittadella ci sono due forme di @@sondaggio@@:
+
+I Referendum vanno proposti dagli Aides e dovrebbero aiutare a gestire la
+bbs, e dovrebbero aiutarli a capire l'opinione degli utenti sui problemi
+che si pongono. E' uno strumento che hanno a disposizione nella bbs, sta
+poi a loro decidere se usarlo o meno. Quando il tempo per votare scade,
+Cittadella posta automaticamente i risultati nella Lobby (quindi niente
+brogli elettorali ;). (Ma leggi il significato di <.uc>).
+
+I Sondaggi hanno uno scopo piu' ludico, e permettono agli utenti di
+proporre un quesiti in una particolare room dove hanno accesso di
+scrittura.
+Il funzionamento e' lo stesso, al termine del periodo concesso per votare
+i risultati vengono postati nella room stessa.
+
+Per ora c'e' un limite di 20 sondaggi contemporanei.
+
+  I comandi sono:
+<.un> Per proporre un nuovo referendum o sondaggio.
+<.uc> Per completare una consultazione in corso prima dello scadere.
+<.ud> Per annullare una consultazione in corso.
+<.ur> Per leggere il testo del referendum o sondagio.
+<.uv> Per esprimere il proprio voto.
+<.ul> Per vedere la lista delle consultazioni in corso.
+
+Per ora sono attivi solo i referendum.

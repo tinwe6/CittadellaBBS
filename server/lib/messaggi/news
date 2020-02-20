@@ -1,0 +1,6 @@
+
+NEWS: - Sono state implementate le room e la possibilita' di lasciarci
+        dei post. Sono stati anche implementati tanti bachi.
+      - E' disponibile l'eseguibile del client locale! Lo potete trovare in
+        http://ping.science.unitn.it/~marco/bbs/cittaclient-i386.tgz 
+      - E' possibile accedere ai files di help digitando <H> (maiuscola)
