@@ -1,0 +1,114 @@
+Istruzioni di installazione di Cittadella/UX
+--------------------------------------------
+
+I sorgenti di Cittadella/UX sono in cittadella-x.y.z.tgz, dove 'x.y.z' e'
+attualmente l'ultima versione disponibile. Si possono trovare al sito
+http://www.cittadellabbs.it/
+
+- Si consiglia la seguente procedura di installazione:
+
+  1) Creare una directory ~/Cittadella/ dove verranno messi tutti i files:
+       mkdir Cittadella
+
+  2) Andare nella directory Cittadella e scompattare l'archivio dei sorgenti:
+       cd ./Cittadella
+       tar zxvf cittadella-x.y.z.tgz
+  
+     In questo modo verra' creata una directory ~/Cittadella/cittadella-x.y.z
+     con tutti i sorgenti.
+  
+  3) Andare nella directory con i sorgenti, compilarli e installare la bbs:
+       cd cittadella-x.y.z
+       make
+       make install
+  
+     Ora dovrebbe esserci una directory ~/Cittadella/citta che contiene
+     tutto il necessario per far girare la bbs.
+  
+- Per far partire la bbs
+    cd ~/Cittadella/citta/server
+    ./bin/cittaserver
+
+- Ora la bbs e' raggiungibile tramite client locale.
+    ~/Cittadella/citta/client/bin/cittaclient
+  
+  Per collegarsi con telnet, bisogna usare il client
+  ~/Cittadella/citta/client/bin/remote_cittaclient
+  che puo' partire tramite telnet a una particolare porta, puo' essere usato
+  come shell di un account pubblico, o chiamato da una door di un'altra bbs.
+
+  ATTENZIONE: Non utilizzare a questo scopo il cittaclient, in quanto
+              quest'ultimo ha dei comandi (tipo subshell) che compromettono
+              la sicurezza della bbs (e dell'intero sistema).
+  
+- Infine bisogna definire l'editor esterno per il remote_cittaclient:
+  quest'ultimo esegue l'editor (eventualmente un link simbolico)
+    ./citta/bin/BBSeditor
+
+  ATTENZIONE: Utilizzare un editor, tipo BBSnano, che non permette all'utente
+              di leggere e/o scrivere a piacere in giro per il disco.
+
+- Per fermare la BBS: ci sono due modi diversi:
+
+  1) inviare il segnale SIGHUP al server con il comando
+       kill -HUP pid
+     dove pid e` il process id del cittaserver.
+
+  2) Dalla bbs con il comando per sysop:
+     <.> <S> <s>hutdown <k>illscript
+
+  Nei due casi il server chiude tutte le connessioni, salva tutti i dati
+  e termina il processo.
+
+- Upgrade degli eseguibili
+
+  Quando esce una versione successiva di Cittadella, ad esempio
+  cittadella-x.y.z, per fare l'aggiornamento esplodere l'archivio in
+  ~/Cittadella/ e compilare i sorgenti
+    cd ~/Cittadella/
+    tar zxvf cittadella-x.y.z.tgz
+    cd cittadella-x.y.z
+    make
+  
+  poi installare gli eseguibili con  
+    make bininstall
+  (non usare make install, serve solo per una bbs nuova)
+
+  A questo punto, al prossimo reboot della bbs, partira` la nuova versione
+  del server.
+
+- Per far partire al boot del computer la bbs, copiate lo script seguente
+  in un file /etc/init.d/bbs (o con un altro nome)
+
+--8<-------------------------------------------------------------------------
+#!/bin/sh
+# description: Starts l_Town services
+
+case "$1" in
+'start')
+        cd /home/bbs/Cittadella/citta/server
+        su bbs -c "./bin/cittaserver"
+        touch /var/lock/subsys/L_town
+;;
+'stop')
+        cd /home/bbs/Cittadella/citta/server
+        kill -HUP `ps -C cittaserver -o pid=`
+        rm -f /var/lock/subsys/L_town
+;;
+*)
+        echo "Usage: $0 { start | stop }"
+;;
+esac
+exit 0
+--8<-------------------------------------------------------------------------
+  e poi chiamatedai vostri script di init.
+    /etc/init.d/bbs start
+  
+  Per fermare la bbs, potete anche usare
+  /etc/init.d/bbs stop
+
+  Allo shutdown del computer, il server ricevera` un SIGHUP dal kernel
+  e si chiudera` salvando tutti i dati da solo.
+
+-----------------------------------------------------------------------------
+                                                     Ultima modifica 04/12/02

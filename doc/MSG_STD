@@ -1,0 +1,39 @@
+
+         =====================
+         | MESSAGGI STANDARD |
+         =====================
+
+Il client puo' chiedere di visualizzare dei messaggi standard al server
+mediante il comando < void leggi_file(char *id); > dove 'id' e' una stringa
+composta da 3 cifre che identifica il file. La prima cifra corrisponde al
+tipo di messaggio e identifica la directory, le altre due identificano il
+file.
+
+- Messaggi che iniziano con '0': * Messaggi standard *
+  Directory: ./lib/messaggi/
+
+  000     hello
+  001     bruttinick
+  002     newuser
+  003     registrazione
+  004     disclaimer
+  005     goodbye
+  006     changepw
+  007     bugreport
+  008     news
+  009     privacy
+
+- Messaggi che iniziano con '1': * Files di Help *
+  Directory: ./lib/help/
+
+  100     lista_comandi
+  101     desc_comandi_1
+  102     desc_comandi_2
+  103     desc_comandi_3
+  104     desc_comandi_4
+  105     desc_comandi_5
+  106     desc_comandi_6
+  110     livelli
+  111     validazione
+  112     manuale
+  199     indice

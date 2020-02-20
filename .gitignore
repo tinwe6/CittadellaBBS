@@ -1,0 +1,23 @@
+# emacs
+*~
+\#*\#
+.\#*
+
+# object files
+*.o
+
+# libraries
+*.a
+
+# executables
+client/bin/*
+server/bin/cittaserver
+server/bin/citta_inetd
+
+# these files are copied from doc/ with bininstall
+server/lib/help/dot_commands
+server/lib/help/lista_comandi
+server/lib/help/manuale
+
+# tarballs
+cittadella-*.tgz

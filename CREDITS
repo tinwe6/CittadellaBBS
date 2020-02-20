@@ -1,0 +1,37 @@
+Creators of Cittadella/UX BBS (C) 1999-2004
+
+Marco Caldarelli <caldarel@yahoo.it>
+Riccardo Vianello <vianello@bibsns.sns.it>
+
+Contributors:
+
+Stefano Bettelli <bettelli@science.unitn.it>
+        - RPM package for cittaclient
+
+Giorgio Donnini <giorgio@socrates.mat.unimi.it>
+        - Documentation
+        - rewritten from scratch Cittadella's pool system
+        - Many bug fixes in cittaclient
+
+Gabriele Garau
+        - pop3 bugfix
+
+Giovanni Garberoglio
+        - cittaweb
+        - Bug fixes
+
+Massimiliano Ghilardi
+        - citta_inetd to listen port 4001
+        - compressed client/server transmission
+
+Tommaso Schiavinotto <>
+        - Temp files
+        - check_email() function
+        - prefixtree.[ch] functions to handle a prefix tree
+        - Bug fixes
+
+Matteo Sisa <furjo@mail.com> 
+        - Bug fixes in cittaclient
+        - Mantainer Cygwin version for win9x
+
+More detailed list of contributions can be found in the ./doc/CHANGES file.

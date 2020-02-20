@@ -1,0 +1,125 @@
+
+            Gestione delle room da parte del server
+	    ---------------------------------------
+
+ * Accesso alle room:
+   ------------------
+  
+  Per poter entrare in una room e leggerne i messaggi, l'utente deve essere 
+  di livello >= rd->rlvl.
+  
+  Nella scansione delle room, e nella tab completion, oltre ad avere il
+  livello minimo, l'utente deve conoscere la room, i.e. il flag
+  UTR_KNOWN deve essere settato. Se non e' settato, per accedere alla room,
+  l'utente deve andarci con un <j>ump digitandone il nome esatto, dopo di
+  che il flag UTR_KNOWN viene settato.
+  
+  Lo stesso vale se la room e' stata zappata: se il flag UTR_ZAPPED e'
+  settato, e' come se l'utente non conoscesse la room, con l'eccezione della
+  lista delle room zappate che si ottiene con <.><k><z>; se UTR_KNOWN e'
+  settato allora la room appare tra le room zappate.
+  
+  Inoltre se la room e' ad invito, oltre alle condizioni precedenti, per
+  averne l'accesso l'utente deve essere stato invitato da un RA, RH, A o S,
+  e quindi avere il flag UTR_INVITED settato.
+
+  Le 'Guess Room' sono room normali, ma quando ne viene modificata la
+  configurazione ed entrano in una nuova generazione, il flag UTR_KNOWN per
+  la room viene resettato a tutti gli utenti. In tal modo, per acquisire
+  l'accesso alla room, gli utenti devono fare un jump con il suo nome
+  esatto, che devono indovinare (fondamentalmente utile per organizzare dei
+  giochi).
+  
+ * Permesso di Lettura e Scrittura:
+   --------------------------------
+  
+  Una volta nella room, l'utente puo' leggerne i post a condizione di avere
+  il corrispondente flag UTR_READ settato.
+  Per poter lasciare anche dei post, l'utente deve essere almeno di livello
+  rd->wlvl e deve avere il flag UTR_WRITE settato.
+  
+ * Utenti ribelli:
+   ---------------
+   
+   Se un utente non segue il galateo e disturba gli altri utenti in una
+   particolare room, il Room Aide puo' mandargli un avvertimento, settando
+   il flag UTR_ADVERT. L'avvertimento verra' ripetuto all'utente ogni qual
+   volta accede alla room; se l'utente non adotta un comportamento civile,
+   un secondo avvertimento comporta l'esclusione totale dalla room, con il
+   flag UTR_KICKOUT.
+   
+ * Generazione della Room:
+   -----------------------
+   
+   Quando una room viene modificata (il nome, la sua configurazione o le sue
+   info) entra in una 'nuova generazione' e il flag UTR_NEWGEN
+   corrispondente alla room viene settato ad ogni utente. In tal modo
+   l'utente e' al corrente della modifica, e la volta successiva che accede
+   alla room ne legge automaticamente le nuove info e il flag viene resettato.
+   Di default, il nuovo utente ha questo flag settato in ogni room.
+
+ * Aide e Sysop:
+   -------------
+   
+   Gli Aide e i Sysop non possono zappare le room, in quanto il loro ruolo
+   e' di tenere sotto controllo (discretamente) tutte le room. I Sysop hanno
+   percio' accesso a tutte le room, e gli Aides posso accedere a tutte le
+   room eccetto quella riservata ai Sysop (la room Sysop) ).
+
+   I Sysop hanno privilegi totali su tutte le room della BBS; gli Aide hanno
+   privilegi totali su tutte le room alle quali hanno accesso, eccetto per
+   quanto riguarda la configurazione dei File Messaggi corrispondenti a
+   queste room, compito che spetta ai Sysop.
+   
+ * Room Aide e Room Helper:
+   ------------------------
+   
+   Ad ogni Room puo' essere assegnato un Room Aide. Il Room Aide si occupa
+   di gestire la room: ne scrive le info, la configura e modera le
+   discussioni, con la possibilita' di cancellare e spostare i post, mandare
+   un avvertimento o cacciare utenti indisciplinati. I Room Aide vengono
+   nominati dagli Aide (o utenti di livello superiore). Per diventare Room
+   Aide l'utente deve avere almeno il livello LVL_NORMALE, e una volta
+   designato sale automaticamente al livello LVL_ROOMAIDE, guadagnando cosi'
+   l'accesso alle room di gestione. Inoltre viene settato il flag
+   UTR_ROOMAIDE.
+   
+   Per farsi aiutare, il Room Aide puo' designare uno o piu' (non ci sono
+   limiti) Room Helper, utenti con livello minimo LVL_NORMALE, che
+   acquisiscono la possibilita' di spostare/cancellare post da quella room e
+   postare messaggi in qualita' di Room Helper, aiutando cosi' il Room Aide
+   a moderare la propria room. A questi utenti viene settato il flag
+   UTR_ROOMHELPER.
+   
+ * Scansione delle room:
+   ---------------------
+
+   Per muoversi tra le room della BBS gli utenti hanno diversi comandi a
+   disposizione.
+   
+   
+ * Lista delle room conosciute:
+   ----------------------------
+   
+   <k>nown rooms: mostra le room conosciute, separate in due liste, la prima
+                  con le room con messaggi ancora non letti la seconda con
+		  le room senza messaggi nuovi. Le room zappate non appaiono.
+   
+   <.> <k>nown <a>ll: lista tutte le room conosciute, comprese quelle zappate.
+   
+   <.> <k>nown <n>ew: lista le room conosciute non zappate con messaggi non
+                      letti.
+		      
+   <.> <k>nown <o>ld: lista le room conosciute non zappate, con tutti i
+                      messaggi gia' letti.
+   
+   <.> <k>nown <z>apped: Lista delle room conosciute e zappate.
+   
+
+* Notazione:
+  ----------
+
+  - rd: room->data  : dati delle room
+
+-----------------------------------------------------------------------------
+[Ultimo aggiornamento a questo file: 26/04/2000]

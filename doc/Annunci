@@ -1,0 +1,2400 @@
+
+ May  3 17:26 2000 da Emperor
+ Subject : Cittadella/UX
+ 
+ 
+La tanto attesa Cittadella/UX e' finalmente arrivata a un livello di
+sviluppo avanzato, e ha l'aspetto di una BBS completa: ci sono le room, si
+possono leggere e scrivere post, oltre a qualche novita' come gli
+eXpress-message e una chat integrata. Mancano principalmente la
+possibilita' di inviare dei mail e alcuni comandi (ad esempio per
+cancellare un post). In compenso e' in una fase sperimentale, e ci sono
+molti bachi che richiedono di testarla in modo intenso.
+ 
+Speriamo di arrivare molto rapidamente a un codice stabile e completo,
+dopo di che trasferiremo definitivamente la BBS sul codice Citadella/UX.
+Questo passaggio sara' molto piu' veloce se siete numerosi ad usare e
+testare la bbs in questa fase, e se fate un rapporto dettagliato dei bugs
+che riscontrate. Per inviare un bug report, potete usare il comando <B>,
+altrimenti usare le room apposite che verranno create sulla bbs di ping
+(vi ricordo, telnet ping.science.unitn.it user: bbs, password: bbs).
+ 
+Il look'n'feel e' molto simile a quello al quale siete abituati qui nella
+Emperor's BBS; qualche comando ha tuttavia cambiato nome, ed alcuni sono
+nuovi. In ogni caso uno sforzo e' stato fatto per scrivere della
+documentazione decente (ancora incompleta) alla quale potete accedere con
+il comando <H> (H-maiuscola! ora e' case-sensitive!) oppure con <.><h> La
+lista dei comandi normali la trovate con <h> oppure <H><3><Enter>, mentre
+la lista dei dot commands si visualizza con <H><1><0><Enter>.
+ 
+Per collegarsi a Cittadella/UX, e' sufficiente fare:
+ 
+telnet ping.science.unitn.it
+login: citta
+Password: della
+ 
+Se volete provare il client locale, potete scaricare l'eseguibile per
+linux-i386 con un browser all'indirizzo:
+ 
+http://ping.science.unitn.it/~marco/bbs/cittaclient-i386.tgz
+ 
+L'archivio si scompatta con
+  tar zxvf cittaclient-i386.tgz
+troverete una nuova directory 'cittaclient' con l'eseguibile, e una
+pagina di manual che potete leggere con
+  man ./cittaclient.6
+Per finire, se non vi funziona il tasto <backspace> potete utilizzare
+<Control><h> per cancellare un carattere.
+                                        
+E allora... buon divertimento!
+ 
+                    Ping & Ric
+ 
+                                    o---O---o
+
+ May 19 14:46 2000 da Ping
+ Subject : Bug Fixes
+
+Allora...
+
+ - Tab Completion: non e' piu' case sensitive...
+ - <r>everse per leggere all'indietro e <b>ack per invertire la direzione
+   della lettura ora funzionano
+ - Nuovo comando <-> per leggere gli ultimi N messaggi (manca ancora <o>)
+ - E' stato corretto il baco nel <d>elete
+ - Corretto baco per il sesso degli utenti (eravamo tutti femminucce)
+
+That's all folks!
+
+                                    o---O---o
+
+ May 25 15:57 2000 da Ping
+ Subject : Cittadella 0.1.7
+
+Piccoli bug fixes: la chat dovrebbe essere Ok, La notifica dell'entrata
+degli utenti avviene solo alla fine della procedura di login, al login
+notifica se ci sono nuovi mail, comando <@> per vedere se c;'e' nuova posta.
+
+                                    o---O---o
+
+ May 30 12:23 2000 da Ping
+ Subject : Cittadella 0.1.8
+
+- Info delle room editabili da room aide e da room helper.
+- Entry cmd (save, abort) quando si lascia un post.
+- Chiede conferma per cancellare un post.
+- Edit room corretto
+
+Inoltre e' stato ristrutturata la procedura di lettura dei post,
+eliminando alcuni problemi. E' tuttavia possibile che si verificheranno
+altri problemi. In particolare, nella Lobby) e in Cinema & TV> ci sono
+dei messaggi corrotti che continuano a fare problemi.
+
+Continuate a dare la caccia ai bachi, io saro' via fino alla settimana
+prossima.
+
+                                    o---O---o
+
+ Jun  5 15:54 2000 da Ping
+ Subject : Cittadella 0.1.9
+ 
+- Flag nella configurazione dell'utente per scegliere se
+  leggere l'ultimo messaggio letto prima di quelli nuovi.
+- Nel profile appare il numero di mail nuovi dell'utente.
+- Un paio di bug fixes nei mail
+
+                                    o---O---o
+
+ Jun  9 14:08 2000 da Ping
+ Subject : Cittadella 0.1.10
+ 
+ 
+ - Sono state messe alcune cose in grassetto qua e la' (prompt, messaggi,
+   etc). Ora la bbs dovrebbe essere molto piu' leggibile. Per ora non
+   e' possibile disabilitarlo, fatemi sapere se vi da problemi con
+   qualche tipo di terminale.
+ 
+ - Eliminato un buffer overflow nel comando <P> per modificare la propria
+   password.
+
+                                    o---O---o
+ 
+ Jun 20 15:58 2000 da Ping
+ Subject : Cittadella 0.1.11
+ 
+Sono stati implementati i `Reply'. Per rispondere a un messaggio e'
+sufficiente premere <r> dal prompt dei messaggi della room.
+ 
+Attenzione, non tutte le room hanno la possibilita' di replicare
+attivata. Ricordo che con <.><r>ead<i>nfo potete leggere le info
+dettagliate della room.
+
+                                    o---O---o
+ 
+ Jun 21 18:10 2000 da Ping
+ Subject : Cittadella 0.1.12
+ 
+Bug fix del <w>
+Anche il baco della formattazione dei mail e' stato fissato.                     
+Ricordatevi di scaricare il nuovo client locale!
+
+                                    o---O---o
+ 
+ Jun 23 14:52 2000 da Ping
+ Subject : Cittadella 0.1.13
+ 
+- Per i fanatici delle gerarchie,
+  ora c'e' la possibilita' di lasciare dei post di amministrazione nella
+  qualifica di Room Helper, Room Aide, Aide o Sysop. Il funzionamento e'
+  spiegato nel manuale tanto bello quanto trascurato.
+- Per i malati delle statistiche,
+  ora nel profile appaiono anche le room in cui l'utente e' Room Aide
+  oppure Room Helper. Inoltre, al posto del livello appare ora la
+  qualifica corrispondente dell'utente.
+- Per gli allucinati,
+  e' stato introdotto il grassetto per evidenziare alcune parti del
+  profile (scelte ovviamente a caso).
+- Per i drogati degli eXpress-messages,
+  e' stato implementato il Follow Up automatico. Questa opzione si puo'
+  attivare editando la propria configurazione o con il toggle command:
+  <.><t><u>, e permette di rispondere automaticamente agli Xmsg in arrivo
+  senza dover digitare il nome del destinatario.
+- Per quelli che preferiscono spararsi in vena una buona chattata,
+  e' stato evidenziato l'autore del messaggio in chat per aumentare la
+  leggibilita'.
+- Per quelli che strippano in attesa di un mail,
+  e' stata implementata la possibilita' di farsi notificare l'arrivo di
+  un nuovo mail. Ovviamente la notifica va abilitata editando la propria
+  configurazione con <.><e><c>.
+- Per quelli che preferiscono la tradizione,
+  e' stato inserito un semplice pager per la lettura dei post troppo
+  lunghi. Il pager si puo' disabilitare editando la configurazione se si
+  e' particolarmente bravi nella lettura veloce.
+- Finalmente per chi pensa appartiene un po' a tutte le categorie precedenti,
+  e' stato messo a posto message prompt dopo l'arrivo di Xmsg e notifiche.
+ 
+Ricordo a coloro che usano il client locale di scaricare la nuova
+versione, altrimenti alcune cose non funzioneranno bene!
+
+                                    o---O---o
+ 
+ Lobby, 26 Giu 2000 alle 17:01 - da Ping
+ Subject : Cittadella/UX 0.1.14
+ 
+- C'e' un nuovo comando per aumentare la capienza dei file messaggi. E'
+  accessibile solo ai Sysop, ma ci ha permesso di portare a 1 Megabyte
+  il file messaggi di Cittadella.
+  Con questo abbiamo eliminato praticamente l'unica limitazione di
+  Cittadella che rimaneva: direi che ora possiamo iniziare a traslocare
+  in modo definitivo...
+ 
+- Ora si possono inviare dei mail a Sysop, Aide e Room Aide. Queste mail
+  vengono postate direttamente nelle room riservate associate, in modo
+  da renderle subito visibili agli Aide e RA.
+ 
+- Post automatici di Cittadella.
+ 
+- Toggle : risponde On/Off.
+ 
+- Beautificato il <W>ho in chat e la configurazione dell'utente.
+ 
+- Chiede conferma quando si edita una room e anche in altri casi.
+ 
+- Bug Fixes: Editor di default per i post funziona,
+             il nome nel 'reply to' viene visualizzato bene.
+ 
+Al solito, chi usa il client locale dovrebbe scaricarsi la nuova  versione.
+ 
+                                    o---O---o
+ 
+ Cittadella Sviluppo, 27 Giu 2000 alle 19:11 - da Ping
+ Subject : Licenza Cittadella/UX
+ 
+Ric ed io abbiamo deciso di rilasciare presto i sorgenti Cittadella/UX
+sotto una licenza GPL.
+ 
+Questo significa che ogniuno potra' scaricarseli, compilarli sulla sua
+macchina, e se ne ha voglia studiarli e modificarli a suo piacimento,
+sempre nel rispetto del copyright.
+ 
+Entro breve avrete a disposizione i sorgenti del cittaclient, mentre
+quelli del server li renderemo pubblici appena raggiungeremo la prima
+versione stabile 0.2.0.
+ 
+Ci sono diverse cose che andrebbero fatte, magari qualcuno ne ha voglia:
+ 
+- Vedere se il client si compila anche su altre piattaforme UNIX (facile),
+  in MSDOS o in Mac. Se ci si riuscisse, si potrebbero aggiungere gli
+  eseguibili per DOS e Mac alla pagina di download. Probabilmente ci
+  sono da fare alcune modifiche ai sorgenti, in particolare alla parte
+  che gestisce la connessione, per compilarli con successo.
+ 
+- Nuovi client per tutti i gusti: se avete voglia di cimentarvi alla
+  scrittura di client piu' moderni, o con un aspetto che vi e' piu'
+  congeniale, provateci! Ad esempio, un client web risulterebbe
+  utilissimo per attirare nuovi utenti (mi pare che Fuffo e Furjo
+  si fossero proposti di fare una cosa simile).
+  Anche dei client grafici da usare col topolino potrebbero essere
+  comodi: con strumenti tipo il glade per le librerie GTK e il
+  Kdevelop per KDE dovrebbe essere possibile raggiungere risultati
+  soddisfacenti molto rapidamente (un'altra possibilita' e' utilizzare
+  le librerie Tcl/Tk, che hanno il grande vantaggio della portabilita')
+ 
+- LA DOCUMENTAZIONE!!! continuo ad insistere sul fatto che una buona
+  documentazione, completa, e' molto importante. Aspetto ancora un
+  volontario per Cittadella Doc>: potrebbe diventare il mantainer
+  ufficiale della documentazione.
+ 
+Detto questo, deve essere chiaro che chi vuole puo' lavorarci, ma ne' Ric
+ne' io avremo molto tempo a disposizione per spiegarvi i dettagli dei
+sorgenti, provate a studiarli da soli, ed eventualmente fate qualche
+domanda specifica. Magari cosi' mettiamo insieme anche un Devel_FAQ.
+
+                                    o---O---o
+
+ Lobby, 29 Giu 2000 alle 12:42 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.15
+
+Un bel po' di novita' questa volta...
+
+- Ora lancia il reboot giornaliero alle 4 del mattino (+/- 10 min) del
+  giorno dopo la partenza del server. Lo shutdown avviene 15
+  minuti dopo, per lasciare agli utenti connessi (ma a parte Ralph non
+  dovrebbero essercene) di uscire con calma.
+
+- Move message (<m> dal prompt dei messaggi):
+  Permette di spostare un messaggio da una room all'altra.
+  Funziona per ora solo per room che sono nello stesso file messaggi.
+  (comunque c'e' un unico FM nella bbs per ora)
+
+- Quote: dal prompt dei messaggi sono disponibili i comandi: 
+  <q>uote, quota il messaggio corrente,
+  <e>xamine quote, per esaminare l'ultimo quote effettuato,
+  <f>ree quote, per cancellare il quote.
+
+- Hold & Continue (Entry cmd):
+  Con <h>old tiene in memoria il post per poterlo postare in un momento
+  successivo, con <c>ontinue continua la scrittura del post. 
+
+  Se ho sia un <h>old che un <q>uote attivi, alla prossima scrittura
+  di un post con editor esterno, appare nell'editor prima il testo
+  memorizzato con <h>old, seguito dal testo quotato.
+  
+  Ripetendo alternativamente i due comandi, e' possibile quotare piu'
+  di un messaggio alla volta.
+  
+  NB: L'hold e il quote funzionano solo se si scrive il nuovo
+  messaggio con l'editor esterno.
+
+- Possibilita' di scegliere se rivisualizzare l'ultimo messaggio
+  letto dopo un reply, tramite la configurazione (<.><e><c>).
+
+- Eliminato il messaggio di errore quando si lascia un messaggio
+  vuoto con l'editor esterno.
+
+- Chiede conferma quando si modifica la registrazione.
+
+- La grande novita': i Referendum e i Sondaggi automatizzati!!
+
+  I Referendum vanno proposti dagli Aides e dovrebbero aiutare a gestire la
+  bbs, e dovrebbero aiutarli a capire l'opinione degli utenti sui problemi
+  che si pongono. E' uno strumento che hanno a disposizione nella bbs, sta
+  poi a loro decidere se usarlo o meno. Quando il tempo per votare scade,
+  Cittadella posta automaticamente i risultati nella Lobby (quindi niente
+  brogli elettorali ;).
+
+  I Sondaggi hanno uno scopo piu' ludico, e permettono agli utenti di
+  proporre un quesiti in una particolare room dove hanno accesso di scrittura.
+  Il funzionamento e' lo stesso, al termine del periodo concesso per
+  votare i risultati vengono postati nella room stessa.
+
+  Per ora c'e' un limite di 20 sondaggi contemporanei, ma nessun controllo
+  su chi e dove li propone. Inoltre non c'e' un controllo accurato sul
+  livello, percio' per favore evitate abusi: in particolare non proponete
+  referendum se non siete Aide, e non annullate sondaggi proposti da altri.
+
+  I comandi sono:
+  <.><u><n> Per proporre un nuovo referendum o sondaggio.
+  <.><u><c> Per completare una consultazione in corso prima dello scadere.
+  <.><u><d> Per annullare una consultazione in corso.
+  <.><u><r> Per leggere il testo del referendum o sondagio.
+  <.><u><v> Per esprimere il proprio voto.
+  <.><u><l> Per vedere la lista delle consultazioni in corso.
+
+  Non ho potuto testarle moltissimo, ma non dovrebbero dare eccessivi
+  problemi. Provateli.
+
+
+NB: Al solito, per godere di queste possibilita' con il client locale
+   dovete scarivarvi il nuovo client cittaclient 0.1.15.
+   
+                                    o---O---o
+
+Con questo direi che Cittadella non ha piu' nulla da invidiare alla vecchia
+bbs: manca ancora qualche comandino al quale si puo' pensare con calma,
+ma direi che possiamo fermarci qui per ora: siamo in feature freeze (wow!):
+le prossime release saranno dedicate principalmente al debugging e a ritocchi
+cosmetici del client. Quando tutto funzionera' correttamente, questa
+diventera' la prima release stabile ufficiale di Cittadella (la 0.2.0).
+
+                                    o---O---o
+
+ Lobby, 17 Lug 2000 alle 11:44 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.16
+
+ Login:
+ ------
+   E' cambiata leggermente la schermata iniziale, che ora contiene anche un
+   login banner scelto a caso.
+
+ Message Pager:
+ --------------
+   E' la grossa novita' di Cittadella/UX 0.1.16. Ora e' possibile leggere
+   i post lunghi molto piu' comodamente. I comandi disponibili sono:
+   - <Space>   vai avanti di una pagina
+   - <Enter>   vai avanti di una riga
+   - <b>ack    vai indietro di una riga
+   - <u>p      vai indietro di una pagina
+   - <r>efresh ristampa la pagina
+   - <s>top    interrompi la lettura
+   - <?>       sommario dei comandi disponibili
+
+ Nuovi Comandi:
+ --------------
+ - Comando <v> per rispondere all'ultimo X ricevuto.
+ - <M> <=> Goto mailroom
+ - <l> per logout (chiede conferma).
+ - Hyperterminal ON/OFF: permette di abilitare/disabilitare il bold.
+   L'opzione e' stata rinominara 'grassetto'.
+ - <D> dal prompt messaggi per fare un dump del messaggio in fondo al
+   file ./cittadella.dump
+ - <.><a><s> Comando swap rooms per scambiare posizione di due room.
+   (per ora non funziona: non usatelo, puo' fare danni)
+
+ Notifiche:
+ ----------
+ - Notifica l'arrivo di un nuovo post mentre scrivevo un post.
+ - Notifica nuovi post nella room corrente (tramite configurazione)
+ (Vanno ancora sincronizzate, ma dovrebbero funzionare abbastanza bene)
+
+ Modifiche varie e comode:
+ -------------------------
+ - Ora il <J>ump matcha anche l'inizio del nome (es: <J> Chia <Enter>)
+ - Utente di default per Mail, X, Profile viene scelto un po' meglio:
+   Mail: autore ultimo messaggio letto, o rcpt ultimo mail spedito
+   X: Ultimo destinatario di un X
+   Profile: Autore ultimo post letto o ultimo X ricevuto
+ - Pager per il profile e per le room info.
+ - Per cancellare un X, broadcast o messaggio in chat: scrivere
+   ABORT (maiuscolo) in una riga vuota.
+
+ Bug Fixes:
+ ----------
+ - Ora l'opzione --no-banner funziona bene (Furjo)
+
+Non dimenticate di aggiornare il vostro client locale se lo usate:
+lo trovate al solito posto!
+
+                                    o---O---o
+
+ Lobby, 23 Lug 2000 alle 14:48 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.17 (Faso)
+
+La "Faso release" di Cittadella/UX e' caratterizzata dalle seguenti due
+feature, che renderanno l'interazione uomo/macchina particolarmente
+piacevole: 
+
+- Il BACKSPACE funziona!!!
+- La percentuale di vita online viene visualizzata correttamente, e
+  aggiornata in tempo reale.
+
+Altre modifiche minime sono state apportate:
+--------------------------------------------
+- Ora e' possibile scegliere mediante configurazione dell'utente <.><e><c>
+  come visualizzare la lista delle <k>nown rooms. La scelta e' tra il solito
+  modo tradizionale, e un nuovo look incolonnato, molto piacevole alla vista.
+  Nel modo incolonnato i nomi delle room sono preceduti dal loro numero di
+  matricola. Perche'?
+- Perche' ora si puo' fare <j>ump 'roomnumber'
+- Nel Login Banner appare ora in alto a destra il numero di utenti connessi.
+- Al login, se si sbaglia la password, c'e' il nome fornito precedentemente
+  di default al prompt del nickname.
+- Inserito un pager nella lista degli utenti <u>.
+- Chiede conferma per zappare una room e per modificare il profile personale.
+- Ora dice: "Sono connessi _altri_ n utenti", al login. Cosi' Furjo non dovra'
+  piu' fare sottrazioni per capire quanti utenti trovera' ;)
+- NEWS disabilitato per ora. Tutta roba vecchia, ma tornera' alla ribalta!!
+- Sono stati inseriti vari prompt <Premi un tasto> per gli utenti non esperti
+  (in modo che l'help non gli cancelli ogni volta cio' che il server gli
+  manda)
+- Inserita una configurazione di utente di default per gli ospiti.
+
+Cambiati alcuni tasti:
+----------------------
+- <E> toggle Expert mode 
+- <X> toggle Xmsg (abilita/disabilita la ricezione degli X da parte di tutti).
+- <I>: info dettagliate (come <.><r><i>)
+
+Comandi per gli aide:
+---------------------
+- Nuovo comando: <.> <a>ide <s>wap rooms
+  Questo comando permette agli aide di scambiare la posizione di due room
+  nella march list; in particolare, permettera' di raggruppare le room
+  per argomenti, in attesa dei floors.
+- Lista room <.><a><r><r> fornisce agli aide tutte le informazioni necessarie
+  per gestire al meglio la BBS. (aggiunta info, beautify + pager)
+
+Bug Fixes vari:
+---------------
+- Curato buffer overflow dei subject nel server.
+- Messe a posto Guess room e room su invito: ora dovrebbero funzionare
+  a dovere, provatele.
+- Eliminato il problema del 'error #2' per i messaggi nuovi gia'
+  sovrascritti.
+- "Un altro post e' stato lasciato nel frattempo.": non appare
+  piu' il nome dell'autore nelle room anonime, e non invia la 
+  notifica se il post e' in mail.
+- "C'e' post@ nuova?" tolto il '@' bruttissimo. :)
+
+E' possibile terminare un annuncio di una nuova release senza ricordare a
+chi usa il client locale di scaricarsi il nuovo eseguibile? No. E allora:
+Scaricate cittaclient 0.1.17 dal solito posto!
+
+                                    o---O---o
+
+ Lobby, 27 Lug 2000 alle 03:32 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.18 (Fatfree)
+
+La release "Fatfree" di Cittadella/UX e' dedicata principalmente al bug
+fixing: buona parte dei problemi noti sono stati risolti. (Rimane ancora il
+problema dei Reply in Mail, ma per il resto dovrebbe essere abbastanza OK.
+E' stata comunque aggiunta qualche nuova feature (indicate con "NEW!!")
+
+Bachi nella march list:
+-----------------------
+- Passa per la Lobby) con <s>kip e <a>bandon quando finisce il giro.
+- Messi a posto <s>kip (non modifica il fullroom) e <a>bandon
+  (rende vecchi solo i messaggi letti)
+- NEW!! Flag di configurazione per scansione delle room con messaggi nuovi:
+  si puo' scegliere se seguire l'ordine della march list oppure per andare
+  nella prima room della march list con messaggi nuovi. 
+- NEW!! <.><s>kip command per andare in una room specifica lasciando il
+  fullroom invariato.
+
+Bachi nel profile:
+------------------
+- I dati personali appaiono nel profile se li ho configurati come
+  visibili agli altri utenti.
+- NEW!! Flag per rendere tutti i dati personali visibili agli amici
+  inseriti nella friend-list.
+- Messo a posto il sesso in alcuni punti del profile ("E' collegata", etc.)
+
+Bachi Room Aide e Room Helper:
+------------------------------
+- <.><a><h> ora toggla lo status di RH di un utente nella room
+  corrente.
+- Quando cambio Room Aide, resetta tutti i flags RA.
+
+Bachi nel <w>ho:
+----------------
+- Non appare piu' il '+' nel <w>ho se l'utente scrive in una room che
+  non conosco, oppure in una room con post anonimi.
+- Ora appare il '^' accanto al nome quando edito la configurazione.
+- Fissato baco nel conteggio dell'idle time.
+
+Altri Bachi:
+------------
+- Quando la sessione viene killata per un doppio login, tutti i dati
+  dell'utente vengono salvati (non si perdono post e non riappaiono nuovi
+  dei post gia' letti)
+- Corretto baco delete dei mail. Ora si possono cancellare anche i mail dalla
+  propria mailbox senza problemi. Ovviamente questo serve soltanto a fare
+  spazio nella mailbox: il mail rimane comunque nella mailbox dell'autore
+  del mail cancellato o del destinatario del mail.
+- E' stata corretta la risposta del client quando si prova a mandare un X o
+  un mail a se stessi.
+
+E prendetevi il nuovo client locale se vi serve... :)
+
+                                    o---O---o
+
+ Lobby, 21 Ago 2000 alle 20:14 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.19 (Sunrise)
+
+Chat e Express messages:
+------------------------
+- La chat e' finalmente nella sua versione definitiva e, si spera, piu'
+  pratica. Ora ha un suo editor, tipo quello della chat della Emperor's BBS
+  che permette di scrivere il messaggio sull'ultima riga dello schermo.
+  In questo modo, i messaggi in chat da parte di altri utenti, gli X-msg e
+  le notifiche arrivano anche mentre scriviamo un messaggio.
+- C'e' una nuova opzione nella configurazione dell'utente:
+  "Usa il line editor per gli X"
+  Se questa opzione e' settata si usa l'editor della chat anche per immettere
+  gli express messages, e mentre si scrive il messaggio continuano ad arrivare
+  tutte le notifiche e messaggi (chat, Xmsg).
+- In generale, quando arrivano messaggi dal server, i prompt riappaiono
+  correttamente e se si stava editando un post con l'editor interno, riappare
+  l'ultima riga che si stava scrivendo per continuare l'editing.
+
+Lettura/Scrittura dei Messaggi:
+-------------------------------
+- Reply in mail: quando si legge un mail, premendo <r> si puo' rispondere
+  all'autore del mail.
+- <#> seguito da un numero N da Room Prompt legge il messaggio # N.
+- Nel prompt 'Entry Command' c'e' il nuovo comando <p>rint per rileggere
+  con il pager il post che si sta scrivendo.
+- Opzione di configurazione 'Niente prompt dopo i messaggi'. Se
+  questa opzione e' settata, legge i messaggi in avanti tutti insieme,
+  senza prompt tra un post e un altro.
+
+Comandi per le Room:
+--------------------
+- L'accesso alle room ad invito si ottiene ora in modo automatico. Quando
+  il room aide edita una room ad invito, deve scegliere se gli utenti possono
+  ottenere l'invito alla room in modo automatico.
+  Per richiedere l'accesso a una room ad invito dovete usare il comando
+  <.><E>nter <I>nvitation request
+  seguito dal nome della room ad invito.
+  Se la room e' stata configurata per consentire l'invito automatico, l'utente
+  riceve automaticamente l'accesso alla room, altrimenti la richiesta viene
+  postata da Cittadella in Room Aide), dove verra' presa in considerazione.
+- Comando <Z>ap all rooms: si dimentica di tutte le room.
+- Comando <U>nzap all rooms: si ricorda di tutte le room conosciute.
+- Nessuno puo' zappare Lobby) e Mail). Inoltre, se sono RH o RA di una room
+  non la posso zappare. (Ovviamente Aide e Sysop non possono zappare proprio
+  nulla...)
+
+Comandi per Aide:
+-----------------
+- Il comando <.> <a>ide <e>nter room <s>ize permette di modificare il
+  numero di slot associati a una data room. (Room Aide)
+- Con <c> si puo' copiare il post che si sta leggendo in un'altra room (Aide).
+- Vi ricordate che al login veniva presentato un breve testo con le news
+  (che non veniva mai aggiornato) ? Ora e' riapparso, insieme al comando
+  <.> <a>ide <e>dit <n>ews che permette agli aides di editare le news.
+ 
+Toggle:
+-------
+- Nuovo: <.> <t>oggle <f>riends toggla la ricezione dei X da parte degli amici.
+
+- Per coerenza, visto che <E> ora toggla il modo esperto e <X> la ricezione
+  degli X, <.te> toggla il modo Esperto e <.tx> toggla la ricezione degli Xmsg.
+ 
+Bug Fix:
+--------
+ - Il jump completa il nome (se necessario) con quello di una room
+   conosciuta e non zappata. Per intenderci, facendo <j><c><Enter>, ora si
+   finisce in Chiacchiere>.
+ 
+NOTA: Il nuovo client locale e' disponibile al solito posto.
+
+                                    o---O---o
+
+ Lobby, 4 Set 2000 alle 14:41 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.20 (Control)
+
+Diario dei messaggi ricevuti
+----------------------------
+ Il client memorizza gli ultimi 20 messaggi ricevuti (Xmsg e Broadcast).
+ Per entrare nel diario e' sufficiente premere <&>.
+ I messaggi si possono scorrere con i comandi <n>ext e <b>ack, cancellare
+ con <d>elete, visualizzare la lista completa con <l>ist, rispondere a un
+ messaggio con <r>eply, e stamparli tutti con <p>rint, in modo analogo alla
+ lettura dei post. Per l'help <?> e per finire <s>top.
+
+Nuovi comandi per l'editor interno e l'editor di linea della chat:
+------------------------------------------------------------------
+ Sono stati abilitati i seguenti nuovi tasti per facilitare l'editing:
+   ctrl-p: cancella l'ultima parola scritta.
+   ctrl-u: cancella la riga corrente.
+   ctrl-x: abort messaggio.
+   
+ Scrivendo "ABORT" in una linea vuota editando un X si lascia perdere la
+ scrittura del messaggio, come prima.
+
+ Inoltre, ora con <ctrl-x> si puo' interrompere ora anche la scrittura di un
+ post se si usa l'editor interno.
+
+Infine, ricordatevi di scaricare il nuovo client locale.
+
+                                    o---O---o
+
+ Lobby, 13 Ott 2000 alle 00:26 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.21
+ 
+Al prossimo reboot (stanotte alle 04:00) entrera' in funzione la nuova
+versione 0.1.21 di Cittadella/UX. Ecco le novita':
+ 
+- LETTURA DEI POST
+  Ora segna i nuovi messaggi come vecchi nel momento in cui vengono letti.
+  In questo modo se durante la lettura dei post si fa <s>top e
+  successivamente <n>ew per leggere i nuovi messaggi, non rilegge tutto ma
+  solo i messaggi che ancora non sono stati letti.
+  Se poi si fa <s>kip recupera il vecchio fullroom
+- Bug fix: ora al login i messaggi nuovi in Lobby) si vedono
+  effettivamente come nuovi.
+ 
+- EXPRESS-MESSAGES
+  Se mentre scriviamo un eXpress-message a un utente quest'ultimo si
+  sconnette, chiede se si vuole spedire il messaggio in mail. Se si risponde
+  di si', l'X-msg viene recapitato direttamente nella mailbox del
+  destinatario.
+ 
+- ALTRE MODIFICHE
+- Diversi ritocchi cosmetici al profile.
+  Inoltre non segna piu' l'idle se l'utente e' occupato, ma dice se
+  e da quanto il terminale e' lockato.
+- Lock terminale: Non caccia piu' l'utente se il terminale e' lockato.
+- Bug fix nell'edit della configurazione.
+ 
+ 
+Le features introdotte con il client sperimentale non sono ancora state
+inserite, in quanto ancora sperimentali :) Comunque se usate il client
+sperimentale (ricordo, telnet a ping.science.unitn.it alla porta 4002)
+ora il profile verra' visualizzato correttamente.
+ 
+Il nuovo client locale, cittaclient-0.1.21, lo potete scaricare come al
+solito dalla pagina web http://ping.science.unitn.it/~BBS/
+
+                                    o---O---o
+
+ Lobby, 16 Lug 2001 alle 02:40 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.22
+
+Dopo molti mesi di silenzio, ecco a voi finalmente la tanto attesa (?)
+versione 0.1.22 della vostra BBS preferita!!
+ 
+Il passaggio dalla 0.1.21 ha visto una sostanziale ristrutturazione del
+server per migliorare le prestazioni di Cittadella e implementare i floors
+(che comunque non sono ancora stati attivati). Non avendo testato a fondo il
+nuovo server, potrebbero verificarsi comportamenti strani e inestetismi
+vari, percio' aguzzate la vista e segnalate i bugs in Bugs Cittadella>! 
+ 
+Ed ecco le vere e proprie novita':
+ 
+Gestione piu' efficace della rete:
+   Ora le risposte del server dovrebbero arrivare piu' velocemente e in
+   modo sensibilmente piu' fluido (grazie a Audrey II).
+ 
+Pager piu' interattivo:
+   E' ora possibile decidere se ricevere o meno notifiche e messaggi mentre
+   si leggono i post. Invece i messaggi urgenti (ad esempio notifiche di
+   shutdown del server) vengono in ogni caso visualizzati.
+   Per ricevere i messaggi nel pager, e' sufficiente editare la sezione
+                3: Comunicazione (Xmsg e notifiche)
+   della vostra configurazione e rispondere "Si'" al punto
+                "Accetto messaggi nel pager"
+ 
+Help Online:
+   - Sono stati finalmente aggiornati i file di help accessibili dal client.
+     Ora premendo <H> si puo' scegliere uno dei 35 files di help compilati
+     da LePetit (cittadoc-0.1.16.tgz).
+     Si riferiscono alla versione di cittadella 0.1.16, e percio' alcune
+     parti rimangono datate mentre altre mancano proprio.
+     Se trovate errori o inesattezze per favore notificatele in
+     Documentazione>.
+   - I files di help si leggono ora piu' comodamente utilizzando lo
+     stesso pager che per i post.
+   - Bugfix nell'help per utenti non esperti.
+ 
+Diario dei messaggi:
+   E' ora possibile memorizzare nel diario dei messaggi anche i messaggi che
+   spediamo oltre a quelli che riceviamo. Per attivare la memorizzazione dei
+   messaggi inviati dovete editare la sezione
+                3: Comunicazione (Xmsg e notifiche)
+   della vostra configurazione e rispondere "Si'" al punto
+        "Salva nel diario gli X inviati"
+   L'header dei messaggi ricevuti inizia con '+++', mentre gli header dei
+   messaggi inviati iniziano con '---'.
+ 
+Carbon Copy dei mail:
+   E' ora possibile scegliere se mantenere o meno una copia dei mail
+   che inviamo nella nostra Mail>.
+   Se decidete di tenerne una copia, dovete editare la sezione
+                5: Mail
+   della vostra configurazione e rispondere "Si'" al punto
+                "Carbon Copy dei mail inviati"
+   ATTENZIONE!!! IMPORTANTE!!
+   Per i nuovi utenti l'opzione CC Mail e' settata di default, ma i vecchi
+   utenti probabilmente non ce l'hanno attivata. Se non volete rischiare
+   di perdere qualche mail che inviate, EDITATE SUBITO LA CONFIGURAZIONE!!!
+   
+Editor di linea:
+   una volta finito di editare il testo, lo visualizza al completo.
+   (ricordo che l'editor di linea e' quello che viene utilizzato per
+   scrivere messaggi in chat e che puo' essere scelto per editare gli
+   X-mgs modificando la propria configurazione.)
+ 
+Idle:
+   E' stato corretto un errore nella visualizzazione dell'idle time nel
+   profile.
+ 
+Notifiche:
+    Vengono ora notificati i logout dovuti a connessioni cadute e all'idle
+    timeout.
+ 
+News:
+    Se le news (quelle che appaiono al login dopo il disclaimer) sono state
+    aggiornate dal vostro ultimo collegamento, appare un prompt, altrimenti
+    se non sono cambiate, appaiono comunque, ma il prompt non c'e'.
+    
+Il nuovo client locale, cittaclient-0.1.22, lo potete scaricare come al
+solito dalla pagina web http://ping.science.unitn.it/~BBS/
+
+                                    o---O---o
+
+ Lobby, 19 Lug 2001 alle 12:37 - da Ping
+ Subject : Client Locale per Windows
+
+E' disponibile la versione 0.1.22 del client locale anche per windows:
+La trovate in
+ 
+http://ping.science.unitn.it/~impe/download/cittaclient-0.1.22-win.tar.bz2
+ 
+Ci sono dentro i sorgenti compilabili con cygwin, l'eseguibile per windows
+(compilato con cygwin) e cygwin.ddl.
+ 
+Appena ho tempo sistemo le cose e faccio due bei pacchetti di sorgenti e
+eseguibili zippati a' la windows.... (nel frattempo procuratevi bzip2...)
+ 
+Il lavoro di conversione e compilazione e' stato fatto da Baol, che
+ringraziamo tutti calorosamente!
+
+                                    o---O---o
+
+ Lobby, 26 Lug 2001 alle 04:18 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.23
+
+Ho aggiornato la bbs alla versione 0.1.23 di Cittadella/UX.
+Non aspettatevi grandi novita', le modifiche introdotte corrispondono
+principalmente a eliminazioni di bachi che minavano la stabilita' del
+server. Molto brevemente ecco le novita' (per una lista piu' dettagliata
+dovete andare a pescarvi il file CHANGES nei sorgenti...):
+ 
+- Quando inviate gli X e avete la ricezione degli X disabilitata (e il
+  destinatario non e' nella friend list), il client vi avverte che non
+  potrete ricevere alcuna risposta se non cambiate la configurazione.
+ 
+- Ho riscritto nei sorgenti le parti del client che davano problemi con
+  il cygwin: ora il pacchetto di sorgenti cittaclient-0.1.23-src.tgz
+  dovrebbe essere compilabile sia sotto UNIX che sotto Windows con cygwin
+  senza doverci trafficare. Aspetto conferma da Furjo o Baol, visto che
+  non ho windows a portata di mano per provare ;)
+ 
+E con questo abbiamo finito con le novita' :)
+I bug fix principali sono i seguenti:
+ 
+- Quando editate la vostra configurazione e rispondete che non volete
+  mantenere le modifiche, vi rimane effettivamente la vecchia configurazione.
+ 
+- Si possono di nuovo editare in tutta sicurezza le room (e cambiare il
+  loro nome). Il maledetto bug all'origine del disastro dell'altro giorno
+  e' stato eliminato...
+ 
+- Eliminato il 'Bug di LePetit', dal nome del suo scopritore: ora potete
+  leggere un post particolare con <#>, senza attentare alla vita del server.
+ 
+- Se fate un <a>gain dopo un <r>eply, non vi si pianta piu' il client
+  (se n'era accorto qualcuno di questo?)
+ 
+Saro' noioso, ma non posso terminare questo annuncio senza ricordarvi
+di scaricarvi il nuovo client locale. Lo trovate linkato alla home
+page di Cittadella BBS:
+                           http://ping.science.unitn.it/~BBS/
+ 
+Continuate a segnalarmi i bugs! Buon divertimento!
+
+                                    o---O---o
+
+Release Notes Cittadella/UX 0.1.24                               (26/08/01)
+----------------------------------                               ----------
+
+- Ampliato la struttura utente: vengono memorizzati il numero mail e il
+  numero messaggi in chat scambiati.
+
+- Il primo utente che si collega alla BBS non necessita piu' di validarsi
+  (e' il sysop).
+
+- Utilizza sempre mkstemp() per creare file temporanei (T. Schiavinotto).
+
+                                    o---O---o
+
+Release Notes Cittadella/UX 0.1.25                               (28/08/01)
+----------------------------------                               ----------
+
+Piccole novita':
+----------------
+
+- Nuovo comando <V> nel client per richiedere una nuova chiave di validazione.
+  (puo' servire se per qualche motivo non e' arrivata la chiave...)
+
+- Quando un aide edita (con <.aeu> ) la configurazione di un utente non
+  validato, ha la possibilita' di validarlo.
+
+- Modifica dell'architettura del server: Trasferito il controllo sul livello
+  di accesso ai comandi nel file interprete.c, in modo da avere un controllo
+  unificato.
+
+
+Bug Fixes:
+----------
+
+- touch di cittaserver.rc all'avvio del server, per evitare che si pianti
+  quando il file di configurazione non e' presente. Risolve il problema
+  ma tutto il sistema di configurazione e' in completa ristrutturazione.
+
+- Bug fix del #mail e #post nel profile.
+
+                                    o---O---o
+
+ Lobby, 29 Gen 2002 alle 01:54 - da Ping (System Operator Message)
+ Subject : Cittadella/UX 0.1.26
+
+Ecco il primo upgrade del 2002! Sono stati eliminati molti bachi (uno per
+tutti quello della cancellazione delle room) e aggiunta qualche piccola
+novita' succosa... Per mantenere la suspence, inizio con i bugs... :-)
+ 
+BUG FIXES - SECURITY
+ 
+- Gli aide non possono piu' portarsi a livello 'Sysop' editando il proprio
+  account con <.aeu>.
+ 
+- Non e' piu' possibile sospendere il client (con Ctrl-Z) quando il terminale
+  e' lockato.
+ 
+BUG FIXES
+ 
+- E' stato messo a posto il comando di CANCELLAZIONE DELLE ROOM. Questo
+  significa che d'ora in avanti potrete cancellare tutte le room che
+  volete (beh, senza esagerare ;-) senza correre il rischio di rimescolare
+  tutti i dati degli utenti...
+ 
+- Controllo dell'email sistemato. Si possono nuovamente inserire in modo
+  corretto gli indirizzi di email. (Thank you Abel!)
+ 
+- Il nome della room corrente nel prompt viene visualizzato per intero.
+ 
+- L'ospite non puo' piu' lockare il terminale, con il rischio di rimanere
+  bloccato (visto che non possiede una password...).
+ 
+- Il numero di mail inviati dall'utente viene aggiornato nel profile.
+ 
+- Aggiunto il file di help (12) 'Stato degli utenti' che mancava.
+ 
+- Non memorizza piu' gli X-msg interrotti nel diario degli X.
+ 
+- I propri X-msg vengono visualizzati nel diario dei messaggi senza righe
+  vuote aggiuntive.
+ 
+- Vi e' capitato di vedere di tanto in tanto la seguente risposta bizzarra:
+  "L'utente 200 Lobby rifiuta gli Xmsg."? Ebbene, non accadra' piu'...
+ 
+- Esce dallo stato di registrazione anche se non vengono mantenute le
+  modifiche. Cosi' non rimane piu' il simbolo '_' nel <w>ho.
+ 
+- Si puo' uscire dall'editing della configurazione del server <.aec> anche
+  senza salvare le modifiche.
+ 
+- Non viene piu' contata ripetutamente nelle statistiche del server la stessa
+  connessione nel caso in cui l'utente sbaglia il login.
+ 
+- <.><e>dit <P>assword: modificare la propria password.           (Nuovo link)
+  <.><a>ide <e>dit <p>assword di un utente.         (faceva la cosa sbagliata)
+ 
+- Infine ho aggiunto l'opzione di compilazione WINDOWS per compilazione
+  con cygwin. Quindi prima di compilare il client sotto windows, dovete
+  editare il Makefile e settare la variabile OS = -DWINDOWS. Spero che con
+  questo accorgimento riusciremo a mantenere una versione dell'eseguibile
+  del client per windows su base piu' regolare, grazie anche al contributo
+  di Furjo.
+ 
+NB: Visto che ora tutta la procedura di validazione e' nuovamente a posto,
+    e' nuovamente necessario procedere alla validazione prima di poter
+    postare. E si rimane a livello Normale.
+    
+Le novita' le trovate nel prossimo post, qui non c'e' piu' posto...
+
+
+                                    o---O---o
+
+ Lobby, 29 Gen 2002 alle 01:56 - da Ping (System Operator Message)
+ Subject : Novita' Cittadella/UX 0.1.26
+
+Novita' per tutti:
+------------------
+- "DOING": e' possibile inserire un 'doing' ovvero un piccolo messaggio,
+  lungo al massimo 24 righe e che appare nella lista degli utenti (<w>ho)
+  al posto dell'host dell'utente. Il doing non viene memorizzato dal server,
+  ma inserito ad ogni nuovo login.
+ 
+  Se il doing non viene specificato, viene visualizzato l'host
+  di provenienza della chiamata, come al solito.
+ 
+  I comandi da utilizzare sono:
+  <.><e>dit <d>oing              per inserire il 'doing'
+  <.><e>dit <D>elete doing       per eliminare il 'doing'
+ 
+- LUNGHEZZA SCHERMO: e' possibile specificare il numero di righe del proprio
+  terminale con il comando <.><e>dit <t>erminal.
+  Inoltre la lunghezza di default e' stata portata a 24 righe.
+ 
+ 
+Novita' per il client locale:
+-----------------------------
+- Comando <d>ump nel diario degli X per salvare l'X-msg corrente nel file di
+  dump, analogamente al comando gia' presente per i post. La cancellazione
+  degli X-msg e' stata cambiata in <D>elete.
+  Gli X vengono salvati di default nello stesso file di dump che i post,
+  ~/cittadella.dump, ma e' possibile sceglierne uno alternativo (vedi sotto).
+ 
+- Nel prompt messaggi, per consistenza, sono stati scambiati i comandi
+  <D>elete msg, e <d>ump to file.
+ 
+- E' stato implementato un sistema di salvataggio automatico dei X-msg
+  scambiati. Quando questo e' attivato, tutti gli X-msg che ricevete o
+  inviate vengono automaticamente salvati nel file di dump degli X-msg.
+ 
+  Analogamente, esiste un sistema di trascrizione delle discussioni in chat.
+  Quando viene attivato, tutti i messaggi che passano nel canale di chat in
+  cui siete vengono salvati nell'apposito file di trascrizione della chat.
+  Il file di default e' ancora una volta ~/cittadella.dump, ma potete anche
+  in questo caso sceglierne uno alternativo (vedi sotto).
+ 
+  Intendo creare un sistema analogo per salvare automaticamente i mail in un
+  file. Attualmente non e' implementato, ci sara' per una versione
+  successiva della BBS.
+ 
+  Quando vi loggate nella bbs, i sistemi di salvataggio automatico sono
+  disabilitati, e dovete abilitarli manualmente con i 'toggle commands'
+  seguenti:
+  - <.><t>oggle <c>hat  : Abilita/disabilita trascrizione automatica chat.
+  - <.><t>oggle <X>-msg : Abilita/disabilita salvataggio automatico X.
+  - <.><t>oggle <m>ail  : Abilita/disabilita salvataggio automatico mail.
+ 
+  E' comunque possibile configurare il client locale in modo tale che
+  i sistemi di salvataggio automatico siano attivati fin dall'inizio
+  utilizzando il....
+ 
+ 
+File di configurazione per il client locale:
+-------------------------------------------
+  E' possibile configurare il client locale tramite un file di configurazione.
+  Tale file, viene cercato dal client nelle seguenti locazioni standard (viene
+  caricato il primo dei tre file trovato, nell'ordine. Se non ne viene trovato
+  nessuno, vengono utilizzati i valori di default.)
+ 
+  LINUX/UNIX:                         WINDOWS:
+  ~/.cittaclientrc                    /cittaclient.ini
+  ~/.cittaclient/cittaclient.rc       /windows/cittaclient.ini
+  /etc/cittaclient.rc                 /system/cittaclient.ini
+ 
+  Se si vuole caricare un file di configurazione diverso, basta eseguire
+  il client con il comando di linea --rcfile (o -F):
+ 
+  cittaclient --rcfile path_file_di_configurazione
+ 
+  Per chiedere al client di non leggere nessun file di configurazione,
+  bisgna invece lanciarlo con l'opzione --norc (o -N).
+ 
+  Nel file di configurazione potete specificare le seguenti opzioni:
+ 
+  HOST, PORT         # Host e porta al quale connettersi.
+  USER, PASSWORD     # nickname e password con cui connettersi.
+  NO_BANNER          # Non visualizzare i login/logout banner.
+  NRIGHE             # Numero di righe dello schermo.
+  EDITOR     # Editor esterno da usare.
+  DOING              # Doing da visualizzare dall'inizio.
+  AUTO_LOG_X, AUTO_LOG_MAIL # Salvataggio automatico post e mail.
+  AUTO_LOG_CHAT      # Trascrizione automatica su file dei discorsi in chat.
+  DUMP_FILE          # File di dump per i post.
+  LOG_FILE_X, LOG_FILE_MAIL # File in cui salvare post e mail.
+  LOG_FILE_CHAT      # File in cui trascrivere discorsi in chat.
+  TMP_DIR            # Path directory temporanea.
+  
+  Nel pacchetto con il client troverete un file cittaclient.rc ampiamente
+  commentato, che potrete usare come punto di partenza per personalizzare
+  il vostro client locale.
+ 
+Questo e' tutto. Spero che tutto cio' vi aiutera' a perdere tempo in modo
+piu' piacevole sulla bbs! I sorgenti e gli eseguibili li potete scaricare
+da http://ping.science.unitn.it:8080/~bbs. Buon divertimento!!!
+
+
+                                    o---O---o
+
+ Lobby, 31 Gen 2002 alle 19:45 - da Ping (System Operator Message)
+ Subject : cittaclient.exe per Windows, v. 0.1.26
+
+Grazie a Bramante, che ha compilato con il cygwin il client locale,
+e' finalmente disponibile la versione 0.1.26 dell'eseguibile per windows!
+ 
+Purtroppo non sapevo bene come fare un file .zip, e percio' usato i comandi
+piu' unixeschi tar e gz per creare un .tgz, che comunque non dovrebbe dare
+troppo filo da torcere al winzip. Se avete dei problemi vedro' di creare
+il file .zip...
+ 
+Potete scaricare l'eseguibile direttamente da
+ 
+  http://ping.science.unitn.it:8080/~bbs/
+ 
+avete inoltre bisogno delle cygwin1.ddl: seguite il link "Leggimi!" dove e'
+tutto spiegato. Infine, insieme all'eseguibile troverete un file di
+configurazione "cittaclient.ini" che potete modificare a piacere. Per ora
+per farlo leggere al client dovete pero' metterlo in C:\cittaclient.ini
+
+
+                                    o---O---o
+
+*** Cittadella 0.1.27 Release notes ***                          (08/04/2002)
+
+Ecco le novita` per la versione 0.1.27 della vostra BBS preferita:
+
+Supporto ANSI colors
+--------------------
+Dimenticatevi le lunghe giornate grigie, con il solo bold a rompere la
+monotonia... da oggi la BBS e` a colori!
+
+Supporto caratteri ISO-8859-1
+-----------------------------
+La BBS ora e` in grado di gestire pienamente tutti i caratteri estesi
+a 8-bit, e in particolare le lettere accentate, ma anche la 'ess-zed'
+per gli amanti del tedesco e la o barrata per gli scandinavi...
+Ovviamente non tutti i terminali sono in grado di visualizzarli, e percio`
+e` possibile scegliere di usare tutti i caratteri estesi o solo i caratteri
+ascii. Se si sceglie di utilizzare solo i caratteri ascii, i caratteri
+estesi vengono tradotti in modo da non perdere il significato delle parole.
+Ad esempio, una "e" con accento grave verra` visualizzata come "e`",
+una ess-zed come "ss", e cosi' via...
+
+Sia i colori, che i caratteri estesi, vanno abilitati tramite editando
+la propria configurazione con <.> <e>dit <c>onfiguration :
+
+Al punto "2. Apparenza" avete le due nuove opzioni
+ Usa caratteri ASCII estesi   : (s/n) [Si] :
+ Visualizza i colori ANSI     : (s/n) [Si] :
+
+alle quali dovete rispondere "Si'".
+
+Per quanto riguarda i colori, potete comunque usare il toggle command:
+
+ <.> <t>oggle <a>nsi colors
+
+per abilitarli/disabilitarli a piacere, oppure mettere il comando
+USE_COLORS nel vostro file di configurazione cittadella.rc .
+
+In ogni caso, per non deludere gli utenti di questa BBS abituati ad ambienti
+user-friendly come il Mac o Windows, la prima volta che vi collegherete
+con il nuovo client, mamma BBS vi guidera` per riconfigurare il tutto
+correttamente!
+
+Modifica dei colori
+-------------------
+E' molto semplice cambiare i colori della BBS: e` sufficiente modificare
+il file colors.h e ricompilare il client. Nel file colors.h c'e` descritto
+nei dettagli come fare.
+Notate bene che i colori sono stati scelti per uno sfondo nero. E` probabile
+che con sfondo nero alcune cose risultino poco leggibili.
+Postate la vostra configurazione dei colori se la ritenete bella!
+
+Modifica al <w>ho
+-----------------
+Grattando qua` e la` sono riuscito a guadagnare ben DUE caratteri in piu'
+per il doing, per dare piu' spazio alla vostra fantasia.
+Inoltre c'e' un flag "C" che appare quando un utente e' collegato a un
+canale della chat.
+
+Profile
+-------
+Il tempo di collegamento degli utenti ora viene calcolato in "lune":
+una luna = quattro settimane.
+
+Doing:
+------
+- Nuovo comando <d>oing per settare il doing (alias di <.ed>)
+- Modifica del doing, non chiede piu' conferma e c'e' di default il vecchio
+  doing.
+- Il doing e` a colori: Potete colorarlo a piacimento!
+- Nel doing potete inserire QUALUNQUE carattere esteso ISO-8859-1.
+
+Rimando la spiegazione di come modificare i colori e usare i caratteri
+estesi con l'editor al prossimo post in Lobby.
+
+Newbie:
+-------
+Sir Action (che qui ringrazio :-) ha scritto un bel testo di un paio di
+schermate, che viene visualizzato automaticamente al login agli ospiti,
+e che gli spiega dove sono finiti. Sono in progetto analoghi file per la
+prima connessione di un utente, e per la sua validazione.
+
+Bug Fixes:
+----------
+- File di configurazione cittaclient.rc
+   * auto-log-chat trascrive i messaggi scritti dall'utente.
+   * cerca tutte le locazioni standard per il file di configurazione.
+   * prende correttamente i path dal file di configurazione
+   * gestione USER e PASSWD
+   * DUMP_FILE funziona correttamente
+   * Sistemato parsing opzioni di linea. Se specificate lo username
+     con l'opzione '-u',  non viene usata la PASSWORD di default.
+- Corretto "1 nuovi su 150 messaggi": nuovi -> nuovo
+- Se si modificano le info di una room, queste vengono visualizzate
+  quando un'utente ci torna per la prima volta.
+
+Ovviamente per usufruire di tutto cio` dovete usare il nuovo client, che
+trovate in http://ping.science.unitn.it/~bbs/
+oppure http://go.to/cittadella.
+
+Buon divertimento!!!
+
+-----------------------------------------------------------------------------
+
+Editor per il Doing:
+--------------------
+Il doing ha ora un nuovo editor, molto piu' potente di quello a cui siete
+abituati, che permette di sfruttare pienamente le nuove capacita` della bbs:
+
+- Accetta i caratteri estesi (accenti, etc...) da tastiera.
+
+- Potete inserire i caratteri estesi digitando i seguenti modificatori
+  prima della lettera che vi interessa:
+
+  Alt-' acuto   Alt-^ circonflesso   Alt-" dieresi   Alt-o tondino
+  Alt-` grave   Alt-~ tilde          Alt-/ barrato
+
+  Questi modificatori si possono applicare alle seguenti lettere:
+  Alt-' + (a, e, i, o, u, y, A, E, I, O, U, Y, ')
+  Alt-^ + (a, e, i, o, u, A, E, I, O, U)
+  Alt-" + (a, e, i, o, u, y, A, E, I, O, U)
+  Alt-` + (a, e, i, o, u, A, E, I, O, U)
+  Alt-/ + (o, O)
+  Alt-~ + (a, n, o, A, N, O)
+  Alt-o + (a, A)
+
+  Altri caratteri speciali:
+  Alt-s : ess-zed, 
+  Alt-% : segno di divisione,
+  Alt-! : punto esclamativo rovesciato,
+  Alt-? : punto interrogativo rovesciato.
+
+  Tutti gli altri caratteri estesi li potete inserire da tastiera (se ce li
+  avete sulla tastiera) oppure con un cut & paste. Se pero' avete
+  assolutamente bisogno di uno shortcut per il vostro carattere favorito,
+  fatemelo sapere e lo aggungero`.
+
+- Il colore del carattere, dello sfondo, e i suoi attributi si modificano
+  nel modo seguente:
+  
+  Colore carattere:
+  Alt-b blue   Alt-c cyan    Alt-g green   Alt-m magenta
+  Alt-r red    Alt-y yellow  Alt-w white   Alt-n black
+
+  Colore di fondo: Escape seguito da Shift-lettera (oppure Alt-Shift-lettera):
+  Esc-B blue   Esc-C cyan    Esc-G green   Esc-M magenta
+  Esc-R red    Esc-Y yellow  Esc-W white   Esc-N black
+
+  Attributi del carattere:
+  Alt-h Highlight  (grassetto)
+  Alt-f Flash      (lampeggia)
+  Alt-u Underscore (sottolineato)
+
+
+- Nel file cittaclient.rc potete inserire colori e caratteri estesi nel
+  doing di default nel modo seguente:
+
+  I caratteri estesi si inseriscono come i Character Entity References
+  dell'HTML: ad esempio &egrave per una e con accento grave, etc...
+
+  I modificatori degli attributi e dei colori dei caratteri sono i seguenti:
+  <b> bold on        </b> bold off
+  <r> reverse on     </r> reverse off
+  <u> underline on   </u> underline off
+  <f> flash on       </f> flash off
+  <fg=DIGIT> foreground color
+  <bg=DIGIT> background color
+
+  Dove DIGIT = 0 - black,      4 - blue, 
+               1 - red,        5 - magenta,
+               2 - green,      6 - cyan,
+               3 - yellow,     7 - gray
+
+  Potete inoltre concatenare i tag con dei ';'. Ad esempio:
+  <b;fg=3;bg=4> setta i caratteri gialli in grassetto su sfondo blu.
+
+
+                                    o---O---o
+
+Lobby, 24 Apr 2002 alle 02:59 - da Ping
+Subject : Cittadella/UX 0.2.0
+  
+Una piccola premessa: non ho testato a sufficienza questa release in quanto
+volevo fosse pronta per questa data storica :-) Percio` ci saranno tanti
+bachetti, oltre a diversi inestetismi che non sono stato in grado di
+ripulire... per ora accontentatevi :-)
+   
+La novita` e` una sola: si possono usare colori e caratteri ISO-8859-1 sia nei
+post che negli eXpress message. Per fare questo avete due possibilita`: la
+prima e` utilizzare l'editor interno. Sarebbe meglio dire il nuovo editor
+interno; per scoprire come funziona leggetevi l'Help direttamente
+dall'editor, premendo Ctrl-I. L'alternativa e` utilizzare l'editor esterno. In
+questo caso potete usare tutti i tasti della vostra tastiera, comprese le
+lettere accentate e altre stranezze. Se volete anche cambiare i colori da
+l'editor interno, o comunque usare direttamente il CML, e` sufficiente
+scrivere nella prima riga del messaggio <cml>. Il linguaggio CML e` descritto
+brevemente in un post precedente qui in Lobby) ma presto scrivero` un file di
+help piu' dettagliato.
+ 
+Altre piccole novita`:
+- Sistemati i comandi .aeu e .aer
+- Variabile di configurazione TABSIZE per il file cittaclient.rc. Serve a     
+  specificare il numero di spazi che corrispondono alla pressione del         
+  tasto TAB nell'editor interno. 
+- Non scompaiono piu' gli X dal diario (grazie ad Abel)   
+- Il resize della finestra non da piu' problemi con il who.   
+   
+Ci sono altre piccole modifiche, la lista completa la trovate nel file  
+CHANGES. Penso sia superfluo ricordarvi che dovete scaricare il nuovo
+client locale!!!
+
+            BUON DIVERTIMENTO!
+
+----------------------------------------------
+Patch Level 1:
+
+Sistemato il bug che piantava il client lasciando la chat
+(Grazie a Venerdi aka Giovanni Garberoglio)
+
+
+                                    o---O---o
+
+ Lobby, 7 Mag 2002 alle 03:02 - da Ping (System Operator Message)
+ Subject : Cittadella/UX versione 0.2.1
+
+Poche novita` nella nuova versione 0.2.1 di Cittadella, principalmente
+destinate a migliorare la gestione della BBS da parte di Aide e Room Aide:
+- E` stato implementato un meccanismo di Kick Out dalle room: gli Aide e i
+  Room Aide possono cacciare un utente che viola ripetutamente le regole
+  di comportamento dalla propria room utilizzando il comando .akk .
+  Per restituire l'accesso alla room all'utente ribelle bisogna usare il
+  comando .akK , mentre con .akw e` possibile vedere la lista degli utenti
+  attualmente cacciati dalla room corrente.
+  Per evitare abusi, ogni utilizzo dei comandi .akk e .akK viene loggato
+  nella room Aide) in modo che gli Aide possano controllare la situazione.
+  Inoltre l'utente cacciato/riammesso da una room viene avverito mediante
+  una Mail.
+  Quando un RA o RH caccia un utente, deve specificare il motivo con al
+  piu' 70 caratteri. Il motivo viene loggato sia in Aide) che nella Mail
+  all'utente cacciato.
+ 
+- Con il comando .aw i Room Aide e Room Helper di una room ad invito
+  possono visualizzare la lista degli utenti che possiedono l'invito.
+ 
+- Gli spostamenti e le cancellazioni di post vengono d'ora in avanti          
+  notificate in Aide) con un post di amministrazione, in modo che gli
+  Aide possano controllare l'operato dei RA e RH, oltre che permettere
+  di ritrovare piu' facilmente post spostati per sbagli. Inoltre,
+  l'autore del post riceve una notifica via Mail dell'avvenuto
+  spostamento/cancellazione. Ovviamente tutte queste notifiche non vengono
+  inviate se lo spostamento/cancellazione viene effettuato dallo stesso
+  autore del post.
+ 
+- Per evitare che i Sysop o gli Aide (o altri) facciano i furbetti, non
+  e` piu' possibile spostare/cancellare i post di amministrazione (quelli
+  con autore Cittadella BBS automatici, per intenderci).
+ 
+Credo sia tutto. Spero che questo aiutera` tutti gli Aide/RA/RH che ci aiutano
+a gestire questa BBS a fare meglio il loro lavoro :-)
+ 
+Il client locale e` disponibile nel solito posto!
+
+---------------------------------------------------------------------------
+
+ Cittadella/UX, 9 Mag 2002 alle 14:58 - da Ping
+ Subject : Cittadella 0.2.1 Patch Level 1
+
+Ho messo in rete il patch level 1 dell'ultima versione di Cittadella.
+L'unica differenza e` che ora la tilde ~ si puo` fare nel client interno anche
+con Alt-t.
+ 
+Cosi' solo i poveretti che non hanno la tilde sulla loro tastiera hanno
+bisogno di upgradare il loro client locale :-)
+
+
+                                    o---O---o
+
+ Lobby, 17 Lug 2002 alle 03:34 - da Gabrillo
+ Subject : Cittadella/UX 0.2.4!!
+
+E' stata rilasciata la nuova release di Cittadella/UX, la 0.2.4!!
+ 
+Da oggi, grazie alla preziosa collaborazione di LePetit, la nostra BBS
+implementa un nuovo sistema per la gestione dei sondaggi.
+ 
+Per accedere al menu dei sondaggi il comando è .b e poi ? per ottenere la
+lista dei comandi; l'unico comando nuovo (.up) serve a posticipare un
+sondaggio.
+Inoltre ad ogni login vi verranno notificati i sondaggi e i referendum ai
+quali non avete ancora preso parte.
+ 
+Per ulteriori informazioni chiedete nella room Help>, altrimenti fate delle
+prove per conto vostro.
+ 
+Vi ricordiamo che è necessario scaricare il nuovo client locale per Linux
+dalla pagina web della BBS, che è sempre
+http://ping.science.unitn.it:8080/bbs/
+ 
+mentre il client locale per Windows sarà disponibile quanto prima.
+                                                                              
+Buon divertimento!
+ 
+            Il Management & I Developers :)
+
+
+                                    o---O---o
+
+*** Cittadella 0.2.5 Release notes ***                           (15/11/2002)
+
+Eccoci giunti alla storica release 0.2.5 della nostra BBS preferita. Ecco
+un piccolo riassunto delle modifiche che sono state effettuate:
+
+- <w>ho: sotto la lista degli utenti connessi troverete un comodissimo
+         pallottoliere che vi indichera` il numero _esatto_ di utenti
+	 connessi. Niente piu' mal di testa a cercare di contarli!
+
+- I post lasciati dagli utenti che hanno disattivato i colori ANSI non
+  appaiono piu' di colore random_ma_non_troppo (tipicamente illegibile).
+  Ora potete leggerli nel grigino standard senza affaticare troppo
+  gli occhi. Inoltre e` stata introdotta la _feature_ 'figibigi', che
+  permette di individuare rapidamente chi non usa i colori.
+  
+- Sondaggi e Referendum: sono stati limati e raffinati, eliminando qualche
+  bachetto qua e la`... ormai hanno raggiunto la maturita`, quindi
+  sfruttateli! (Ricordo che i RA devono settare un flag delle proprie room
+  se vogliono permettere a tutti gli utenti di postare sondaggi).
+
+- Cittaweb: nel nuovo server c'e' il 'cittaweb', ovvere un piccolo server
+            httpd che permette di pubblicare i post di alcune room sul
+	    web. Lo scopo di tale giocattolo e` mostrare al modo quanto
+	    siamo stup^H^H^H^Hinteressanti :-)
+
+  La versione attuale del cittaweb e` funzionante, ma di default e`
+  disattivato, in quanto richiede ancora del lavoro per portarla nella
+  sua versione definitiva. Chi volesse provarlo o usarlo nella propria
+  bbs, deve editare il file server/src/config.h e definire la variabile
+  USE_CITTAWEB.
+
+  Nota: i RA possono gia` dire di pubblicare la room nel web quando editano
+        la configurazione delle proprie room. Ovviamente finche' il
+	cittaweb non verra` attivato, tale flag non avra` effetto. Vi
+	consiglio di lasciarlo settato a "No", perlomeno finche' il
+	Sysop non avra` deciso la policy da adottare per la pubblicazione.
+
+- Per i Sysop: per fare l'upgrade dalla versione 0.2.4 dovete prima compilare
+               l'utility di conversione conv_0.2.5 e farla girare dalla
+	       directory server.
+ 
+Per piu' dettagli sulle modifiche effettuate, potete leggere il file
+CHANGES. Un rigraziamento a LePetit e Venerdi, ormai arrivati al livello
+"Cittadella Guru", che hanno effettuato buona parte del lavoro.
+
+Ricordatevi di scaricare il client locale nuovo di pacca da
+  http://www.cittadellabbs.it/
+  
+Buon divertimento!
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.2.6 Release notes ***                        (22/11/2002)
+
+- Nel profile e nelle room info e` possibile usare i colori, gli accenti
+  e tutto quanto grazie al CML. In compenso d'ora in poi dovrete scrivere
+  profile e RI direttamente in CML con il vostro editor esterno (senza dover
+  mettere il "<cml>" in cima al file). Chi non conosce il CML puo` comunque
+  scrivere come sempre il proprio profile, con l'accorgimento di aggiungere
+  il carattere '\' davanti ai caratteri '\', '<' e '&'.
+		      
+- Eliminata la feature "figibigi" ;-)
+ 
+- Il client locale registra sul file di log degli X anche il giorno, il
+  mese e l'anno per gli X-message/Broadcast inviati/ricevuti.
+ 
+- La telenovela del <w>ho continua: Il numero delle (login in corso) non
+  viene conteggiato nel numero di utenti connessi ma viene stampato a parte.
+
+Arrivederci alla prossima puntata, e ricordatevi che dovete avere il nuovo
+client locale per godere di queste features!
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.2.7 Release notes ***                        (04/12/2002)
+
+Principalmente bugfix questa volta:
+- Editor esterno: non tronca piu' le righe CML se superano gli 80 caratteri.
+- Room info: le linee CML possono superare gli 80 caratteri.
+- Again: viene visualizzato con il CML.
+- Quote & Hold: inserisce correttamente il CML.
+- Sondaggi: i dati vengono salvati durante il crash save.
+- Sistemati i comandi <K> (list all known rooms),
+                      <v> (Risponde all'ultimo X ricevuto)
+                      <w> (Who: Lista degli utenti connessi al server).
+		      <h> (Help)
+- Doing: si puo` usare senza problemi il carattere '|' nel doing.
+- bugfix nel login banner
+- Ripuliture varie del server (vedi CHANGES)
+- Per i sysop: il nuovo server non richiede piu' lo script di autorun
+  per funzionare: basta fare
+    cd server
+    ./bin/cittaserver
+  Al reboot vengono eseguiti gli script server/bin/logrotate
+  e server/bin/backup, che vanno aggiustate dal sysop secondo
+  le sue esigenze e quelle della bbs.
+  Inoltre il nuovo server si rifiuta di girare come root.
+
+Il nuovo client locale si trova all'indirizzo
+http://www.cittadellabbs.it/
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.2.8 Release notes ***                        (05/12/2002)
+
+1. Sistemati i bachi in chat introdotti nella 0.2.8
+2. Editor di linea per X e chat:
+   - Ora formatta correttamente i messaggi (ma avete a disposizione meno
+     caratteri: andra` migliorato.
+   - Nuovi comandi Emacs-style per l'editor di linea:
+       Ctrl-A  Vai all'inizio della riga
+       Ctrl-E  Vai alla fine della riga
+       Ctrl-B  Sposta il cursore di un carattere a sinistra
+       Ctrl-F  Sposta il cursore di un carattere a destra
+       Ctrl-I  Help
+       Ctrl-L  Refresh line
+       Ctrl-P  Cancella una parola all'indietro
+       Ctrl-K  Cancella dal cursore fino alla fine della riga
+       Ctrl-U  Cancella tutto il testo
+       Ctrl-X  Abort
+3. Sistemato baco cosmetico <v>
+4. Bonus! Comando <.><p>er Sir Action (a gentile richiesta).
+
+Non e` necessario aspettare il reboot del server, perche' non ha subito
+modifiche. Scaricate percio` subito il nuovo client locale!
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.2.9 Release notes ***                        (17/12/2002)
+
+1. Sistemato in modo definitivo i sondaggi. Sondaggiate per credere.
+2. Sistemati i colori del doing: non e` piu' necessario chiuderli.
+3. Migliorato estetica messaggi con editor di linea (chat & X).
+4. Comando '/me' nella chat.
+5. Ritocco estetico al <w>ho.
+
+Si ringraziono LePetit e Venerdi' per il lavoro svolto.
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.2.10 Release notes ***                        (27/02/2003)
+
+Il team di sviluppo e` orgoglioso di presentare la nuova fiammante verione
+0.2.10 di Cittadella/UX! ecco un riassunto del lavoro effettuato.
+
+- E' stato implementato il 'post lock' per le room: se la room e`
+  configurata per utilizzarlo, solo un utente alla volta puo` scrivere nella
+  room. Se un altro sta scrivendo, deve aspettare che abbia finito prima
+  di poter lasciare il proprio messaggio. Questa opzione e` utile ad esempio
+  per la room Libera Associazione>, e per i BBS global che vogliono occuparla
+  pacificamente :-) Ancora non e` stato implementato un tempo limite per
+  lasciare il post, quindi non abusatene e scrivete velocamente.
+
+- Cittaweb: e` ormai maturo, permette di leggere alcuni post di alcune room
+  per avere un feeling di cosa e` la BBS prima di collegarsi la prima volta.
+  Ora vengono visualizzate anche le Room Info e la User List.
+  Non e` ancora definitivo da un punto di vista estetico, quindi aspettiamo
+  a linkarlo con la Home Page, pero` e` sufficientemente maturo per iniziare
+  a testarlo tutti insieme e raccogliere suggerimenti per migliorarlo (visto
+  che e` il primo approccio alla BBS da parte dei futuri nuovi utenti, deve
+  essere molto accattivante!
+
+A TUTTI I RA: Editate le vostre room, settando il post lock se lo trovate 
+              necessario e pubblicante la vostra room su web seguendo le
+	      indicazioni del Sysop e dei RA!
+
+- CML: Ora le "entity", ovvero la codifica tipo &egrave; dei caratteri
+  speciali, richiede un ";" obbligatorio alla fine. Attualmente se non lo
+  mettete il client e` sufficientemente elastico per chiudere un occhio,
+  questo anche per visualizzare bene i vecchi post, ma prendete l'abitudine
+  di metterlo perche' presto diventera` a tutti gli effetti obbligatorio.
+  Questo vale anche per profile e room info: quindi editate rapidamente il
+  vostro profilo e le RI delle vostre room aggiungendo i ';' mancanti!
+
+- Nel <w>ho sono stati modificati i caratterini che indicano lo stato
+  dell'utente: '.'  l'utente e' idle da piu' di un minuto
+               '+'  l'utente sta editando un testo
+               '&'  l'utente sta comunicando (Xmsg, Chat o Broadcast)
+               '^'  l'utente sta compilando/modificando la configurazione
+               '_'  l'utente sta compilando/modificando la registrazione
+               '#'  l'utente sta editando il proprio profile.
+	       '%'  l'utente effettua operazioni di amministrazione (Aide,RA)
+	       '?'  l'utente sta compilando un nuovo referendum/sondaggio.
+	       '*'  l'utente sta compilando un bug report.
+	     {nome} l'utente e` entrato nella subshell.
+             (nome) l'utente ha lockato il terminale.
+
+- Colorato user list <u>.
+
+- Brutte notizie per i pigri: d'ora in avanti il cittaclient si rifiutera`
+  di effettuare il login se e` obsoleto. Dovrete sempre essere aggiornati!
+
+BUGFIXES
+- Il Reply a un post con editor esterno seguito da 'continue' non fa piu'
+  crashare il client.
+- Inserisce '<cml>' all'inizio del testo quando si "continua" un messaggio
+  con l'editor esterno.
+- non rimane il '+' accanto al nome nel <w>ho quando si fa un Hold, e nemmeno
+  il '_' dopo aver fatto <.aeu>.
+- ora il log degli X mette il mese giusto. Prima era il numero corrispondente
+  al mese prima.
+- Il server ora controlla lo stato dell'utente prima di permettere
+  l'esecuzione di un comando. Questo incrementa notevolmente la sicurezza del
+  server, impedendo ad esempio a Mr Test di postare in Lobby) come l'altro
+  giorno.
+
+Il team di sviluppo vi ricorda che dovete scaricare il nuovo client locale da
+http://www.cittadellabbs.it/ e vi augura un buon divertimento!
+
+			     LePetit, Ping, Ric & Venerdi.
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.2.11 Release notes ***                        (05/03/2003)
+
+Una nuova release rapida rapida con qualche bug fix e un nuovo strumento che
+permettera al Sysop e agli Aide di risolvere civilmente e senza spargimenti
+di sangue le controversie tra utenti e Room Aide.
+
+
+Iniziamo subito dalla novita: finalmente e stata completata
+l'implementazione del CESTINO. In pratica, d'ora in avanti, quando
+un amministratore (RH, RA, Aide o Sysop) cancella un post, quest'ultimo non
+verra eliminato a tutti gli effetti, ma semplicemente spostato in una room
+speciale chiamata 'Cestino'. Questa room e accessibile solo dai Sysop
+(eventualmente si puo abbassare il livello di lettura al livello Aide), e
+permette principalmente agli amministratori di tenere d'occhio la situazione
+e controllare che non si verifichino abusi da parte dei RA.
+
+Nella room Cestino) non si puo postare e non si possono nemmeno spostare
+i post da Cestino in un'altra room. Se un post viene cancellato dall'autore
+stesso invece l'eliminazione e definitiva, come prima (per ragioni di
+privacy.)
+
+In compenso, chi ha accesso alla room Cestino) potra effettuare l'UNDELETE
+dei post. Per fare l'undelete del post corrente, e sufficiente premere il
+tasto <D> da message promt come per cancellarlo (in realta il client
+chiedera se lo si vuole cancellare, ma in realta eseguira l'undelete. Lo
+sistemero'.)
+
+La policy su come e quando chiedere l'intervento di Aide/Sysop per una
+cancellazione ritenuta ingiusta, verra stabilita dai vertici della BBS (un
+Mail> a 'Aide' o 'Sysop' puo essere la soluzione giusta.) che
+eventualmente, se riterranno il ricorso dell'utente giustificato, potranno
+riesumare il post.
+
+
+Ed ora veniamo ai bug fix. Grazie a una segnalazione di Furjo e stato
+eliminato il bug del CITTAWEB che corrompeva le pagine le rendeva
+illeggibili per alcuni browser. Fate delle prove, ora dovrebbe essere tutto
+HTTP/1.1 compliant. Non e stata toccata la routine di conversione in HTML,
+ma puo darsi che ora funzioni tutto a modino. Aspettiamo le vostre
+segnalazioni/osservazioni.
+
+Infine sono state sistemate alcune frasi del client che erano state corrotte
+nell'ultima versione.
+
+
+Siamo spiacenti per i pigri che utilizzano il client locale, dovrete
+scaricarvi la nuova versione :-)
+
+Buon divertimento,
+       il team di sviluppo.
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.2.12 Release notes ***                        (11/03/2003)
+
+NOVITA`
+
+- Nuovo comando '<L>ascia perdere tutti i nuovi post'.
+  ---------------------------------------------------
+  Segna come letti tutti i post nelle room conosciute tranne in
+  Lobby), Mail) e nelle room dove l'utente e` Room Aide oppure Room
+  Helper.
+  Aide e Sysop non sono autorizzati a utilizzare questo comando.
+
+- Timeout per i post.
+  ------------------
+  Le room con il "post lock" attivo, ovvero quelle dove solo un utente
+  alla volta puo` postare, possono essere configurate per dare un
+  tempo limite a disposizione dell'utente per postare (editare la room
+  con <.aer> e rispondere "Si'" alla domanda "Tempo massimo per
+  postare (s/n)"). Se l'utente e` troppo lento a postare in tali room,
+  scaduto il tempo il post viene interrotto e il lock rimosso per dare
+  la possibilita` agli altri utenti di postarci.
+  Il tempo a disposizione per lasciare il post e` fissato a un minuto.
+
+- Attivazione/disattivazione delle room.
+  -------------------------------------
+  E` possibile disabilitare una room editandone la configurazione e
+  rispondendo "No" alla domanda finale "Attivata (s/n)".
+  Le room disattivate sono visibili solamente ai Sysop, Aide e ai Room
+  Aide e Room Helper della room.
+  Gli Aide possono vedere quali room sono disabilitate con il comando
+  <.arr>, appare un '!' tra i flag delle room disabilitate. E` bene
+  controllare che non ci siano room disabilitate dopo l'upgrade, visto
+  che il flag corrispondente e` da tempo editabile anche se inattivo.
+  Le nuove room andrebbero abilitate solo dopo averle configurate
+  completamente, room info comprese.
+
+- Notifica dell'undelete.
+  ----------------------
+  I post riammessi dal Cestino vengono ora notificati sia nella room
+  Aide) che in Mail) all'autore del messaggio.
+
+
+BUGFIX
+
+- Quando si modifica la propria registrazione con <.er>, il vecchio
+  indirizzo di email viene accettato come indirizzo di default.
+- Il client usa la lungh max dei X/B/C comunicata dal server.
+- Nella room Cestino) il prompt messaggi e` stato modificato per
+  mostrare i comandi effettivamente disponibili.
+- Non e` piu' possibile postare in Cestino).
+- Sistemati dei messaggi del client errati.
+
+
+PER I SYSOP
+
+- Nuove variabili di configurazione in config.h:
+
+  USE_NOTIFICA_DEL, USE_NOTIFICA_MOVE, USE_NOTIFICA_UNDEL:
+    se definite, Cittadella/UX invia un mail all'utente per
+    notificargli rispettivamente la cancellazione, lo spostamento o
+    l'undelete di un suo post. Se non definite, l'utente non viene
+    avvertito.
+
+  POSTLOCK_TIMEOUT:
+    tempo, in secondi, a disposizione dell'utente per postare in una
+    room con il "post lock" attivato. Di default 60 secondi.
+
+- I sysop possono cancellare i post di sistema (quelli postati da
+  "Cittadella BBS" (in futuro questa possibilita` verra` modificata
+  imponendo alcuni limitati).
+
+- Portato a 1000 il numero massimo di slot per room.
+
+
+MODIFICHE INTERNE
+
+- I messaggi di errore post sono stati spostati dal server al client.
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.3.0 Release notes ***                         (26/08/2003)
+
+La versione 0.3.0 di Cittadella/UX vede la nascita di un nuovo editor interno
+con movimento del cursore a tutto schermo e modalita` ASCII-Art, una versione
+di base del cittaweb completamente funzionante, la possibilita` di scaricare le
+Mail con il proprio client di posta, il supporto per MacOS/X e windows, oltre a
+varie altre piccole novita` e bugfixes.
+
+
+NUOVO EDITOR INTERNO:
+
+E' un nuovo editor, che funziona in modalita` "full-screen" e permette di
+utilizzare i tasti del cursore per modificare il testo in qualunque punto.
+
+Oltre alla modalita` "Insert", funziona anche nelle modalita` "Overwrite" e
+"ASCII-Art". Si cambia la modalita` usando il tasto <Ins>.
+
+Si possono usare, come nel vecchio editor, le varie combinazioni di tasti per
+cambiare colori, attributi dei caratteri, inserire accenti e caratteri
+speciali.
+
+Inoltre, per facilitare l'uso dei colori, si possono colorare i propri testi
+mediante la pressione dei seguenti tasti:
+ <F2> applica colore e attributi correnti al carattere sottostante al cursore
+ <F3> applica colore e attributi correnti fino a prossimo spazio
+ <F4> applica colore e attributi correnti a tutta la riga corrente.
+
+Per terminare un testo bisogna ora premere <Ctrl-X> (il doppio <Enter> non
+termina piu' l'immissione del testo).
+
+In caso di problemi, premendo il tasto <F1> dall'interno dell'editor accedete a
+delle schermate di aiuto che spiegano il suo funzionamento.
+
+Notate che ora, sia l'Hold che il Quote sono perfettamente compatibili con
+l'editor interno, e quindi vi appaiono all'iinterno del messaggio e potete
+tranquillamente modificarli.
+
+Inoltre, il Profile, le Room Info e le News si possono modificare direttamente
+con l'editor interno, senza dover soffrire con il CML nell'editor esterno.
+
+Ormai l'unica ragione per utilizzare l'editor esterno e` per includere dei
+file. Questa possibilita` verra` presto implementata nell'editor interno del
+client locale, e a quel punto l'editor esterno verra` eliminato. Si consiglia
+agli utenti di settare fin da ora il nuovo editor come editor di default.
+
+
+CITTAWEB:
+
+Finalmente il CittaWeb e` completamente funzionante, anche se richiedera`
+ancora diversi ritocchi estetici. In ogni caso permette ai navigatori della
+rete di leggere senza problemi tutte le room pubblicate sul web, se il Sysop
+attivera` la feature. Notate il design bellissimo delle pagine, progettato da
+Cristiano Barabanti (aka Sir Action) e il supporto multilingue (il tedesco e`
+tradotto col babelfish, ci vorrebbe qualcuno che lo sistemi un po'!!)
+
+
+SUPPORTO POP3
+
+E` stato implementato il protocollo POP3 per permettere agli utenti di
+scaricare i messaggi in Mail> con il proprio client di posta. Questo puo`
+rivelarsi utile se intendete archiviare i messaggi che vi scambiate con i Mail
+della BBS insieme ai vostri messaggi di posta elettronica. Attenzione! a
+seconda di come avete configurato il vostro client di posta, i messaggi
+potrebbero venire cancellati dalla BBS (ma ne manterrete una copia sul vostro
+computer).
+La sessione POP3 viene rifiutata se siete connessi come utente, e quando vi
+collegate come utente viene stroncata la vostra eventuale connessione POP3.
+
+Il server, viene attivato e configurato dal Sysop tramite il file di config.h,
+e di default gira alla porta 4003.
+
+Sta a voi studiare come configurare il vostro client di posta per collegarvi
+alla BBS con il POP3; una volta che lo avete scoperto potete comunque
+segnalarlo in Help> per il futuro. Mi limito a darvi una possibile
+configurazione per il Pine versione >= 4.00:
+
+   Lanciare pine, premere <M> <S> <C> e settare [X] enable-incoming-folders,
+   salvare e uscire da pine. Una volta rilanciato Pine, andare nella
+   Incoming folder list (con <L>) e mettere il cursore su INBOX.
+   Premere <A>, e alla richiesta del "server name" inserire:
+   bbs.cittadellabbs.it:4003/pop3/BBSnick
+   dove BBSnick e` il vostro nickname. Alla successiva richiesta del folder,
+   inserite "INBOX", e infine alla richiesta del nickname rispondete
+   "Cittadella".
+   A questo punto tra gli incoming folder avete un folder 'Cittadella' con
+   il contenuto della room Mail).
+
+L'implementazione del POP3 e` RFC 1939-compliant. Attualmente gli header dei
+messaggi non contengono le informazioni sugli eventuali reply; queste verranno
+aggiunte successivamente.
+Notate che il POP3 vi permette di scaricare il contenuto della room Mail, ma
+non di inviare dei messaggi utilizzando il vostro client di posta.
+
+
+CITTACLIENT PER MacOS/X E Windows
+
+E' stato fatto uno sforzo per rendere il client facilmente compilabile anche da
+Windows e MacOS/X. Ora sono disponibili per questi sistemi operativi le opzioni
+di linea corte (ma non quelle lunghe).
+
+Per compilare il client bisogna editare il Makefile, e settare la variabile
+OSFLAGS al valore corretto (-DLINUX, -DMACOSX o -DWINDOWS).
+Aspetto feedback per sapere se la cosa funziona, non avendo modo di testare
+personalmente la cosa. Gli eseguibili per queste piattaforme saranno
+disponibili se e quando qualcuno si occupera` di compilarli e spedirmeli :)
+
+
+ALTRE NOVITA`
+
+Nuovi comandi e alcune modifiche:
+ <L> abbandona la room e vai in Lobby.
+ <M> abbandona la room e vai in Mail (prima effettuava un 'goto')
+ <S> Segna tutti i messaggi nuovi come letti (vecchio comando <L>)
+ <.><r>ead <N>ews per leggere le news in qualsiasi momento.
+
+Ora sia le 'news' che i vari messaggi (tipo il disclaimer) della BBS sono in
+CML, gli amministratori della vostra BBS si occuperanno di rallegrarli con dei
+colori se ne avranno voglia.
+
+Esiste ora un timeout per la chat: se l'utente non invia messaggi in chat per
+un certo periodo, viene cacciato. Il tempo massimo di inattivita` nella chat
+viene fissato nel file config.h dal Sysop, e di default e` di 10 minuti.
+
+Profile, Room Info e News si editano ora con l'editor interno.
+
+I nomi utenti sono ora non sensitivi al case durante il login
+(Ric e RIc sono equivalenti, LightKnight puo` collegarsi come Lightknight)
+
+Nuova variabile di configurazione SHELL in cittaclient.rc .
+Se non e` presente prende il valore dalla variabile di ambiente.
+
+Se si abortisce un messaggio all'Entry Prompt, viene chiesta conferma.
+
+Quando si finisce in Lobby, ora vengono fornite informazioni sul numero di
+room con messaggi nuovi e sul numero di room zappate:
+Lobby) - 0 nuovi su 17 messaggi.
+         Hai 13 room con messaggi non letti e 17 room dimenticate.
+
+
+BUGFIX
+
+- Non vengono piu' persi i mail quando si "continua il login ed elimina l'altra
+  sessione".
+- Si possono cancellare le room in tutta sicurezza.
+- Le room con "post timeout" funzionano ora correttamente, e non si viene piu'
+  buttati fuori in modo casuale.
+- Sistemato numero utenti e ospiti nel <w>ho, la prima riga della
+  <u>ser list e` ora in grassetto, la frase "Mi dispiaca, %s rifiuta gli X"
+  e` stata corretta, e lo sforamento di righe del profile e` stato sistemato.
+- Il comando <.ec> per editare la propria configurazione non blocca piu' il
+  client.
+- Nella chat il "/me" funziona bene anche su piu' righe.
+- Accetta il carattere '%' nei login banner.
+- Contabilizza solo gli utenti registrati loggati per il record.
+- Non notifica piu' la caduta connessione utenti che non hanno terminato la
+  registrazione.
+- Mette il ';' finale nelle entities quando si continua con l'editor esterno
+  un post quotato.
+- I nuovi utenti e ospiti non hanno piu' l'ISO8859 abilitato di default.
+- Il primo utente che si collega alla BBS viene avvertito che e` Sysop e non
+  viene piu' buttato fuori al primo login.
+- Accetta un massimo preavviso di 24 ore per lo shutdown.
+- Sistemato la compilazione Cestino e sua inizializzazione al primo run della
+  BBS.
+- Non e` piu' possibile usare <r>eply per inserire un post nelle
+  room con il reply disabilitato.
+- Non cambia il barflag dopo un goto fallito.
+- il dump dei post viene effettuato correttamente.
+
+
+Il salto dalla versione 0.2 alla 0.3 contiene molte novita`, ed e` inevitabile
+che troverete diversi bachetti qua e la'. Aspetto il feedback nella room
+BBS Bugs>.
+
+                                    o---O---o
+
+*** Cittadella/UX 0.3.1 Release notes ***                         (23/10/2003)
+
+La versione 0.3.1 porta due piccole modifiche di sicurezza, per limitare i
+danni che possono essere causati dagli utenti di dubbia moralita` che
+ultimamente sembrano uscire da ogni porta.
+
+- Non e` piu' possibile avere due account con lo stesso indirizzo di posta
+  elettronica. Questo non dovrebbe cambiare nulla per i piu', visto che
+  i doppi account erano comunque gia` vietati, anche se prima si faceva
+  affidamento all'onesta degli utenti
+                      (Questa modifica e` stata gentilmente donata da Abel)
+
+- Gli aide possono settare un numero massimo di post che un utente puo`
+  lasciare per ogni ora di collegamento. Questo per evitare lo spam da
+  parte di utenti ancora non del tutto ambientati nel mondo delle BBS.
+  Settando questo valore a zero (di default lo e`), non vi e` alcun limite
+  al numero di messaggi che l'utente puo` inviare.
+                   (Questa feature e` stata gentilmente offerta da LePetit)
+
+- Nota per coloro che devono fare il lavoro sporco (ovvero i sysop):
+
+  E' stata modificata la struttura dei dati utente, e percio' e` necessario
+  aggiornarla al momento dell'upgrade:
+
+  Fermare la BBS, fare un backup.
+  cd cittadella-0.3.1/
+  make ; make bininstall
+  cd ../citta/server/
+  ./bin/conv_0.3.1
+  Far ripartire la BBS
+  Incrociare le dita.
+
+Ovviamente dopo l'upgrade sara' necessario il nuovo client per collegarsi.
+Lo troverete come al solito in http://www.cittadellabbs.it/
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.3.2 Release notes ***                         (08/01/2004)
+
+Grandi novita'  per la versione  0.3.2 del vostro  software preferito!
+Il  punto forte  sono i  nuovi sondaggi,  che vedono  la luce  dopo la
+riscrittura totale  dell'urna da parte di LePetit:  piu' stabili, piu'
+semplici e  piacevoli da usare, e  molto piu' flessibili.   Ma ci sono
+anche altre piccole novita' per  utenti e sysop, e vari bugfixes. Ecco
+la descrizione delle novita`:
+
+
+1) Nuovi sondaggi (LePetit)
+
+  La gestione dei sondaggi e` stata completamente riscritta,
+  migliorando il codice, eliminando diversi bachi e implementando
+  le seguenti novita':
+
+  * Nuovo tipo di referendum: il "referendum propositivo".
+
+    Gli utenti propongono dei nomi che verranno riportati fedelmente
+    alla fine del sondaggio... Tutto da testare :-)
+ 
+  * Scelta semplificata dei sondaggi:
+
+    Ad ogni sondaggio ora viene associata una lettera, che puo' venire
+    usata per sceglierlo piu' semplicemente, in alternativa al numero
+    del sondaggio. In ogni caso, l'interfaccia riconosce quando c'e`
+    solo un sondaggio disponibile, e chiede conferma ("vuoi **** questo?")
+
+  * Creazione semplificata dei sondaggi:
+
+    - e` ora possibile interrompere la creazione di un sondaggio
+      in qualunque momento mediante la pressione di Ctrl-X,
+    - non chiede in anticipo quante voci si vogliono immettere, ma
+      permette di aggiungerne e toglierne finche' si vuole,
+    - La data di termine e` (semicausualmente) predefinita.
+
+
+2) Friend/Enemy lists.
+
+  La vecchia friend-list e' stata eliminata, a favore di due liste, la
+  lista di amici (friend-list) e  la lista di nemici (enemy-list).  In
+  ognuna delle liste si possono inserire i nomi di dieci utenti.
+
+  Per vedere il contenuto delle liste, si usa il comando:
+  <.><f>riend <r>ead
+
+  Per modificarne il contenuto,
+  <.fe> : <.><f>riend edit <e>nemy-list      :   Modifica lista amici
+  <.ff> : <.><f>riend edit <f>riend-list     :   Modifica lista nemici
+
+  La   friend-list  ha  il   vecchio  comportamento,   ovvero  tramite
+  configurazione utenti <.ec> e' possibile accettare gli X provenienti
+  da  amici  anche  se   gli  X  sono  disabilitati  (equivalentemente
+  utilizzando  il comando  'toggle  friends' <.tf>),  e richiedere  la
+  notifica dei login/logout degli amici anche quando le notifiche sono
+  disattivate.
+
+  L'effetto  dell'enemy-list  invece  e'  di rifiutare  sempre  gli  X
+  provenienti dai nemici, anche quando avete gli X abilitati.
+
+  Inoltre, i nomi degli utenti vengono colorati diversamente a seconda
+  della lista alla quale appartengono: gli amici in rosso, i nemici in
+  grigio  scuro. Nelle liste  utenti infine  l'utente vede  il proprio
+  nome in azzurro chiaro. Tutti gli altri utenti sono blu.
+
+
+3) Destinatari multipli per gli express-messages.
+
+  E'  ora  possibile  inviare   un  X  a  piu'  utenti  simultaneamen-
+  te. Semplicemente,  dopo aver digitato  il nome di  un destinatario,
+  invece  di premere  <Enter>  per inviare  l'X,  potete inserire  una
+  virgola  <,> seguita dal  nome di  un secondo  destinatario.  Potete
+  avere fino a 10 destinatari distinti.
+
+  Per inserire il  nome di un amico piu'  rapidamente, potete digitare
+  <&n>, dove n  e' il suo numero nella lista.  La stessa cosa funziona
+  con i  nemici, <^n> viene  sostituito dal nome  dell'ennesimo nemico
+  nella enemy-list.
+
+  Nel diario  degli X, che potete  chiamare con <&>,  appaiono tutti i
+  destinatari degli  X multipli.  Se uno o  piu' utenti  si scollegano
+  mentre scrivete l'X,  vi verra' chiesto se volete  forwardare l'X in
+  Mail.
+
+  Infine, potete interrompere l'immissione  dei destinatari degli X in
+  qualunque momento, premendo <Ctrl-X>. L'invio dell'X-message verra'
+  cosi' annullato.
+
+
+4) Nuova opzione di configurazione: "Ricevo Newsletter BBS via Email"
+
+  Potete modificarne il  valore con il comando <.ec>  Se rispondete di
+  "Si", riceverete via Email la  newsletter che gli Aide vi manderanno
+  di tanto in tanto.  Il supporto per la newsletter verra' ampliato in
+  futuro.   Controllate che questa opzione sia abilitata per il vostro
+  account.
+
+5) Altre novita':
+
+  - Nel profile personale i dati non visibili a tutti vengono
+    visualizzati fra parentesi quadre.
+    (Feature gentilmente offerta da Furjo)
+
+  - E' stato implementato un sistema di keepalive per mantenere in
+    vita la connessione con il server anche durante lunghi periodi
+    d'inattivita'.
+
+  - <Ctrl-L> da room prompt cancella tutto lo schermo.
+
+  - Nel pager e' ora possibile usare anche i tasti di cursore su/giu'
+    e i tasti <Page Up> e <Page Down> per scorrere il testo.
+
+
+  - Alla fine del collegamento, appaiono alcune statistiche sulla
+    trasmissione tra client e server durante connessione.
+
+
+6) Per la gioia dei Sysop:
+
+  a) Istruzioni per un upgrade indolore dalla 0.3.1:
+
+     Per effettuare il passaggio, fare lo shutdown della bbs, loggarsi
+     come utente che fa girare la bbs ed eseguire
+       make ; make bininstall
+     come al solito dalla directory con i nuovi sorgenti.
+
+     Prima di rilanciare la BBS, vanno convertiti alcuni file/
+     Per questo, andare nella directory del server:
+       cd citta/server
+     ed eseguire la routine di conversione:
+       ./bin/conv_0.3.2
+     questa chiede conferma, poi fa una copia dei dati vecchi.
+     Se esce senza problemi, ha convertito tutto correttamente.
+     Il file urnaconv contiene i log della conversione.
+
+     Fatto questo, si puo' far ripartire la bbs:
+       ./bin/cittaserver
+
+
+  b) Nuova gestione del reboot:
+
+    Il server,  quando parte, genera un file  ./lib/server/lock con il
+    PID del proprio processo: se il lock file e' presente il server si
+    rifiuta di partire (in caso di  crash del sistema, il file di lock
+    va eliminato manualmente prima di lanciare il server).
+
+    La gestione  del reboot quotidiano e  dell'esecuzione degli script
+    "backup"  e  "logrotate"   viene  configurata  editando  nel  file
+    server/src/config.h le variabili
+
+    DAILY_REBOOT_HOUR
+    REBOOT_INTERVAL
+    BACKUP_MIN_INTERVAL
+    LOGROT_MIN_INTERVAL
+
+    Il    reboot    giornaliero    avviene   all'ora    definita    da
+    DAILY_REBOOT_HOUR   (di  default   le  4am)   per   non  eseguirlo
+    nell'orario   di   maggiore    traffico.    La   nuova   variabile
+    REBOOT_INTERVAL fissa  il numero di giorni  che devono trascorrere
+    tra un  reboot e l'altro: se vale  1 il reboot e'  quotidiano, 2 a
+    giorni alterni, etc. Se vale 0 il server rimane sempre su e non fa
+    il reboot (questo e` sconsigliato in quanto gli script di 'backup'
+    e 'logrotate' vengono eseguiti solamente durante il reboot.
+
+    Per quanto riguarda  il backup, c'e' la nuova  variabile di config
+    BACKUP_MIN_INTERVAL che  setta il numero minimo di  ore che devono
+    trascorrere   tra   due    backup.    Quindi,   ad   esempio,   se
+    REBOOT_INTERVAL e' 1 ma  BACKUP_MIN_INTERVAL vale 48, fa il reboot
+    quotidianamente ma  il backup a giorni  alterni. (conviene mettere
+    47 in realta', perche' c'e'  una tolleranza di circa 15 minuti sul
+    momento in cui avviene il reboot). 
+
+    Stessa cosa per il  logrotate: con LOGROT_MIN_INTERVAL si fissa il
+    numero minimo di ore che devono trascorrere tra due logrotate.
+
+    Per  forzare  l'esecuzione  degli  script backup  e  logrotate  al
+    successivo reboot e/o shutdown, ci sono tre modi:
+     1) eseguire ./bin/cittaserver -f
+     2) oppure fare "touch ./lib/server/force_scripts"
+     3) <.><S>ysop <s>hutdown <f>orce script execution dal client
+
+
+  c) Nuove opzioni di linea del Cittaserver:
+
+    $ ./server/bin/cittaserver -b 'msg'
+
+    invia un broadcast a  tutti gli utenti, proveniente da "Cittadella BBS",
+     con testo 'msg'.
+
+
+    $ ./server/bin/cittaserver -f
+
+    per forzare l'esecuzione degli script al prossimo reboot/shutdown.
+
+
+    $ ./server/bin/cittaserver -h
+
+    per vedere tutte le opzioni di linea disponibili.
+
+
+    $ ./bin/cittaserver -M file
+
+    invia per posta elettronica il file a tutti gli utenti validati.
+
+
+    $ ./bin/cittaserver -m file
+
+    invia per  posta elettronica il  file a tutti gli  utenti validati
+    che hanno scelto di  ricevere la newsletter (opzione UT_NEWSLETTER
+    settata).
+
+
+    $ ./bin/cittaserver -s
+
+    invia un segnale di "shutdown now" al server corrispondente al PID
+    registrato  in ./lib/server/lock  (anche  se ci  sono piu'  server
+    cittadella su porte diverse, invia il segnale al server giusto).
+
+
+
+7) Bug fixes:
+
+  - Il quote  con editor  esterno funziona ora  correttamente, andando
+    correttamente a capo.  (LePetit)
+  - Appiccicato il ':' a 'Reply e 'Subject' (grazie LightKnight!) 
+    Sistemati i reply a post anonimi. 
+  - Ora il  socket pop3  viene chiuso durante  shutdown e  il reboot
+    funziona nuovamente. 
+  - Eliminati  diversi   buffer  overflow/memory  leaks   grazie  alle
+    segnalazioni di Abel. 
+  - Sistemato il comando <.aeu>
+  - Bugfix  in  POP3:  "TOP   num  0"  viene  accettato  conformemente
+    all'RFC1939.  (Gabrillo)
+  - bugfix in find_remote_host() (LePetit)
+  - bugfix FILE_DOUBLE_EMAIL (Abel)
+
+
+Ecco tutto. Ricordo agli utilizzatori del client locale di scaricarsi
+l'ultima versione disponibile da http://www.cittadellabbs.it/
+
+Vi auguriamo un buon anno 2004 su Cittadella BBS! :)
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.3.3 Release notes ***                         (23/06/2004)
+
+Per la versione 0.3.3 abbiamo qualche novita' e molte correzioni
+di bachi. Diversi contributi sono dovuti a Max, apprezzata new
+entry tra gli sviluppatori.
+
+
+BUGFIXES
+~~~~~~~~
+- Finalmente il Ctrl-Z funziona a dovere (grazie ad Abel)
+
+- LePetit ha corretto numerosi bachi. Segnaliamo solo quelli piu' vistosi:
+  * nel subject non vengono piu' interpretati i '%s', etc..
+  * nei sondaggi sono state sistemate le seguenti cose:
+     + i RA possono posticipare i sondaggi
+     + scheda bianca
+     + impaginazione della votazione, lettura proposte
+     + statistiche (totali iniziate, concluse, attive)
+  * resetta lo stato della sessione per il comando <.aeu>
+
+
+NOVITA'
+~~~~~~~
+1) Compressione della trasmissione client/server                [Max]
+
+La novita' piu' interessante per gli utenti consiste nella possibilita'
+di comprimere la trasmissione tra server e client (per gli utenti che
+usano il client locale solamente). Questo dovrebbe permettere di avere
+una BBS molto piu' reattiva e con meno lag, anche per chi si connette
+da una linea lenta. Apprezzerei molto sapere da voi se notate davvero
+un miglioramento.
+
+Per attivare la compressione, avete due possibilita':
+- inserire la seguente riga in ~/.cittaclientrc:
+  COMPRESSIONE "z"
+- lanciare il client locale con l'opzione -c :
+  cittaclient -c
+  Per chiedere esplicitamente una connessione non compressa,
+  c'e' l'opzione -C
+
+Ricordo che per vedere tutte le opzioni disponibili del client c'e'
+cittaclient -H
+che e' una scelta un po' infelice (cambiera' presto..)
+
+2) Per i sysop (cittaserver)
+
+- Limite di core dump di 1Mb per il cittaserver, modificabile da linea di
+  comando.                                                       [LePetit]
+- aggiunta la bufferizzazione dei dati ricevuti dal client:
+  elabora_input() in client/src/conn.c adesso esegue dei read()
+  di 256 bytes alla volta (configurabile) anziche' di 1 byte alla
+  volta, diminuendo cosi' il carico sul sistema                      [Max]
+- Nuovo sistema per agganciare le connessioni alla porta 4001 al
+  client remoto: c'e' il programmino ./server/bin/citta_inetd che
+  se ne occupa, evitando cosi' la necessita' di dover editare da
+  root dei file di configurazione, e permettendo cosi' di fare
+  tutto come utente normale.                                         [Max]
+  L'uso e' il seguente:
+
+  citta_inetd -- /usr/sbin/telnetd -L <path>/remote_cittaclient
+
+  Presto questa potenzialita' verra' integrata direttamente all'interno
+  del server comunque.
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.3.4 Release notes ***                         (03/09/2004)
+
+Come sapete, ci sono stati alcuni problemi con la 0.3.3 in particolare con
+la sincronizzazione degli eXpress-messages. Questa release e' dedicata
+semplicemente all'eliminazione di quel baco, in modo da rendere finalmente
+disponibile la connessione compressa alla bbs per tutti.
+
+Inoltre, per risolvere il problema del client interno con programmi telnet
+problematici (telnet Windows e Mac OS 9 o precedente), e' stato reintrodotto
+il vecchio editor interno per editare i post. E' possibile ora scegliere
+tramite configurazione utente se usare il nuovo editor interno oppure, per
+compatibilita', quello vecchio. Inoltre, al primo login, viene chiesto che
+OS si usa in modo da determinare l'editor corretto da utilizzare.
+
+Infine, il cittaserver ora funziona su Mac OS X, e d'ora in avanti
+Cittadella/UX verra' ufficialmente mantenuta per questo sistema operativo.
+
+Per compilare Cittadella/UX:
+1) editare il Makefile e scommentare la riga corrispondente al OS utilizzato.
+2) make
+3) make install (per una nuova BBS) o 
+   make bininstall (per un upgrade)
+
+
+                                    o---O---o
+
+*** Cittadella/UX 0.4.0 Release notes ***                        
+
+Scoprite la BBS piu' avanzata del mondo: Cittadella/UX 0.4.0 !
+
+ 
+- ALLEGATI NEI POST:
+
+Dall'editor interno, premendo Meta-i (o Alt-i, Option-i, ESC-i...) potete
+inserire degli "allegati" nei post. Nella barra di stato vi viene chiesto
+cosa volete inserire. Le possibilita' sono le seguenti:
+
+  File Upload: fornite il path di un file, e questo verra' caricato dal server
+               al momento del salvataggio del post. (solo client locale)
+
+  Link: semplicemente il link a una pagina web, che i lettori del post potranno
+        cosi' comodamente aprire nel browser
+
+  Post: Il riferimento a un post in una room (o blog). Si fornisce il nome della
+        room e il numero locale del post. Cosi' come con il quote, dal prompt
+        dei messaggi con la pressione di <P> e' possibile memorizzare il
+        riferimento al post corrente, che viene usato come riferimento di
+        default
+
+  Room: Il riferimento a una room o a un blog.
+
+  Text file: per inserire nel messaggio il testo preso da un file.
+             Viene chiesto il path del file, e il testo puo' essere semplice
+             testo ascii oppure un file CML (che inizia con <cml>)
+
+  User: il riferimento a un utente.
+
+Alla lettura di un post che contiene allegati, il prompt dei messaggi si
+modifica per avvertire l'utente, e con la pressione del tasto
+<A>llegati, si accede alla lista degli allegati, dalla quale si puo'
+sceglierne uno e decidere l'azione da eseguire. Per esempio, si puo'
+leggere il post al quale ci si riferisce o andare direttamente li',
+aprire il link nel browser, scaricare un file allegato ed eventualmente 
+aprirlo (vedere un'immagine o ascoltare un mp3 per esempio), etc...
+Per poter aprire link nel browser o aprire file nelle applicazioni
+corrispondenti, dovete definire le variabili
+BROWSER PICTUREAPP MOVIEAPP AUDIOAPP PDFAPP
+PSAPP   DVIAPP     RTFAPP   DOCAPP
+nel file cittaclient.rc
+Inoltre, potete specificare con DOWNLOAD_DIR la directory in
+cui finiscono i file scaricati.
+
+
+ALTRI COMANDI NUOVI PER L'EDITOR INTERNO:
+                                                                              
+Ctrl-T : Save Text: salva in CML il testo corrente nel file specificato.      
+         Unito con il Meta-i <t>ext, questo apre interessanti possibilita'.
+
+Ctrl-G : Incolla (<g>lue, la <y> non me la prendeva..) il testo tagliato con
+         Ctrl-K. Attenzione, e' ancora un po' bacato questo...
+
+
+Le altre novita' da testare sono invece:
+ 
+
+- RICERCA NEI POST  
+ 
+con il comando '/' potete ricercare delle parole nel corpo dei post.
+</> parola   per la ricerca di "parola",                                      
+</> paro#    per la ricerca di tutte le parole che iniziano con "paro".       
+La ricerca e' case unsensitive. Le room devono venire settate                 
+"cercabili" da configurazione room .aer                                       
+Si ringrazia Abel per avere scritto la libreria che si occupa della
+ricerca e tutti gli utenti che ora non ricordo che hanno partecipato
+alla discussione sull'implementazione.
+
+
+- BLOG                                                                        
+                                                                              
+Ogni utente ora puo' "aprire casa propria" ovvero ha una room privata con la  
+quale puo' fare quello che vuole. L'idea e' che diventi una specie di blog, o 
+un laboratorio dove l'utente puo' sperimentare una nuova idea di room senza   
+dover per forza chiederne la creazione prima.
+
+Per attivarla, va editata la configurazione, e si puo' decidere chi puo'      
+postare e chi no attraverso friend/enemy list.                                
+                                                                              
+I comandi sono:                                                               
+  <.bc> per configurare e attivare il proprio blog.                           
+  <.bl> oppure <b> per vedere la lista dei blog attivi.                       
+  <.bg> nomeutente (con tab completion)  per andare nel blog di qualcuno      
+                                                                              
+Oltre a ".Blog Goto", per muoversi tra i blog si possono usare:
+  <:> abbandona la room e vai a casa tua(il tuo blog)
+  <J>ump, <.S>kip : L'argomento e' il nome della room, oppure, se il primo
+                    carattere e' ":", il nome di un blog, nel modo seguente:
+
+                     'roomname'  --> room
+                     ':username' --> blog di username
+ 
+                    funziona la tab completion, sia con blog che con room.
+
+Inoltre, i blog possono venire pubblicati su web utillizzando il cittaweb,
+e si trovano all'url:
+
+http://bbs.cittadellabbs.it:4040/blog/nickname
+
+dove "nickname" e' il nome dell'utente, con gli eventuali spazi ' ' sostituiti
+con dei sottolineati '_'.
+Il blog deve essere esportato su cittaweb tramite configurazione .bc o .ec
+dall'utente.
+                                                                              
+Per aide e sysop: Attenzione, ora il comando per i broadcast e'  <B>.
+
+
+ALTRE NOVITA'
+
+- SPOILERS: e' possibile immettere post con spoiler nelle room configurate
+            per riceverli.
+- NICKNAMES ANONIMI: quando si posta nelle room con anonimato facoltatico si
+                     puo' scegliere un nickname anonimo che appare come autore
+- CAMBIAMENTO NICKNAME: gli utenti possono, richiedendolo esplicitamente ai
+                        sysop o aide, cambiare nome. (comando <.aeu>)
+- CHAT:     Si possono usare i tasti di cursore per editare il messaggio.
+- CITTAWEB: E' stato rinnovato un pochino, e ora generea delle pagine conformi
+            alle specifiche grazie all'eliminazione di un bachetto.
+            Dateci un'occhiata.
+- NON ESPERTI: migliorato i prompt.
+- WHO:      Appare '>' accanto al nome degli utenti che stanno
+            effettuando un upload.
+
+BUGFIXES:                                                                     
+                                                                              
+- CHAT: Sistemato il controllo M/F quando si "scivola" dalla chat.
+        Un messaggio dopo il timeout non arriva piu' a tutti.
+        Quando cambio canale chat avverte dell'uscita.
+- Le risposte si/no si possono dare solo con 's' e 'n' minuscole.             
+- Niente notifiche post nuovi nelle room anonime.                             
+- sistemato .arr                                                              
+- Non appare piu' l'autore dei post anonimi nei post di                       
+  notifica di cancellazione/riesumazione/spostamento in Aide.                 
+
+
+I dettagli sono nel file CHANGES.
+Colgo l'occasione per ringraziare ancora una volta tutti coloro
+che hanno testate le prime versioni della 0.4.0
+Buon divertimento!!

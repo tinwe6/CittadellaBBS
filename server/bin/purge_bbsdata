@@ -1,0 +1,17 @@
+#! /bin/sh
+#
+# Da usare con cautela...
+#
+rm ./log/*
+rm ./lib/server/dati_server*
+rm ./lib/msgfiles/*
+rm ./lib/rooms/*
+rm ./lib/rooms/room_info/*
+rm ./lib/rooms/msgdata/*
+rm ./lib/server/*
+rm ./lib/utenti/*
+rm ./lib/utenti/mail/*
+rm ./lib/utenti/profile/*
+rm ./lib/utenti/utr_data/*
+rm ./lib/urna/*
+./bin/touchlogs

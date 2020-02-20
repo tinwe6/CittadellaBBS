@@ -1,0 +1,33 @@
+
+    Cittaclient: Client Application for Cittadella/UX
+    ------------ (C) M. Caldarelli and R. Vianello
+
+Per compilarlo digitare il comando 'make' nella directory ./src/, verranno
+generati i seguenti tre eseguibili:
+
+./bin/cittaclient : Client per connettersi al server di Cittadella
+
+./bin/remote_cittaclient : Client che viene utilizzato per connettersi al
+                server tramite telnet a una porta apposita. In questo modo
+                il client gira localmente sulla macchina server, e puo'
+                venire utilizzato da chi non ha il client standard a
+                disposizione. Vi sono lievi differenze rispetto a
+                cittaclient: determina l'host di provenienza della chiamata
+                telnet e alcune funzioni 'pericolose' (e.g. subshell) sono
+                disattivate.
+
+./bin/debug_cittaclient : Utile per il debugging. Visualizza la
+                comunicazione client/server. Le stringhe inviate dal client
+                al server iniziano con '&C ' mentre quelle che il client
+                riceve dal server iniziano con '&S '.
+
+Editor esterno:
+---------------
+   L'editor esterno viene determinato dalla variabile d'ambiente EDITOR, nel
+   caso di cittaclient (o debug_cittaclient). E' sufficiente scrivere:
+   setenv EDITOR /usr/bin/emacs
+   nella shell (csh in questo caso) prima di eseguire il client.
+   Nel caso del client remoto, l'utente non puo' scegliere l'editor che
+   desidera, deve utilizzare quello predefinito. Il client utilizza l'editor
+   che si trova in : ./bin/BBSeditor che, in generale, e' un link simbolico
+   all'editor prescelto.

@@ -1,0 +1,2126 @@
+11/02/20 - bugfix the pager receives the correct text length from receive_msg()
+
+10/02/20 - bugfix server blog_num_post() (lowest was not used)
+         - removed longjmp() from client
+ 
+08/02/20 - bugfix server cmd_rkrl()
+
+07/02/20 - modificato doc/lista_comandi
+	 - bugfix urna_postpone(). Now should correctly check that the new
+           deadline is after the current one
+
+06/02/20 - Bugfix is_isoch() [share/iso8859.h] char can be (signed char) on
+	   some platforms, thus we cast it to (unsigned char) before comparing
+	   it with extended chars. Also replaced & with &&
+         - when using varargs and the buffer is too small for a vsnprintf()
+           we must reset the va_list before we use it again
+           [cml.c, conn.c]
+	   Also replaced the magic values for the initial buffer length
+           with a TMPBUF_LEN constant.
+         - Changed the default host to the new one
+         - uflags[] and sflags[] changed from char to uint8_t
+	 - using stdbool.h for bools in the client
+
+22/06/18 - renamed (getline, clog, clogf) to (c_getline, citta_log, citta_logf)
+           to avoid name clashes
+
+                                   o---O---o
+
+* From Cittadella 0.4.1 to  0.4.2                              (09/06/2006)
+
+09/06/06 - extract_ulong()
+         - sistemati coerentemente signed/unsigned nel fileserver.
+           Al caricamento dati, le filestats corrotte vengono corrette.
+
+08/06/06 - GUSR, EUSR: invia/modifica anche sflags[1] con i divieti.
+         - Sistemato l'editing #post/ora: viene ricordato il valore attuale
+         - Possibilita' di vietare a un utente l'invio di X, post o mail,
+           l'entrata in chat o postare anonimo (.aeu).
+
+06/06/06 - BUGFIX AUTO_LOG_X: salva correttamente anche gli X inviati anche
+           se questi non vengono salvati nel diario; inserisce i '\n'
+           correttamente nel log.
+
+05/06/06 - comando server RMSG sistemato, <r> post allegato funziona.
+         - se il post allegato (o room) non e' presente, non esegue il goto.
+         - messaggi errore per la lettura di post in allegato.
+
+22/07/05 - Bugfix: inserzione link come allegati (tolto protezione)
+         - Bugfix sicurezza: con link maligni non si puo' piu' eseguire codice.
+
+* From Cittadella 0.4.0 to  0.4.1                              (22/07/2005)
+
+21/07/05 - Bugfix: buffer overflow in login.c                     [Mathieu]
+         - Menu quando gli allegati sono solo due
+         - Permette di leggere i post allegati con <r>
+         - Nuove room info
+
+
+                                   O---O---o
+
+* From Cittadella 0.3.4 to 0.4.0                              (21/07/2005)
+
+20/07/05 - L'autore del post viene registrato anche se il post e' anonimo.
+           baco che si vedevano autori anonimi post vecchi corretto.
+           Reply a post anonimo riporta il "nick anonimo"
+         - se si edita una room e attiva il find, la room viene indicizzata.
+         - Corretto baco che mostrava solo il primo risultato della ricerca.
+         - Aggiunto flag [F]ind e [W]eb in lista room .arr
+         - Elimina file allegati a post che vengono scrollati
+         - al boot elimina i file allegati a post sovrascritti.
+19/07/05 - Messaggi di errore per upload dei file
+         - Sistemato prompt degli allegati (in particolare "rinomina" e un
+           bugfix)
+18/07/05 - Elimina la prenotazione quando cancello un upload dell'editor.
+         - Elimina tutte le prenotazioni di un utente se cade o esce.
+         - I messaggi con file allegati hanno MF_FILE settato.
+         - Cancella file allegati se cancello il post.
+         - Tiene conto del numero di copie del file in caso di <c>opy del post
+         - Se si sposta nel cestino un post (delete da aide) i file allegati
+           vengono comunque cancellati e non si recuperano con un undelete.
+         - Invia dati upload/download nel profile.
+15/07/05 - Righina magenta a lato degli spoiler
+         - Aggiunto nell'indice del CittaWeb il link all'ultimo post lasciato
+           nella bbs se la room corrispondente e' pubblicata su web. Tratta
+           correttamente i mail.
+14/07/05 - Espande download_dir
+         - Se c'e' un unico allegato, lo seleziona direttamente
+         - riconosce e apre vari tipi di file
+         - allegati visibili anche nei messaggi con spoiler
+12/07/05 - Sistemati tutti prompt per md dell'editor
+         - Modifica nome blog se l'utente cambia nickname
+         - Eliminato la possibilita' di tenere file messaggi multipli
+11/07/05 - Comando "RMSG room|msgnum" per leggere post #msgnum in Room>
+         - Sistemato il trattamento degli allegati in metadata_ops.c
+         - MD: azioni alternative per client remoto
+10/07/05 - Download dei file da cittaweb
+         - operazioni su allegati: riferimento a utente, vai a post.
+09/07/05 - CML2HTML tratta gli allegati, messo riferimento a #post.
+08/07/05 - Nuovo editor di linea getline_scroll, migliorato edit.c
+         - Key_Right e Key_Left per editare testi in chat.
+         - Messaggi di errore recipiente X in colore C_ERROR
+07/07/05 - quando cancello buffer di copia elimina gli allegati presenti
+           (vengono preservati con il paste)
+         - Sistemato baco in cml2html, cml2editor e cml_eval_max
+           (totlen era totlen-1)
+06/07/05 - Editor: sistemati Key_Right, Key_Left, Key_Up, Key_Down, Backspace,
+           Delete, wrap delle parole, applica attributi F2 F3 F4, Ctrl-U,
+           per trattare gli allegati
+04/07/05 - Etichetta opzionale ai link
+         - sistemato bug in ansicol.c
+         - Tasti cursore destro/sinistro per editare messaggi chat.
+01/07/05 - Cancellazione delle prenotazioni di upload
+30/06/05 - Upload e download dei file
+         - Progress bar per il download
+28/06/05 - Prompt messaggi: <m>ove, <A>llegati (metadata->allegati)
+         - Modificato prompt messaggi in modalita' non esperto
+         - Nel who '>' durante l'upload
+         - File server: gestione file e comandi upload/download
+27/06/05 - E' possibile usare un nickname anonimo nelle room con possibilita'
+           di post anonimo.
+         - Variabili configurazione client per specificare che applicazioni
+           esterne utilizzare per aprire link, immagini, filmati e file audio
+           e download directory.
+         - Configurazione Directory Rooms (upload/download files)
+         - Variabili di configurazione server per upload/download
+25/06/05 - Esteso il CML per link, post, blog, room e user.
+         - Libreria per la gestione del metadata.
+24/06/05 - Prompt messaggi
+                 <M> move (era <m>)
+                 <m> esamina il metadata associato al post
+                 <P> memorizza il riferimento al post corrente
+                 <C> vedi sorgente CML del post
+         - Meta-i da editor interno permette di inserire metadata di vario
+           genere: utente, riferimento a post, room, link.
+23/06/05 - E' possibile cambiare il nickname di un utente con il comando <.aeu>
+           Se il nickname viene modificato, appare un annuncio in Lobby) e
+           l'utente in questione viene avvertito al suo indirizzo email.
+         - EDITOR: buffer di copia, e paste delle righe tagliate con ctrl-k
+22/06/05 - Messaggi con Spoiler.
+         - BUGFIX: Sistemato il controllo M/F quando si "scivola" dalla chat.
+                   Un messaggio dopo il timeout non arriva piu' a tutti.
+                   Quando cambio canale chat avverte dell'uscita.
+         - statistiche # post in blog e # letture di blog nel cittaweb
+         - <:> abbandona la room e vai a casa (il tuo blog)
+         - <J>ump, <.S>kip : 'roomname'  --> room
+                             ':username' --> blog di username
+           funziona la tab completion, sia con blog che con room.
+         - La ricerca '/' e' lowercase
+19/06/05 - Eliminato memory leaks dal cittaweb.
+         - Riscritto gestione socket con struct iobuf.
+         - trasmissione di dati binari da socket.
+         - invio immagini (e file in generale) tramite cittaweb.
+16/06/05 - Move e Copy accessibile solo da room normali (non dinamiche)
+         - Non si possono zappare room dinamiche
+         - Riscritto cml2html() per costruire del valid html 4.01 strict
+14/06/05 - Ultimo post immesso appare nel cittaweb
+12/06/05 - Bloglist da cittaweb
+         - Descrizione del blog (info)
+10/06/05 - Blog esportati su cittaweb
+         - Riscrittura completa di memstat.c
+05/06/05 - Cambio comandi:
+           <b> --> .Blog List
+           <B> --> Broadcast
+           il comando Bug Report (che tanto non funzionava) non e' piu' mappato
+         - Implementato fullroom e user flags per i blog.
+         - comando GOTO anche per entrare in una blog room
+02/06/05 - Le risposte si/no si possono dare solo con 's' e 'n' minuscole.
+         - Notifica nuovo post nel blog
+         - Niente notifiche post nuovi nelle room anonime.
+         - Blog list mostra ora e data ultimo post nel blog
+01/06/05 - chat = 0 se si scivola fuori dalla chat, sistemato sesso.
+         - Opzione di compilazione per background bianco.
+31/05/05 - Meta-i per inserire un file nell'editor interno.
+           E' in grado di inserire puro testo e testo in cml.
+         - Ctrl-T per salvare il Testo in un file
+21/05/05 - Comando .td : toggle debug mode
+         - Bugfix: sistemato comando .arr
+11/11/04 - Room virtuali possono trattare post su piu' file dei messaggi
+         - Variabili di configurazione blog utente.
+         - Non si possono editare, cancellare, etc. le room virtuali,
+           sistemati i messaggi di errore nel client.
+         - Comandi nuovi: .bl per vedere la lista degli utenti con blog.
+                          .bg per andare nel blog di qualcuno.
+                          .bc per configurare il proprio blog.
+         - Tab completion per utenti con blog
+07/11/04 - Comando '/' del client per effettuare ricerca e corrispondente
+           comando FIND del server. </> parola per la ricerca di "parola",
+           </> paro# per la ricerca di tutte le parole che iniziano con "paro".
+           La ricerca e' case unsensitive.
+         - Inserito share/prefixtree.[ch] per il find                [Abel]
+         - Aggiunto flag RF_FIND in room_flags.h. Editando la room si puo'
+           decidere se la ricerca viene effettuata anche sulle parole dei
+           messaggi in una determinata room. Diventa attivo alla successiva
+           ricostruzione dell'albero dei prefissi (prossimo reboot attualmente)
+         - Bugfix: 'make install' ora costruisce esplicitamente tutte le
+           directories necessarie per il funzionamento del server.
+         - Bugfix: Non appare piu' l'autore dei post anonimi nei post di
+           notifica di cancellazione/riesumazione/spostamento in Aide.
+           Precisamente, non vi e' piu' nessun dato che viene registrato
+           dal server che puo' permettere di risalire all'autore.
+         - Inserito variabili di configurazione per l'autosave dell'editor
+           interno. Nel file cittaclient.rc si possono usare ora le
+           variabili AUTOSAVE_FILE e AUTOSAVE_TIME.
+
+
+                                   O---O---o
+
+* From Cittadella 0.3.3 to 0.3.4                              (03/06/2004)
+
+03/09/04 - Sistemato il problema degli X dovuto al nuovo metodo di prendere
+           input da server.
+
+02/09/04 - Nuova variabile di configurazione utente per scegliere di usare
+           il vecchio editor interno. Al primo login, chiede se ci si collega
+           con windows o con un vecchio mac, nel qual caso usa il vecchio
+           editor di default.
+         - Il server ora compila sotto Mac OS X.
+         - Modificati i Makefile: e' sufficiente dichiarare in
+           ./cittadella/Makefile il sistema operativo per il quale si compila.
+
+                                   o---O---o
+
+* From Cittadella 0.3.2 to 0.3.3                              (23/06/2004)
+
+16/06/04 - Bugfix: Ctrl-Z funziona                                  [Abel]
+         - Eliminati tutti i commenti // dai sorgenti
+         - log() e logf() sono diventati clog() e clogf()
+         - Nuovo sistema per agganciare le connessioni alla porta 4001 al
+           client remoto: c'e' il programmino ./server/bin/citta_inetd che
+           se ne occupa, evitando cosi' la necessita' di dover editare da
+           root dei file di configurazione, e permettendo cosi' di fare
+           tutto come utente normale.                                [Max]
+           L'uso e' il seguente:
+           citta_inetd -- /usr/sbin/telnetd -L <path>/remote_cittaclient
+
+10/06/04 - aggiunta la bufferizzazione dei dati ricevuti dal client: [Max]
+           elabora_input() in client/src/conn.c adesso esegue dei read()
+	   di 256 bytes alla volta (configurabile) anziche' di 1 byte alla
+	   volta.
+	 - Comunicazione compressa server->client                    [Max]
+
+03/06/04 BUG_FIXES [LePetit]
+         - client
+	      messaggi.c
+		   cml_printf(msg->h[1/2]) trasformati in
+		   cml_printf("%s",msg->h[1/2]) 
+      
+	      urna-rw.c
+		   cml_printf(_("%s "), let); tolto il _()
+
+		    baco segnalato da ABEL in
+			   urna_servizio 
+			   char default_resp[maxlen];  |-> +1
+			   
+	      urna_vota: c'erano due lettere accentate
+		    inizializzato bianca
+		    nella votazione, chiedeva il voto anche nel
+		    caso di scheda bianca. a posto
+
+         - server
+	      cittaserver.[ch] aggiunta gestionde del core
+
+	      urna-comm.c   i (room) aide possono posticipare
+			    a posto baco sul voto della scheda bianca
+
+	      urna-crea.c   i (room) aide possono posticipare
+
+	      urna-fine.c   mancava una inizializzazione
+			    messa a posto l'impaginazione dei
+			    risultati della votazione
+
+	      urna-rw.c     baco segnalato da medardo
+
+	      urna-vota.c a posto baco sul voto della scheda bianca
+
+	      utente.c  baco segnalato da Gabrillo: non resettava
+			lo stato della sessione.
+
+16/03/04 - in urna-rw rinormalizzava la grandezza dello slot, ma nel caso
+           votanti=10 leggeva uno slot in piu`. messo a posto
+
+07/03/04 - nel client cmd_da_server.c 
+           nella gestione degli X - Broadcast viene
+           liberata una struct ancora usata.
+         - comunicaz.c:644 nl_num torna un valore positivo su errore,
+           corretto con x.dest &&
+         - par2strd: non toglieva l'id quando ne trovava uno con un valore
+                     piu` lungo del necessario. Ora cambia l'id in old-id 
+        (da correggere anche nel client la creazione della
+         stringa che aggiunge <fg=0> alla fine, allungando
+         di 6.
+
+01/03/04 - URNA-PRINT.c diventa urna_to_ascii.c... con quel che ne consegue.
+
+26/02/04  -in URNA-PRINT.c e in urna-fine.c corretto la
+           stampa dei risultati (estetica)
+         - urna-rw riformattata
+           a posto la lettura di proposte,
+         - urna-vota.c 
+	       errore: num_voti invece di num_slots
+
+         - alle volte, premendo <-> e invio, valgrind dava un errore di
+           sconfinamento... ho fatto una piccola modifica in messaggi.c
+ 	   aggiungendo (riga 250) un
+                    if(n==0){
+		            i=-1;
+			    break;
+		    }
+
+25/02/04 - messe a posto le statistiche per le urne.
+           ora (spero) calcola correttamente 
+           totali (urne iniziate)
+           concluse (urne concluse)
+           attive
+         - controllo di coerenza ustat
+		  (se complete=0, complete=ultima_urna-1-attive
+           se totali<complete+attive totali=complete+attive)
+          il server va compilato con SANE_STAT,
+          e in server/lib/urna dev'esserci un file sane_ustat
+
+18/02/04 - a posto sec_pr_post (spero)
+
+09/01/04 - in cmd_xinm, se la richiesta era un "non mandare mail", il
+           server dava piu` di una risposta...
+	   --- Va comunque controllato il client, che in quel caso
+	       segfaultava
+05/01/04 - urna_proposte segfaultava perche' quando si salvavano i risultati
+           urna->prop non veniva messa a NULL
+
+         - -- client
+         - comunicaz.h printf con un argomento non richiesto
+         - in vari file "include macro.h"
+         - urna_servizio.c a posto un buffer overflow
+		 
+         - -- server 
+         - Makefile: profileg
+         - URNA-PRINT: varie
+         - cittaserver.c aggiunto extern FILE stdout/err
+            messe a posto un paio di cose su MEM_STAT
+         - cittaweb.c: idem
+         - config.h: idem
+         - pop3.c idem
+
+         - conv_conv_0.3.2:
+            ultima_urna++
+            risolti (?) i @@ nel testo
+            max_voci messo a posto
+         - memstat.h 
+             Malloc e Calloc con argomenti nel caso non si usi
+             memstat
+             definito RECREATE
+         - socket_citta.c: cambiato tipo opt, in setsockopt 
+         - urna-comm.c:
+               stanza(0)-> stanza(lobby)
+         -urna-crea.c:
+               aggiunge gli utenti collegati in quel momento
+               agli utenti che hanno visto l'urna.--
+         -urna-file.c:
+               a posto un paio di sciocchezze
+         -urna-fine.c:
+               conta correttamente i votanti (prima contava quelli
+               collegati).
+               un po' di estetica
+               controllo se le proposte sono 0
+               controllo su testo!=NULL
+               stanza(0)-> stanza(lobby)
+         -urna-posta.c:
+               stanza(0)-> stanza(lobby)
+         -urna-rw.c:
+               a posto la lettura nelle proposte
+               nel caso la proposta sia fatta di soli spazi
+               bianchi 
+         -urna-servizi.c
+               puntatore corretto.
+         -urna-vota.c
+               aggiunta una funzione
+               rs_vota(struct sessione *t, struct urna_conf *ucf)
+               oltre a 
+               rs_vota_ut(struct dati_ut *ut, struct urna_conf *ucf)
+               (serve perche' mi trovo in due situazioni differenti) 
+         -x.c
+               usa u_err invece di cprintf in cmd_srnb 
+         share
+         -macro.h 
+               un po' di cambiamenti per usare MEM_STAT
+
+                                   o---O---o
+
+* pl4 *
+03/06/04 - aggiunto il limite di core dump di  1Mega, modificabile da
+           linea di comando                                       [LePetit]
+
+                                   o---O---o
+
+* From Cittadella 0.3.1 to 0.3.2                              (08/01/2004)
+
+18/12/03 - Riorganizzato il ciclo server.
+
+17/12/03 - Statistiche trasmissione client/server durante connessione.
+         - bugfix diario degli X.
+         - Multi X: arriva anche la lista dei destinatari dell'X.
+         - Ctrl-X per abortire immissione destinatari.
+         - Sistemato anche X in Mail (XINM)
+         - Sistemato (parzialmente) dump chat.
+
+16/12/03 - Riscritto funzione send_email(). Invia mail a singoli indirizzi,
+           a tutti gli utenti, ai soli validati, o ai soli con UT_NEWSLETTER.
+         - cittaserver -m file, cittaserver -M file, per mandare via email
+           il testo in file agli utenti con UT_NEWSLETTER o agli ut validati.
+         - Implementato il flag UT_NEWSLETTER
+         - Funzioni nl_ per gestire le liste di nomi: da utilizzare con
+           friend-list, ennemy-list e destinatari multipli di X e Mail.
+         - Implementato la ennemy-list. Gli X provenienti da utenti nella
+           ennemy-list vengono sempre rifiutati.
+         - Friend-list portata a 10 elemento, i dieci liberati vengono
+           usati per la ennemy list. NOTA: in futuro ristrutturare i dati.
+         - .fe edit ennemy, .ff edit friends.
+         - Colori diversi per me/friend/ennemy in <w>, lista utenti,
+           header messaggi e notifiche
+         - Key_UP, Key_DOWN, Key_PAGEUP, Key_PAGEDOWN nel pager.
+
+11/12/03 - Merge dei nuovi sondaggi                              (LePetit)
+         - cittaserver -b 'msg' per inviare un broadcast.
+
+10/12/03 - Il client manda regolarmente l'istruzione NOOP al server quando
+           e' idle per mantenere in vita la connessione.
+
+09/12/03 - Ctrl-L da room prompt cancella lo schermo.
+         - Bugfix in POP3: "TOP num 0" viene accettato conformemente
+           all'RFC1939.                                         (Gabrillo)
+
+05/12/03 - Nel profile personale i dati non visibili a tutti       (Furjo)
+           vengono visualizzati fra parentesi quadre.                
+
+03/12/03 - Per forzare l'esecuzione degli script backup e logrotate al
+           successivo reboot/shutdown, ci sono tre modi:
+           1) eseguire ./bin/cittaserver -f
+           2) oppure fare "touch ./lib/server/force_scripts"
+           3) <.><S>ysop  <s>hutdown <f>orce script execution dal client
+
+02/12/03 - Bugfix: chiude socket pop3 durante shutdown -> reboot funziona.
+         - implementato lock file per il server ./lib/server/lock
+           contiene il pid del processo che lo ha creato. Il server si
+           rifiuta di partire se il lock file e' presente.
+         - ./bin/cittaserver -s per mandare SIGHUP al server.
+         - Esegue il backup solo se trascorse almeno BACKUP_MIN_INTERVAL
+           ore dal precedente backup.
+         - Esegue il logrotate solo se trascorse almeno LOGROT_MIN_INTERVAL
+           ore dal precedente logrotate.
+         - REBOOT_INTERVAL fissa ogni quanti giorni si esegue il
+           reboot automatico del server.
+         - bugfix FILE_DOUBLE_EMAIL                                 (Abel)
+
+27/11/03 - Eliminato buffer overflow da info_sul_server() in cittaclient.c
+           controllare comunque lungh risposta del server           (Abel)
+         - inserito \n per quote con editor esterno.             (LePetit)
+         - bugfix in find_remote_host()                          (LePetit)
+         - corretto memory leaks in esegue_comandi() e in
+           get_text_col().
+         - Appiccicato il ':' a 'Reply e 'Subject'   (grazie LightKnight!)
+           Sistemati i reply a post anonimi.
+         - bugfix <.aeu>
+
+*		Nuova Urna                                       [LePetit]
+    - Riscritto completamente la struttura. Per maggiori informazioni
+      leggere il sorgente.
+    - Centralizzazione di alcuni servizi (stampa dei referendum)
+    - vari bugfix 
+    - Tolta (anche se parte della struttura c'e`, commentata)
+      la gestione dei singoli voti (il server teneva in memoria
+      quanti 1, quanti 2 e cosi' via venivano dati. Potrebbe
+      servire in futuro per aggiugnere statistiche ai risultati) 
+    - Nuovo tipo di referendum: propositivo. Gli utenti propongono
+      dei nomi che verranno riportati fedelmente alla fine del
+      sondaggio... Tutto da testare :-)
+    - Ad ogni sondaggio e` associata una lettera, per semplificare
+      la scelta
+    - L'interfaccia riconosce quando c'e` solo un sondaggio (e
+      chiede "vuoi **** questo?"
+    - L'interfaccia di creazione permette di interroperla in 
+      piu` punti,
+    - non chiede quante voci ma permette di aggiungerne e togliere
+      finche si vuole
+    - La data di termine e` (semicausualmente) predefinita.
+
+---     Come fare il passaggio:
+
+======creare l'eseguibile conv_0.3.2
+            cd ~/cittadella/server/src/
+	    make conv_0.3.2
+	    
+======copiarlo
+            cd ~/citta/server
+	    cp ~/cittadella/server/src/conv_0.3.2 .
+
+======eseguirlo
+           ./conv_0.3.2
+
+	   chiede conferma, poi fa una copia dei dati vecchi
+	   se esce senza problemi l'ha fatto.
+	   il file urnaconv contiene i log della conversione
+		
+12/12/03   [LePetit]
+		
+***********	Generico: #include urna.h e` diventato include delle urne necessarie
+		--- CH_FORMAT in tutti i log / cprintf eccetera... il compilatore fa
+		un controllo dei formati
+		
+***********	Client: Makefile aggiornato 
+		aggiunti     memkeep (gestione dei malloc)
+		parm.c gestione di invio di dati come
+		urna-* gli urna
+****		cittaclient.c:
+		- aggiunto uno srand(time(NULL)) per il tempo a caso
+		nelle urne
+		- .ul e .uL diventano urna_list(0) urna_list(1)
+		- patch di Abel
+		-comandi.h:
+****		cmd_da_server.c
+		- avviso di urna conclusa
+****		
+****		colors.h Alcuni colori
+****		conn.h  include "..."
+****		inkey.c,.h
+		- aggiunto inkey_elenco_def: prende un carattere
+		da un elenco 
+****		edit.c "\n" in quote (bug)
+****		prompt.h -- prompt nuovo (TODO)
+****		remote.h -- tty / ttyname (BUG)
+****		urna.c --  Da togliere
+****		urna_errori -- tutta rifatta
+****		utente_client (non urna) messo a posto il baco dei
+		msg/ora
+		
+****		utility.c, h new_date ha ora dei valori di default (semicasuali)
+		
+*************	Server:
+****		purge_bbs_data, banalita
+****		Makefile: ovvietà+urna_to_file
+****		cittaserver.c 
+		include
+		free strutture urna quando esce
+****		comm.h aggiunto CON_REF_VOTO (parametri per voto) 
+****		config.h patch di Abel
+****		interprete.c
+		- include
+		-tolto SCVL
+		-modificato SLST SRNE	
+****		mail.c
+		- ld-d
+****		memstat.h,.c
+		banalita
+****		parm.c,h banalita
+		alcune funzioni (vedi parm.c)
+****		messaggi.c
+		ld<->d
+****		pop3.c
+		ld <-> d
+****		urna-*.[ch]
+		tolti
+****		sysconfig 
+		banalita
+****		utente_cmd.c
+		ld <-> d
+****		utility.c 
+		CH_FORMAT
+****		x.c
+		cambiate delle funzioni	
+****		server/src/URNA-PRINT.c 
+		stampa i referendum-- va linkata
+		x.c banalita+ portati sris+srne+modifiche ad alcuni
+****		server/src/protocollo-urna
+****		/urna-specs.txt inizio di texi di specifiche di urna...
+		
+*************	Share: 
+****		text.c,h  
+		CH_FORMAT
+****		text_arr.c,h  
+		CH_FORMAT
+****		/share/urna-comune 
+		banalita
+****		aggiunto urna_errori.h
+		
+
+                                   o---O---o		
+
+* From Cittadella 0.3.0 to 0.3.1                              (23/10/2003)
+
+17/10/03 - No double email                                          (Abel)
+         - Possibilita` di limitare il numero di post che puo` lasciare un
+	   utente specificando il numero massimo di messaggi per ora, con
+           relativa funzione di conversione per dati_ut.         (LePetit)
+
+                                   o---O---o
+
+* Cittadella 0.3.0-pl1
+
+27/08/03 - Bugfix <L>
+         - Alt-A abort immissione testo nell'editor per gli X e nel nuovo
+	   editor interno.
+
+* From Cittadella 0.2.12 to 0.3.0                             (26/08/2003)
+
+26/08/03 - Elimina sessione POP3 se presente prima di collegare l'utente.
+           (lo fa in modo un po' brutale. E` corretto?)
+         - Non permette nuova sessione POP3 se ne e` gia` presente una oppure
+           se l'utente e` gia` collegato.
+         - byte-stuff del '.' nel POP3: a questo punto tutto l'RFC 1939
+           e` stato implementato: il POP3 e` pronto!
+         - Editor interno: quote+hold+quote non da piu' problemi.
+         - bugfix chat: /me multilinea.
+         - dump dei post sistemato.
+21/08/03 - Sistemato compilazione Windows e MacOS/X.
+         - Non usa getopt_long() per win e mac.
+09/08/03 - Migliorato elabora_input().
+         - La gestione delle code (coda_testo.c) richiede ora la lunghezza
+           della stringa: piu' sicuro e migliora le prestazioni.
+         - Eliminato buffer overflow nel cittaweb: dovrebbe essere robusto ora.
+         - Eliminato buffer overflow da logf().
+         - Idle timeout per sessioni HTTP e POP3.
+         - Le sessioni HTTP e POP3 liberano tutta la memoria prima di chiudersi
+         - Nomi utenti non sensitivi al case al login (Ric e rIc sono uguali)
+         - Chat timeout se l'utente non scrive in chat settato in config.h
+         - Il subject viene tradotto in HTML. Cittaweb pronto.
+08/08/03 - Sistemato numero utenti e ospiti nel <w>ho, prima riga della
+	   <u>ser list in bold. "Mi dispiaca, %s rifiuta gli X" corretto.
+	   Sistemato sforamento nel profile.
+         - Non cambia il barflag dopo un goto fallito.
+         - Mette il ';' finale nelle entities quando si continua con l'editor
+           esterno un post.
+         - Nuova variabile di configurazione SHELL in cittaclient.rc
+           Se non e` presente prende da variabile di ambiente.
+         - Modificato protocollo GOTO per inviare numero di room con nuovi
+           messaggi e numero di room zappate se si va in Lobby.
+         - Bugfix: <.ec> non blocca piu' il client.
+         - Contabilizza solo gli utenti registrati loggati per il record.
+         - Nuovo comando <.><r>ead <N>ews
+         - Editor interno: + F3 applica col/attr correnti fino a prox spazio
+                           + F4 applica col/attr correnti a tutta la riga
+                           + sistemati i quote nell'editor interno (wrap)
+                           + tratta correttamente i paroloni lunghi una riga.
+         - Non notifica piu' la caduta connessione utenti che non hanno
+           terminato la registrazione.
+         - POP3: + Data in formato RFC822 (thanks Venerdi)
+                 + Comandi case unsensitive.
+01/07/03 - Sessioni POP3 per scaricare i mail (RFC 1939)
+22/06/03 - Implementato i comandi del server PARM e APRM con un protocollo
+           per l'invio al client di comandi con parametri (in parm.[ch])
+           Il protocollo e` descritto dettagliatamente in server/src/param.h
+         - funzione send_email() per inviare email.
+         - cmd_bend usa send_email per inviare il bug report.
+21/06/03 - Bugfix: Sistemato baco post_timeout in modo definitivo.
+17/06/03 - Bugfix: massimo preavviso di 24 ore per lo shutdown.
+16/06/03 - News si editano con editor interno.
+         - Messaggi errore editing news, profile e rinfo portate nel client.
+         - Varie costanti MAXLINEE* trasmesse da INFO.
+         - Terminate modalita` ASCII-Art e Overwrite per l'editor.
+         - Sistemato l'help per l'editor interno.
+12/06/03 - Room info e profile si editano ora con l'editor interno.
+         - Editor interno: + Modi Overwrite e ASCII Art: ruota con 'Ins'
+                           + F2 per applicare col corrente al carattere 
+11/06/03 - Non e` piu' possibile usare <r>eply per inserire un post nelle
+           room con il reply disabilitato.
+         - Sistemato baco wrapping editor interno.
+         - Chiede conferma all'entry prompt per abortire.
+         - Se TERM=xterm passa a vt220 (xterm ha problemi di scrolling).
+10/06/03 - Nuovo look delle pagine cittaweb, con stylesheets.
+           Design di Cristiano Barabanti (aka Sir Action)
+         - Cittaweb serve le pagine multilingue.
+09/06/03 - Sistemato i tag del cittaweb, dovrebbe essere a posto ora.
+         - Sistemati comandi Ctrl-W e Alt-d nell'editor (cancell. parole)
+05/06/03 - CML nelle news e nei vari messaggi. I messaggi andranno editati.
+         - I nuovi utenti e ospiti non hanno l'iso8859 abilitato di default.
+         - Eliminato il baco della perdita dei mail quando si killa una
+           sessione.
+	 - Bugfix: accetta il '%' nei login banner.
+07/05/03 - Sistemati colori editor, underline, hold, quote, continue.
+         - Sistemato bug cancellazione delle room.
+06/05/03 - Editor: <Tab>, Caratteri ISO-8859 con keybindings, bugfixes vari.
+         - inkey prende tutti i tasti che ci interessano.
+30/04/03 - Editor: Sistemati il backspace, Ctrl-K.
+29/04/03 - Comando 'L' abbandona e va in Lobby.
+         - Vecchio 'L' e` ora 'S' (segna i messaggi nuovi come letti)
+         - 'M' va nella mailroom non viene piu' eseguito come un 'goto'
+           ma come 'abandon'.
+         - Sistemato bachi editor (in particolare refresh)
+17/04/03 - Reinserito full screen editor nel ramo principale di sviluppo.
+           Adattato al CML, terminfo, bugfixes.
+         - Sistemato inkey.c per i tasti cursore.
+13/04/03 - Bugfix compilazione Cestino, e sua inizializzazione al primo run
+           della BBS. Spostato tutto in cestino.[ch].
+         - Il primo utente che si collega alla BBS viene avvertito che e`
+           sysop e non viene piu' buttato fuori al primo login (bugfix)
+
+                                   o---O---o
+
+* From Cittadella 0.2.11 to 0.2.12                            (11/03/2003)
+
+10/03/03 - Accetta nella registrazione il vecchio email come default (bugfix)
+         - Sistemato timeout post (ma rimane bacato).
+         - Nuovo comando <L>ascia perdere tutti i nuovi post.
+	   segna come letti tutti i post nelle room conosciute tranne
+	   in Lobby, Mail e nelle room dove si e` RA o RH. Aide e Sysop
+	   non sono autorizzati a utilizzare questo comando.
+         - Sistemato Makefile per build client e eliminato file doc/client/
+
+06/03/03 - Il client usa la lungh max dei X/B/C comunicata dal server.
+         - Notifica dell'undelete in mail all'autore e in Aide.
+	 - USE_NOTIFICA_DEL, MOVE, UNDEL per decidere in fase di compilazione
+	   se le notifiche in Mail) vanno eseguite o meno.
+         - I sysop possono cancellare i post di sistema (in futuro questa
+	   possibilita` verra` limitata).
+	 - Sistemato qualche altro messaggio del client.
+         - Sistemato prompt messaggi per adattarlo alla room cestino.
+
+05/03/03 - Impedisce post in cestino.
+         - Spostati messaggi errore post da server a client.
+         - Implementato attivazione/disattivazione delle room.
+	   Solo Sysop, Aide e RA e RH della room in questione la vedono.
+         - Portato a 1000 il numero massimo di slot per room.
+         - Implementato il timeout per i post. Sistemare reazione client.
+
+                                   o---O---o
+
+* From Cittadella 0.2.10 to 0.2.11                            (05/03/2003)
+
+04/03/03 - Bugfix cittaweb (thx Furjo)
+         - Nuovi file lib/banners/tip_of_the_day e lib/banners/tip_hash
+	   per i Tip of the day.
+         - Implementati Cestino) e Undelete.
+	   USE_CESTINO in config.h per attivare il Cestino).
+	 - Sistemato qualche messaggio del client.
+
+                                   o---O---o
+
+* From Cittadella 0.2.9 to 0.2.10                             (27/02/2003)
+
+26/02/03 - Nuova variabile di config POSTLOCK_TIMEOUT in config.h
+         - Eliminato file doc/SERVER (in doc/protocollo ora).
+         - Bug fix: non rimane il + accanto al nome nel who quando si fa Hold,
+           non rimane '_' dopo aver fatto <.aeu>.
+         - Inserirsce '<cml>' all'inizio del testo quando si "continua" un
+           messaggio con l'editor esterno.
+         - Reply con editor esterno + continue non fa piu' crashare il
+           client.
+         - txt_clear() per cancellare un testo da una struttura text.
+25/02/03 - Nuovo stato CON_ROOM_EDIT, CON_BUG_REP, CON_BANNER
+         - Eliminato comando server UOCC.
+	 - Controllo dello stato della connessione prima di eseguire un
+           comando. Questo risolve vari problemi di sicurezza.
+         - nell'HWHO utente% per operazioni di admin,
+                     {utente} per subshell,
+                     utente# per profile,
+	             utente? per nuovo referendum,
+                     utente* bug report.
+         - Nuova variabile di config BBS_EMAIL (bug report).
+24/02/03 - Sistemato un po' di IFNEHAK; in giro per il client.
+	 - Implementato lock post. Manca timeout e gestione logout/caduta
+	   linea.
+23/02/03 - Messo macro _() per gettext() e sistemate le frasi e sesso.
+20/02/03 - Messo un po' di ordine in cittaweb.c, bugfix in cml2html.c: anche
+	   se non e` elegante ora dovrebbe funzionare a modino.
+	 - Cittaweb: userlist, iniziato profile.
+19/02/03 - Mette di default il ';' in fondo alle CML entities. Attualmente
+           non e` obbligatorio, ma lo sara` quando il file dei messaggi
+ 	   avra` fatto il giro.
+         - Spostato cml_entity() in share/cml_entity.c
+	 - Sistemato "'s' per spedire" in urna_client.c.
+18/02/03 - Il client si rifiuta di effettuare il login se obsoleto.
+17/02/03 - Modificato struttura lista utenti.
+         - Eliminato piccolo memory leak dati_ut degli ospiti.
+15/02/03 - Colorato user list.
+14/02/03 - Spostato cml_entity_tab[] in un nuovo file share/cml_entities.c
+           visto che ora viene usato sia da client che da citta(web)server.
+	 - Aggiunto le Room Info nel cittaweb.
+19/12/02 - client, comunicaz.c
+           ora il log degli X mette il mese giusto. Prima era il numero
+           corrispondente al mese prima.                        (V.)
+
+                                   o---O---o
+
+* From Cittadella 0.2.8 to 0.2.9                              (17/12/2002)
+
+05/12/02 - Comandi chat: /me
+         - Migliorato estetica messaggi con editor di linea.
+         - Bugfix fine sondaggio (Leppie)
+	 - Bugfix 'chiusura colore' nei doing (edit.c sempre in cml)
+	   (Leppie)
+	   
+                                   o---O---o
+
+* From Cittadella 0.2.7 to 0.2.8                              (05/12/2002)
+
+04/12/02 - Comando <.><p>er Sir Action (a gentile richiesta).
+         - get_textl_cursor() sistemato.
+	 - Sistemata formattazione editor di linea.
+         - Sistemato baco cosmetico <v>
+
+                                   o---O---o
+
+* From Cittadella 0.2.6 to 0.2.7                              (04/12/2002)
+
+03/12/02 - Salvataggio dati sondaggi durante il crash_save_per_favore().
+         - Sistemati script, eliminati autorun & co. Ora il server si
+	   lancia dalla dir ./server/ con ./bin/cittaserver
+
+02/12/02 - Il server si rifiuta di girare con privilegi di root.
+         - log direttamente inviati al file ./syslog tranne se opzione
+	   di linea -d per cittaserver (allora i log vanno in stderr).
+	 - Se l'opzione -d non viene specificata, il server si stacca
+	   dal tty (e gira come demone).
+         - Nell'operazione di reboot il server non si ferma: effettua
+	   tutte le operazioni di chiusura, salvataggio, esegue gli
+	   script logrotate e backup e poi riapre la bbs senza uscire.
+	   
+30/11/02 - Sistemato cmd_cend() per trattare stringhe arbitrariamente
+           lunghe (e quindi usare il CML nella chat)
+
+28/11/02 - bugfix editor esterno: non tronca piu' le righe CML se superano
+           gli 80 caratteri.
+
+27/11/02 - Funzione txt_dup() in text.c per duplicare strutture di testo.
+         - messaggi.c: migliorata la gestione del last_msg, quoted_msg.
+	   -> visualizza l'again con il CML.
+           -> inserisce correttamente il cml nei quote e hold
+         - Sistemato il <K> (all known rooms).
+	 - <v> non dice che non conosce il recipient se non ho ancora
+	   ricevuto un X, ma agisce come <x>.
+         - Aggiornato il file COMANDI (<h>elp)
+	 
+26/11/02 - modificato protocollo HWHO per permettere il char '|' nel doing.
+         - Inserito file protocollo in ./doc/ con protocollo e FAQ su come
+	   scrivere un client.
+	 - bugfix room info: le linee CML possono essere > 80 char
+	   (fino a 255 per la precisione)
+	   
+25/11/02 - client/src/generic_cmd.c
+        tolto i "registrati" nella visualizzazione del numero utenti
+        collegati.
+        Cambiato il solipsistico "Ci sei solo tu" con un piu' allegro 
+        "Dai che fra un po' arrivano! :)".
+                                                        (Venerdi)
+        [e se ancora non va bene, gli faccio mettere una frase a caso]
+
+25/11/02 - server/src/banner.c
+        se settata l'opzione no banner allora scrivi al login
+        "1 utente connesso" oppure "x utenti connessi" se x>1
+                                                        (Venerdi)
+
+                                   o---O---o
+
+* From Cittadella 0.2.5 to 0.2.6                              (22/11/2002)
+
+22/11/02 - I profile e le room info vengono salvati in CML e visualizzati
+           con colori etc.. Vanno scritti attualmente IN CML e non va messo
+	   il <cml> iniziale.
+
+21/11/02 - Sistemato definitivamente il "figibigi" ma forza fondo nero
+           e carattere grigio.
+
+15/11/02 - client/src/comunicaz.c
+           Il client locale registra sul file di log anche giorno, mese ed
+           anno per gli X-message/Broadcast inviati/ricevuti.    (Venerdi)
+
+15/11/02 - client/src/generic_cmd.c
+           Il numero delle (login in corso) non fa parte degli utenti
+           connessi al <w>. Viene stampato a parte.              (Venerdi)
+
+                                   o---O---o
+
+* From Cittadella 0.2.4 to 0.2.5                              (15/11/2002)
+
+15/11/02 - client/src/generic_cmd.c
+           Il numero degli utenti/ospiti connessi viene scritto in una riga
+           nella forma "Ci sono x utenti registrati e y ospiti"
+                                                        (Venerdi)
+
+14/11/02 - client/src/generic_cmd.c
+           Il client conta il numero degli uto^Henti e lo scrive dopo averne
+           fatta la lista e prima di controllare gli ospiti.
+           <green>Ci sono <bold>xx</bold> utenti connessi.</green>
+                                                        (Venerdi)
+
+24/10/02 - Inserito files cml2html.[ch] per la traduzione dal CML all'HTML
+           per il cittaweb. C'e` qualche imperfezione, e il codice va
+           migliorato, ma sostanzialmente funziona. Va pero` testato.
+
+23/10/02 - Flags di configurazione utente per i blog.
+         - Creazione della Blog Room al primo run del server.
+         - Estesa struttura dati_server: connessioni http e blog.
+	   Utility di conversione conv_0.2.5 per aggiornare i file.
+	   Aggiornato comando .Srs per leggere stat.
+         - urna.c + tolto il #define USE_REFERENDUM 1 dall'inizio del file
+                             (va definito in config.h)
+		  + nuova funzione send_ustat() per inviare al client
+                    le statistiche dei sondaggi (utilizzata da cmd_rsst())
+	 - BUGFIX: Sistemato il colore dei post lasciati dagli utenti
+                   che non hanno attivato i colori (da sistemare modo bold)
+         - Scoperto il motivo per cui il server 0.2.5 sbomba:
+           Quando carica vecchi sondaggi, ud->voti_nslots ha valori enormi...
+
+22/10/02 - Ripulito il file cittaserver.c:
+             + gestione delle code_testo in coda_testo.c
+	     + gestione dei socket in socket_citta.c
+         - Eliminato http_body_queue_len: il conteggio della lungh
+           del body viene fatto automaticamente da wprintf()
+         - Riscritto http_merge()
+         - Spostato space2under() in utility.c
+	 - aggiunto PATCH_LEVEL a versione.h
+
+22/10/02 - cittaserver.c
+                char comm[MAX_STRINGA] invece di MAX_L_qualcosa
+
+         - cittaweb.h
+                modificata la struttura http_sess per gestire due code
+                (HEADER della riposta e BODY della risposta)
+
+         - cittaweb.c
+                Se tutto va bene usa wprintf con due code per generare
+                header della risposta HTML e body
+                le due code vengono riunite alla fine dopo aver calcolato
+                il Content-Length del body del messaggio
+
+                . wprintf viene chiamato con il secondo argomento che puo'
+                  essere CODA_BODY o CODA_HEADER
+                  (definiti all'inizio di cittaweb.c)
+
+                . int http_body_queue_len(http_sess *p)
+                  restituisce la lunghezza della CODA_BODY
+
+                . void http_merge(http_sess *p)
+                  unisce CODA_BODY a CODA_HEADER e mette tutto in CODA_BODY
+                  (per merito di Ping, ovviamente)
+
+            (G. Garberoglio aka Venerdi)
+
+21/10/02 - cittaweb.c + modifiche al ciclo principale di cittaserver.c
+           per servire pagine con protocollo http. (G. Garberoglio aka Venerdi)
+	 - Flag di configurazione room per pubblicare i post nel web.
+
+                                   o---O---o
+
+* Cittadella 0.2.4-pl3
+
+01/08/02 - Correzione buffer overflow in urna.c e in messaggi.c
+
+* Cittadella 0.2.4-pl2
+
+29/07/02 - Eliminata macro MAX_VOCI_PER_RS (doppione di MAX_VOCI)
+           e portato il numero massimo di voci a 20 (G. Donnini aka LePetit)
+
+* Cittadella 0.2.4-pl1
+
+17/07/02 - Sistemato memory leak debugga_server() in urna.c
+         - trovato bug malefico del crash...
+         - Flag sondaggi per le room
+         - Controllo sul criterio di livello minimo.
+
+* From Cittadella 0.2.3 to 0.2.4                              (16/07/2002)
+
+15/07/02 - Riscritto totalmente il sistema di sondaggi (G. Donnini aka LePetit)
+           tra le varie cose:
+           - Nuovo file urna_comune.h
+           - urna_errori.[ch] gestione errori sondaggi lato client.
+           - funzione new_date() in utility.c per prendere chiedere una data
+             all'utente.
+           - funzione inkey_elenco() per aspettare un tasto nell'elenco in
+             inkey.c.
+	   - Nuovo comando <.><u>rna <p>osticipa consultazione
+           - Nuovi comandi server SPST SCVL e SCPU
+           - nuovi metodi di votazione.
+           - Notifica al login dei sondaggi/referendum da votare
+
+                                   o---O---o
+
+* From Cittadella 0.2.2 to 0.2.3                              (16/05/2002)
+
+16/05/02 - Bug Fix: legge le info correttamente (G. Donnini aka LePetit)
+         - Bug Fix: Sistemata la modalita` senza colori ansi.
+         - Bug Fix: Edit doing: appare nel colore giusto fin dall'inizio.
+
+                                   o---O---o
+
+* From Cittadella 0.2.1 to 0.2.2                              (15/05/2002)
+
+15/05/02 - Bugfix: fd aperti ma non chiusi (G. Garberoglio aka Venerdi)
+         - Controllata la chiusura di tutti gli altri file del server.
+         - Il demone gestisce ora i pty per il client remoto, ma non
+           e` tuttora pronto.
+         - se il server viene compilato con l'opzione ONLY_BANNER, invia
+           il file ./lib/messaggi/bbs_closed invece del banner di login
+           e chiude immediatamente dopo la connessione.
+         - indirizzo di default per il login: 212.97.39.38
+         - Alt-t nell'editor interno -> '~'    (da 0.2.1-pl1)
+
+                                   o---O---o
+
+* From Cittadella 0.2.0 to 0.2.1                              (07/05/2002)
+
+06/05/02 - .akk .akK .akw per la gestione del kick-out.
+         - .aw lista utenti invitati.
+         - Le cancellazioni e spostamenti dei post vengono notificati
+           all'autore e loggati in aide.
+         - Non e` piu' possibile spostare/cancellare messaggi di sistema.
+
+24/04/02 - Sistemato overflow 'Lascia Chat' (G. Garberoglio aka Venerdi)
+
+                                   o---O---o
+
+* From Cittadella 0.1.27 to 0.2.0                             (24/04/2002)
+
+24/04/02 - Sistemato help dell'editor.
+
+20/04/02 - Modifiche gestione socket client/server: piu' efficace, memoria
+           dinamica per non avere limiti sulla lunghezza delle stringhe
+           che vengono scambiate (X in CML > 80 char...)
+         - Bug fix: Select Poll: check di EINTR se fallisce select().
+           In questo modo il server non rebootta quando nessuno e`
+           connesso.
+
+16/04/02 - txt_puts() per inserire in modo diretto una stringa nel testo.
+         - Sistemato Ctrl-U.
+	 - Sistemato <.aeu> e <.aer>
+         - Ctrl-I help per l'editor interno.
+
+15/04/02 - Variabile config TABSIZE per specificare il numero di spazi
+           che corrispondono alla pressione del tasto <TAB>.
+         - Nell'editor, <TAB> porta alla prossima colonna == 0 mod TABSIZE.
+         - cml_edit() restituisce le modifiche del colore che verranno
+           fatte dalle sequenze di escape.
+
+14/04/02 - Sistemata la gestion colore di sfondo e attributi editor interno.
+         - Colori + ISO-8859 negli X-msg
+
+13/04/02 - Ristrutturato getline() in modo da sfruttarlo in get_text().
+         - getline_col() e get_text_col(): editor per colori e ISO8859.
+
+12/04/02 - Sistemato warning in check_email_syntax() (Tommaso Schiavinotto)
+         - Non scompaiono piu' degli X dal diario degli X (T. Schiavinotto)
+         - Ripulito funzione express(), settato colore, funzione is_friend().
+         - Colori diario X. Ristrutturato diario X.
+	 - Logga su file anche i broadcast in partenza.
+         - Numero messaggi memorizzati dal diario configurabile con
+           opzione MAX_XLOG (default = 20)
+         - Corretto bug editor esterno.
+         - Editor doing: M-^ seguito da 1, 2, 3 => &sup1, &sup2, &sup3
+           M-< , M-> left/right guillemets (&laquo, &raquo)
+           M-^ f , M-^ m => &ordf, &ordm
+           M-" + Spazio => dieresi &uml
+           M-S => Section sign &sect , M-P Paragraph sign &para
+           M-$ c => &cent, M-$ p => &pound, M-$ y => &yen , M-$ o => &curren
+           M-| => Broken bar &brvbar , M-- => Soft hyphen &shy
+           M-_ => Macron &macr , M-+ &plusmn, M-o Space => &deg
+           M-c Space => cedilla &cedil , M-. &middot , M-* &times
+           M-' Space => &acute , M-/ 1 => &frac14 , M-/ 2 => &frac12
+           M-/3 => &frac34 , M-( c => copyright , M-( r => registered
+
+11/04/02 - Colorato il Login Banner.
+         - Riscritto text.c con le liste in modo da non essere piu'
+           limitati da 80 caratteri per riga.
+         - Post in CML.
+         - Editor esterno: se post inizia con <cml> non traduce in cml.
+
+10/04/02 - Finito di implementare tutti i caratteri ISO 8859-1 in CML.
+         - messi i cml_printf al posto dei printf dove mancavano.
+         - aggiunto <r>eply all'help da msg prompt.
+
+09/04/02 - Bug fix Alt-u nell'editor (da 0.1.27-pl1)
+         - Alt-, (c, C) => c_CEDILLA, C_CEDILLA nell'editor
+         - Finito di sistemare il riconoscimento dei character entity
+           references dal CML.
+
+08/04/02 - Sistemato bug del <w>ho (da 0.1.27-pl1)
+         - Resize della finestra non da piu' problemi con il <w>ho
+         - Modifiche per i post con caratteri estesi se settata la
+           costante ISO_POST (da eliminare alla fine del processo.)
+         - Funzione iso2cml che converte una stringa con caratteri
+           iso-8859-1 in una stringa CML.
+         - Pager funzionante sia con CML che in raw ascii
+         - Flag MF_CML per i messaggi in CML. Da ora in avanti tutti i
+           post saranno automaticamente in CML.
+
+                                   o---O---o
+
+* From Cittadella 0.1.26 to 0.1.27
+
+07/04/02 - Sistemato tutti gli accenti del client.
+         - Config: uso del charset ascii std oppure ISO-8859.
+           Se il charset e' ascii, converte i caratteri estesi a 8-bit.
+         - Quando avviene l'upgrade, chiede agli utenti la nuova config.
+         - Resetta i colori quando esce, in qualunque situazione.
+
+06/04/02 - Sistemato ansicol.c:
+         - Terminato parser CML: accetta i seguenti tag:
+           <b> </b>   bold
+           <r> </r>   reverse
+           <u> </u>   underline
+           <f> </f>   flash
+           <fg=DIGIT> foreground color
+           <bg=DIGIT> background color
+           <b;fg=3;bg=4>   (Concatenazione tag)
+
+04/04/02 - riscritto extract() e extract() in modo piu' efficiente.
+         - funzione extracta() con allocazione dinamica della stringa.
+	 - uso extracta() nella gestione del doing.
+
+02/04/02 - Controllo nell'editor se il carattere ISO e' permesso.
+         - Elimina le virgolette dalle stringhe in cittacfg
+           (comunque non e' soddisfacente per ora, ma funziona)
+         - bug fix DUMP_FILE: ora file config dovrebbe essere a posto.
+         - Autologin: aspetta un tasto prima del login.
+         - Sistemato parsing opzioni di linea. Se -u non usa PASSWORD default.
+
+01/04/02 - editati flags messaggi per il multimedia
+         - Gestione caratteri estesi ISO_8859.
+         - M-', M-`, M-^, M-", M-/ e M-~ + carattere => ext char.
+
+27/03/02 - lune nel conteggio del tempo di collegamento del profile.
+         - getline_col per input testo con codici escape ANSI
+         - routines elabora_testo e editor2text per gestione ipertesto
+	 - Doing a colori
+
+26/03/02 - Corretto segfault doing [(null)]
+         - Modificato il <w>ho:
+                     * 1 carattere in meno per room
+                     * usa l'80esimo carattere (->doing+2)
+                     * Chat-flag in fondo al campo dei nomi
+         - push_col e pull_col -> ricupera colore corrente dopo prompt.
+	 - Opzione di configurazione utente UT_ANSI (oltre a USE_COLORS)
+	 - <.ta>nsi colors
+         - Bug fix: prende correttamente i path dal file di configurazione
+         - sistemato set di caratteri permessi nel file config
+
+25/03/02 - Inseriti file introduttivi per ospite, nuovo utente e utente
+           alla prima validazione (Gentilmente scritti da Sir Action)
+
+24/03/02 - Bug fix: Setta l'UTR_NEWGEN degli utenti se si modificano le info
+
+22/02/02 - Iniziato supporto ANSI colors nel client ufficiale
+         - Corretto "1 nuovi su 150 messaggi": nuovi -> nuovo
+
+30/01/02 - <d>oing: alias di <.ed>
+         - Modifica del doing, non chiede piu' conferma e c'e' default.
+         - Bug fix funzioni new_str_def_M e new_str_def_m
+         - Sistemate lunghezze massime stringhe in input (in particolare si
+           potevano creare problemi con username e password).
+         - Ora cerca tutte le locazioni standard per il file di configurazione.
+           Riscritta cfg_open() per accettare un numero arbitrario di loc std.
+         - Bug Fix: auto-log-chat trascrive i messaggi scritti dall'utente.
+
+                                   o---O---o
+
+* From Cittadella 0.1.25 to 0.1.26
+
+28/01/02 - Conteggio dei mail inviati nella struttura utente.
+         - Corretta visualizzazione propri X nel diario degli X.
+	 - <.><e>dit <t>erminal: cambiare # righe terminale.
+	 - <.><e>dit <P>assword: modificare la propria password.
+	 - <.><a>ide <e>dit <p>assword di un utente.
+
+27/01/02 - Sistemati templates directories temporanee.
+         - opzione di compilazione WINDOWS per compilazione con cygwin.
+	 - Se LOCAL non e' definito, in comandi.c non vengono accettati
+           i comandi non disponibili nel client remoto.
+
+26/01/02 - Nel prompt messaggi: <D>elete msg, <d>ump to file. (scambiati)
+	 - Comando <d>ump nel diario degli X per salvare l'X-msg corrente
+           nel file di dump. La cancellazione e' stata spostata in <D>elete.
+	 - Toggle commands <.tc>, <.tm> e <.tX> per abilitare/disabilitare
+	   il salvataggio automatico dei messaggi in chat, mail e degli
+	   X-msg nei dump files.
+	 - Salvataggio automatico degli X implementato.
+         - trascrizione automatica discussioni in chat.
+         - Bug fix: se si abortisce un X, questo non viene piu' memorizzato
+           nel diario.
+	 - Terminato il 'doing'. Viene immesso con <.ed> e cancellato
+           con <.eD>
+
+25/01/02 - Possibilita' di inserire un 'doing' che appare nella lista degli
+           utenti connessi al posto dell'host. Il doing va settato ad ogni
+           sessione, ma puo' essere specificato tramite il file di
+           configurazione.
+	 - Opzione di linea --rcfile=path_file_di_configurazione (o -F) per
+	   selezionare un particolare file di configurazione.
+	 - Opzione di linea --norc (-N) per non caricare file di config.
+	 - Variabile di configurazione EDITOR per editor esterno.
+	 - Interpreta correttamente la '~' nei path.
+
+24/01/02 - Messo il file ./lib/help/stato che mancava.
+         - Numero di righe del terminale configurabile (NRIGHE).
+           Valore di default portato a 24.
+
+23/01/02 - Terminato cittacfg.c per gestire i file di configurazione.
+         - Modifiche alla gestione delle command options per compatibilita'
+           con file di configurazione.
+
+22/01/02 - Disabilitato il Ctrl-Z quando il terminale e' lockato.
+         - Se il client e' obsoleto, aspetta che venga premuto un
+           tasto prima di continuare il login.
+
+21/01/02 - Bug fix <.er>: esce dallo stato di registrazione '_' anche se
+           non mantiene le modifiche. Inoltre cmd_rgst() controlla che
+           l'utente e' in stato di registrazione prima di modificare.
+
+20/01/02 - Bug fix modifica livello utente con <.aeu>
+         - L'ospite non puo' piu' lockare il terminale.
+         - Bug fix ciclo <.aec> (possibilita' di uscire senza salvare)
+         - Bug fix, risposta "L'utente 200 Lobby rifiuta gli Xmsg."
+	 - Bug fix cancellazione room.
+
+01/09/01 - Bug fix nome room corrente nel prompt.
+
+30/08/01 - Funzione check_email_syntax() (Tommaso Schiavinotto).
+         - Spostato statistiche login e ospiti da cmd_user a cmd_usr1
+	   per evitare conteggi multipli quando si sbaglia il login.
+
+                                   o---O---o
+
+* From Cittadella 0.1.24 to 0.1.25
+
+29/08/01 - Trasferito controllo sul livello di accesso ai comandi in
+           interprete.c
+	 - Quando si edita la configurazione di un utente non validato
+	   e' possibile validarlo.
+	 - comando 'V' nel client per richiedere una nuova chiave di
+	   validazione.
+	 - touch di cittaserver.rc per evitare che il server si pianti
+	   quando il file non e' presente. (da migliorare)
+	 - Bug fix #mail e #post in profile.
+
+                                   o---O---o
+
+* From Cittadella 0.1.23 to 0.1.24
+
+26/08/01 - Numero mail e numero messaggi in chat nella struttura utente.
+         - Il primo utente che si collega alla BBS non necessita piu'
+	   di validarsi (e' il sysop).
+
+21/08/01 - Utilizza sempre mkstemp() per creare file temporanei.
+           (Tommaso Schiavinotto)
+
+01/07/27 (Tommaso Schiavinotto)
+         nei file:
+         client/src/makefile (aggiunto -DMKSTEMP a MYFLAG)
+	 client/src/utility.c (aggiunto time.h)
+	 client/src/sysop.c (aggiunto time.h e string.h)
+	 client/src/configurazione.c (aggiunto string.h)
+	 client/src/inkey.c (aggiunto stdlib.h, warning sulla funzione "exit")
+	 client/src/pager.c (aggiunto string.h)
+	 client/src/login.c (aggiunto string.h)
+
+         client/src/aide.c (modifica mkstemp)
+	 client/src/edit.c (modifica mkstemp attenzione in entrambi si usa 
+	     TEMP_EDIT_TEMPLATE, ed e' definito all'inizio di ogni file)
+  	 client/src/floor_cmd.c (modifica mkstemp, stesso discorso di sopra)
+  	 client/src/room_cmd.c (modifica mkstemp, stesso discorso di sopra
+  	 client/src/sysop.c (modifica mkstemp, stesso discorso di sopra)
+		   
+	 Ho lasciato ovunque la definizione ad inizio file, perche' cosi'
+	 decidi se tutti debbano avere lo stesso nome oppure no...
+
+01/07/25 (Tommaso Schiavinotto)
+	 nei file:
+	 share/hash.c
+	 share/text.c
+	 server/src/cache_post.c
+	 server/src/room_ops.c
+	 server/src/x.c
+	 server/src/memstat.c
+	 aggiunto #include <string.h> per evitare warning (strcmp, memcpy..)
+
+	 nei file:
+	 server/src/signals.h
+	 server/src/urna.h
+	 trasformato
+	     #endif _SIGNALS_H
+	 in 
+	     #endif /* _SIGNALS_H*/
+	 per evitare warning: extra tokens at end of #endif directive
+
+	 nel file 
+	 server/src/interprete.c:
+	 trasformate tutte le occorrenze simili a:
+	     { "TABC", { &cmd_tabc }, PASS_ARG },
+	 in
+	     { "TABC", { (void *)&cmd_tabc }, PASS_ARG },
+	 non ci sono piu' gli warning
+
+	 nei file 
+	 server/src/utente.c
+	 server/src/utente_cmd.c
+	 server/src/x.c
+
+	 Ho aggiunto delle parti incluse dentro 
+	     #ifdef MKSTEMP
+
+	 per l'utilizzo di mkstemp invece di tempnam.
+	 nel ramo else dell'#ifdef c'e' il vecchio codice.
+	 All'inizio di ogni file dopo gli include c'e' la define del template
+	 andrebbero riunite tutte in un unico header, e definite solo 
+	 se MKSTEMP e' definito.
+
+	 in server/src/Makefile ho messo che venga definita MKSTEMP
+	 tra i MYFLAGS
+
+                                   o---O---o
+
+* From Cittadella 0.1.22 to 0.1.23
+
+25/07/01 - Eliminate le funzioni atoi() e atol() a favore di strtol(),
+           piu' robusta rispetto agli overflows.
+	 - Definito in user_flags.h costanti con lunghezze stringhe
+	   nella struttura utente.
+	 - Bug fix in cmd_read() del server (controllo err dopo fm_get)
+         - Bug fix get_number() e funzioni simili.
+	 - Definito variabili per gli errori FMERR. Funzione print_err_fm()
+	   nel client per descrivere l'errore.
+	 - Bug fix di extract(), extractn(), ottimizzazione num_parms(),
+	   test seri funzioni in extract.c (vedi cittadella/tmp)
+	 - Bug fix edit room: si puo' cambiare nome tranquillamente
+	   alle room
+	 - Bug fix: il client non si pianta piu' se si fa <a>gain subito
+	   dopo un <r>eply.
+
+22/07/01 - interprete_comandi() nel server usa ora una tabella per
+           trovare il comando corrispondente al token.
+
+21/07/01 - Controllo sintassi Email con email_sintax() nel client. Eliminata
+           cosi' la necessita' di fnmatch.h che da problemi con cygwin.
+	   Migliorata la parte email della registrazione.
+	 - Eliminato uso di vasprintf() in serv_putf() poiche' e' una GNU
+	   extension, a favore di vsnprintf() (ISOC9X). Con questo, il
+	   client dovrebbe compilarsi senza problemi con cygwin.
+
+19/07/01 - Se invio un X e ho X disabilitati (e il rcpt non e' in friend
+           list) il client mi avverte che il rcpt non potra' rispondermi.
+         - eliminata funzione (inutilizzata) version_name() da version.c
+         - Utilizzo cache: visualizza e logga % hits per chiarezza.
+	 - Bug Fix Edit Userconfig: non updata se si risponde 'no' e
+	   risponde con messaggio giusto.
+	 - Bug Fix: il server non si pianta piu' se riceve HWHO da una
+	   connessione che non ha passato il login.
+
+                                   o---O---o
+
+* From Cittadella 0.1.21 to 0.1.22
+
+15/07/01 - Bug fixes tramissione post e elabora_input().
+
+13/07/01 - inkey_pager() in grado di gestire eventi di input contemporanei.
+           Restituisce insieme di bit corrispondenti al tipo di input.
+	 - pager() ritoccato, bugs eliminati.
+	 - Utilizza last_msg_text per <a>gain per non dover ritrasmettere
+	   il post.
+	 - ritocchi estetici layout messaggi
+
+09/07/01 - Quando le news vengono modificate, viene settato il flag SUT_NEWS
+           a tutti gli utenti, e il client si ferma alla lettura delle news.
+	   Il flag viene poi resettato da cmd_chek().
+	 - cmd_info() invia al client anche dei flag di configurazione del
+	   server (supporto per floors, referendum, etc...) e il client
+	   abilita le varie opzioni solo se disponibili nel server.
+	 - cmd_info() invia anche lunghezze massime di post e messaggi.
+
+08/07/01 - bug fix editor di linea: non crasha piu' se si immette un testo
+           vuoto + ritocco estetico.
+
+07/07/01 - Fusione dei pager. Ora esiste un'unica funzione pager() che si
+           occupa della paginazione e varie macro (in pager.h) per le
+	   diverse versioni del pager utilizzate nella bbs.
+	 - L'evoluzione del caricamento del testo visualizzata dal pager.
+
+06/07/01 - Utilizza il pager per visualizzare i files.
+	 - Funziona il flag per decidere se accettare notifiche e/o X
+	   all'interno del pager.
+
+05/07/01 - Bug Fixes vari nelle funzioni di help.
+
+03/07/01 - Bug Fix diario X: lista messaggi nel diario, messaggi inviati
+           salvati anche se recipiente occupato o errore simile.
+         - Aggiornati i file di help consultabili online.
+         - Sistemato il prompt per file di Help, e i files disponibili
+	   vengono elencati su due collonne.
+
+02/07/01 - Bug fix diario X (scrolling messaggi e salvataggio X ricevuti)
+
+10/02/01 - <K> list all rooms organizzate per floor, con flags [ZN]
+
+21/01/01 - Bug Fix: funzione durata() in utente_client.c: ora visualizza
+           correttamente l'idle time nel profile.
+         - <.R>oom commands: tutti i comandi sulle room (per snellire <.a>)
+	 - Statistiche: . Max utenti connessi contemporaneamente con data.
+	                . Statistiche floors
+	                . numero messaggi in chat.
+
+20/01/01 - Bug Fix: il server non crasha piu' quando si elimina l'altra
+           sessione al login (comunque da rivedere tutto).
+         - Tab completion delle room: se si inizia con ':' il completamento
+	   viene ricercato fra i nomi dei floors.
+
+16/01/01 - Aggiorna i dati sull'ultimo post lasciato nel floor quando viene
+           lasciato un messaggio in una room del floor.
+	 - Modificato send_mail() per funzionare con USE_STRING_TEXT.
+         - Comando FKRL: lista room conosciute nel floor corrente.
+         - Comando FKRM: lista floors con room conosciute (con/senza nuovi
+	                 messaggi)
+	 - Modificato comando <k> per funzionare in presenza dei floors.
+
+14/01/01 - Comandi server FIEB e FIEE per editare le info.
+	 - Comandi <.> <F>loor <i>nfo
+	           <.> <F>loor <I>nfo dettagliate
+	           <.> <F>loor <E>dit floor info
+
+13/01/01 - Variabile globale current_floor[] nel client per il nome del
+           floor corrente. Nel prompt appare anche il nome del floor.
+	 - Comandi <.> <F>loor new floor <a>ide
+	           <.> <F>loor <c>reate
+	           <.> <F>loor <d>elete
+	           <.> <F>loor <l>ist
+	           <.> <F>loor <m>ove room
+
+12/01/01 - Flags di configurazione utente per scegliere di usare o meno i
+           floors per la scansione e la visualizzazione delle room.
+         - Creato le directory ./lib/floors/ , ./lib/floors/floor_info/
+	   e ./lib/floors/room_list/ .
+	 - Aggiustati comandi di creazione/distruzione room per tenere conto
+	   dei floors.
+	 - Implementata la Floor Lobby>.
+	 - Implementata la march-list per i floor; modificato cmd_goto()
+	   per seguire i floors se l'utente lo vuole.
+
+11/01/01 - Implementazione comandi base per i floor (cmd_flst, cmd_fnew,
+           cmd_fedt, cmd_fmvr).
+
+10/01/01 - Notifica dei logout dovuti a connessioni cadute e idle timeout.
+
+09/01/01 - Cittadella Sockets Versione 2 (beta): gestione piu' efficace
+           della rete, invia tutto l'output disponibile al client.
+
+05/12/00 - Floors: modificata la struttura 'room' per fare riferimento al
+           floor e alla sua posizione nella march list del floor.
+	 - Modificata la struttura dati_server, per ampliare il tipo di
+	   statistiche effettuate sull'uso del server.
+	   Programmino conv_0.1.22.c per upgradare i files della BBS.
+
+04/12/00 - Strutture dati per i floor pronte. Routine di base per caricare,
+           salvare, trovare, creare, cancellare e liberare la memoria per
+	   i floors in floor.c.
+
+01/12/00 - bugfix inkey.c
+         - Trasferito in ./server/src/config.h le variabili di configurazione
+	   del server che vanno settate prima della compilazione.
+	 - Il server non si mangia piu' le righe vuote nei post.
+	 - Bug fix per citta_post() con USE_STRING_TEXT.
+
+27/11/00 - Messo a posto tutti i controlli sul livello minimo per utilizzare
+           i comandi del server.
+
+20/10/00 - Controlli su tutte le funzioni del server che (t->utente!=NULL)
+           A questo punto diventa non banale far crashare il server tramite
+	   telnet alla porta 4000 del server.
+
+19/10/00 - Modificati file_messaggi.c, messaggi.c, cache_post.c: i post
+           vengono memorizzati ora da fm_get() direttamente sotto forma di
+	   un vettore di char, le diverse righe separate da '\0'. In questo
+	   modo si minimizza la memoria utilizzata per mantenerli nella
+	   cache, e rimane molto piu' veloce dell'uso di text.c.
+         - Inserisce nella cache i post nuovi quando li salva sul fm.
+
+16/10/00 - Bugfix Realloc(), ora memstat.c e' a posto.
+         - riscritto text.c con le liste per non sprecare memoria.
+	   txt_putc() va ancora ottimizzata.
+
+14/10/00 - Bugfix help utenti non esperti.
+	 - Cache funzionante per i post.
+	 - Memstat.c per tenere sotto controllo la memoria allocata dal
+	   server.
+
+13/10/00 - Inserito flag CC per diario X nel ramo ufficiale.
+	 - Flag per CC dei mail nella propria mailbox.
+         - Editor di linea: una volta finito di editare il testo, lo
+	   visualizza al completo.
+
+12/10/00 - Inserito la cache dei post nel ramo ufficiale. Per attivarla deve
+           essere definita la macro USE_CACHE_POST. (per ora sperimentale)
+	 - Inserito modifiche a text.c nel ramo ufficiale di sviluppo.
+
+                                   o---O---o
+
+* From Cittadella 0.1.20 to 0.1.21
+
+11/10/00 - Splitting dei rami di sviluppo: cittadella con la versione
+           stabile, color_cittadella, per la versione sperimentale del
+	   client. Quando il client sperimentale diventera' stabile,
+	   diventera' il cittaclient ufficiale. (col punto sono indicate le
+	   modifiche nel ramo sperimentale)
+	 - Setta vecchi i messaggi nel momento in cui si leggono.
+	   Se poi si fa <s>kip recupera il vecchio fullroom
+
+10/10/00 + Funzioni per la gestione delle cache in share/cache.c
+         + Cache per i post.
+
+09/10/00 + Funzioni per la gestione di hash tables in share/hash.c
+         . Hash table dei nomi delle room.
+
+03/10/00 + Quando l'editor di linea finisce di prendere un testo lo
+           visualizza al completo.
+	 + text.c: alcune funzioni sono state sostituite da macro.
+
+17/09/00 . Usa database terminfo per accedere alle capacita' del terminale.
+
+16/09/00 + Flag per CC dei propri messaggi nel diario dei messaggi.
+
+15/09/00 . Editor integrato funzionante.
+
+09/09/00 + Supporto caratteri estesi per il client.
+         + <F1> in un qualunque momento fornisce l'help.
+         . Comandi dell'editor per usare i colori nei post.
+
+08/09/00 . Supporto per colori ANSI in ./share/ansicol.c e flags di
+           configurazione.
+         . Gestione del terminale con termcap.h
+	 . Uso le funzioni termcap per l'editor (minimizzo cosi' i caratteri
+	   in output su schermo)
+	 . Editor interno con finestra per i messaggi.
+
+07/09/00 . Ctrl-Z: sospende la sessione cittaclient (solo locale)
+         . Editor interno: comandi emacs + get_line_wrap
+
+06/09/00 - Bug fix: ora al login i messaggi nuovi in Lobby) si vedono
+           effettivamente come nuovi.
+	 - Bug fix edit configurazione.
+	 - Profile: non mette l'idle se l'utente e' occupato, dice se
+	   e da quanto il terminale e' lockato.
+	 - Idle: Non caccia se lo schermo e' lockato.
+	 - Comandi di cursore per l'editor di linea.
+
+05/09/00 - Funzioni per spedire mail agli utenti (send_mail() e citta_mail())
+         - Se un utente Xato si scollega, chiede se si vuole spedire il
+	   messaggio in mail.
+	 - Ritocchi cosmetici al profile.
+
+                                   o---O---o
+
+* From Cittadella 0.1.19 to 0.1.20 (Control release)
+
+04/09/00 - Diario dei messaggi arrivati (X e Broadcast)
+           Con <&> si entra nel diario. I messaggi si possono scorrere con
+	   i comandi <n>ext e <b>ack, cancellare con <d>elete, visualizzarne
+	   gli headers con <l>ist, rispondere a un messaggio con <r>eply,
+	   stamparli tutti con <p>rint. Per l'help <?> e per finire <q>uit.
+
+03/09/00 - Corretto baco editor per chat messages.
+         - Comando <.><S>ysop <b>anners <m>odify
+	 - Editor interno e editor di linea:
+	   ctrl-p: cancella l'ultima parola scritta.
+	   ctrl-u: cancella la riga corrente.
+	   ctrl-x: abort messaggio.
+	 - Baco edit profile eliminato.
+	 - Abort funziona nella scrittura dei post.
+
+                                   o---O---o
+
+* From Cittadella 0.1.18 to 0.1.19 (Sunrise release)
+
+21/08/00 - Comando <.> <a>ide <e>nter room <s>ize per modificare il
+           numero di slot associati a una data room.
+         - Reply in mail.
+
+20/08/00 - Nel prompt 'Entry Command' nuovo comando <p>rint per leggere il
+           post che si sta scrivendo con il pager.
+	 - Opzione di configurazione 'Niente prompt dopo i messaggi'. Se
+	   questa opzione e' settata, legge i messaggi in avanti tutti insieme,
+	   senza prompt tra un post e un altro.
+	 - Opzione: Usa il line editor (quello della chat) per gli X. In
+           questo caso tutte le notifiche e i messaggi in chat arrivano in
+	   tempo reale.
+	 - <.> <a>ide <e>dit <n>ews
+
+19/08/00 - Messo a posto i prompt quando arriva un comando dal server.
+           Mentre si scrive un messaggio in chat arrivano tutte le notifiche,
+	   compresi i messaggio in chat da parte di altri utenti.
+	 - Migliorato histo.c
+
+18/08/00 - Per coerenza, <.te> toggla l'experto mode, <.tx> toggla la
+           ricezione degli Xmsg.
+	 - <.tf> toggla la ricezione dei X da parte degli amici.
+	 - <.><E>nter <I>nvitation request, comando per richiedere l'invito a
+	   una particolare room a invito. Se il flag RF_AUTOINV della room e'
+	   settato, l'utente riceve automaticamente l'accesso alla room,
+	   altrimenti la richiesta viene postata in Room Aide).
+	 - Aggiunto controlli in x.c per verificare che l'inizializzazione
+	   e' stata effettuata correttamente prima di poter eseguire la
+	   procedura di invio di un testo + piccolo bug fix.
+	 - Il jump completa il nome (se necessario) con quello di una room
+	   conosciuta e non zappata.
+	 - Editor di linea per i messaggi in chat.
+
+16/08/00 - Funzione per copiare un post in un'altra room.
+         - <#> legge messaggio # N.
+	 - Se sono RH o RA di una room non la posso zappare.
+	 - La lobby e la mailroom non si possono zappare.
+	 - Comando <Z>ap all rooms.
+	 - Comando <U>nzap all rooms.
+
+31/07/00 - Demone per lanciare il client remoto dalla porta 4001.
+           usa in.telnetd modificato. (manca l'autentificazione e l'invio
+	   dell'host remoto da cui si chiama)
+
+                                   o---O---o
+
+* From Cittadella 0.1.17 to 0.1.18 (Fatfree release)
+
+26/07/00 - Passa per la Lobby) con <s>kip e <a>bandon quando finisce il giro.
+         - Flag di configurazione per scansione delle room con messaggi nuovi
+	   seguendo l'ordine della march list o per andare nella prima room
+	   della march list con messaggi nuovi.
+	 - <.><s>kip command (Sysop commands --> <.><S>ysop)
+	 - Flag per rendere tutti i dati personali visibili agli amici
+	   nella friend-list.
+	 - Messo a posto la gestione di CON_CHIUSA. Quando la sessione viene
+	   killata per un doppio login, non vengono piu' persi dati.
+	 - Notifiche del reboot messe a posto.
+
+25/07/00 - Fissato baco nel conteggio dell'idle time.
+         - Corretto risposta del client se provo a mandare un X o un
+	   mail a me stesso.
+
+24/07/00 - Comando <.> <a>ide <e>nter room <s>ize per modificare il
+           numero di slot associati a una data room. (beta)
+	 - Comandi <Z>ap all, <.sbm>, <.sbr> (Da fare)
+	 - Messi a posto <s>kip (non modifica il fullroom) e <a>bandon
+	   (rende vecchi solo i messaggi letti)
+	 - Corretto baco delete dei mail. Ora si possono cancellare senza
+	   problemi.
+	 - <.><a><h> ora toggla lo status di RH di un utente nella room
+	   corrente.
+	 - Quando cambio Room Aide, resetta tutti i flags RA.
+	 - I dati personali appaiono nel profile se li ho configurati come
+	   visibili agli altri utenti.
+	 - Non appare il '+' nel <w>ho se l'utente scrive in una room che
+	   non conosco, oppure in una room con post anonimi.
+	 - Ora appare il '^' accanto al nome quando edito la configurazione.
+	 - Messo a posto il sesso nel profile ("E' collegata", etc.)
+
+                                   o---O---o
+
+* From Cittadella 0.1.16 to 0.1.17 (Faso release)
+
+23/07/00 - Si puo' fare <j>ump 'roomnumber'
+         - Messe a posto Guess room e room su invito.
+	 - Nome di default al login se si sbaglia la password.
+	 - Eliminato il problema del 'error #2' per i messaggi nuovi gia'
+	   sovrascritti.
+	 - "Un altro post e' stato lasciato nel frattempo.": non appare
+	   piu' il nome dell'autore nelle room anonime, e non invia la 
+	   notifica in mail).
+	 - Configurazione utente di default per gli ospiti.
+
+22/07/00 - Lista room <.><a><r><r> (aggiunta info, beautify + pager)
+         - Pager nella lista degli utenti
+	 - Funziona il backspace.
+	 - C'e' post@ nuova? tolto il '@' bruttissimo.
+	 - hit_any_key() vari per gli utenti non esperti.
+	 - Chiede conferma per zappare una room.
+	 - Chiede conferma per modificare il profile personale.
+         - Cambiamento comandi: <E> toggle Expert mode, <X> toggle Xmsg.
+	 - % vita online aggiustata.
+	 - <I>: info dettagliate (come <.><r><i>)
+	 - Curato buffer overflow dei subject nel server.
+	 - Sono connessi 'altri' n utenti, al login.
+	 - Numero utenti connessi nel login banner.
+	 - Known room incolonnata (mediante configurazione utente) + Pager
+	 - <.> <a>ide <s>wap rooms messo a posto.
+	 - NEWS disabilitato per ora.
+
+                                   o---O---o
+
+* From Cittadella 0.1.15 to 0.1.16
+
+16/07/00 - Login Banner
+           ( Creare la directory ./lib/banners e il file
+	   ./lib/banners/banners con i login banner. Il logo della bbs
+	   va nel file ./lib/messaggi/logo)
+         - Bug fix --no-banner (Matteo Sisa aka Furjo)
+	 - Notifica nuovo post mentre scrivevo.
+	 - Notifica nuovi post nella room corrente (tramite configurazione)
+	 - Per cancellare un X, broadcast o messaggio in chat: scrivere
+	   ABORT (maiuscolo) in una riga vuota,
+
+15/07/00 - <M> <=> Goto mailroom
+         - Hyperterminal ON/OFF: funziona e si chiama ora grassetto.
+	 - Utente di default per Mail, X, Profile.
+	   Mail: autore ultimo messaggio letto, o rcpt ultimo mail spedito
+	   X: Ultimo destinatario di un X
+	   Profile: Autore ultimo post letto o ultimo X ricevuto
+	 - Comando <v> per rispondere all'ultimo X ricevuto.
+	 - Ora il <J>ump matcha anche l'inizio del nome (es: <J> Chia <Enter>)
+	 - Message pager. (< >, <Enter>, <u>, <b>, <s>)
+	 - <l> per logout.
+	 - <D> da prompt messaggi per appendere il messaggio in fondo
+	   al file ./cittadella.dump
+
+11/07/00 - <.><a><s> Comando swap rooms per scambiare posizione di due room.
+         - Pager per il profile e per le room info.
+
+                                   o---O---o
+
+* From Cittadella 0.1.14 to 0.1.15
+
+28/06/00 - Lancia il reboot giornaliero alle 4 del mattino (+/- 10 min) del
+           giorno dopo la partenza del server. Lo shutdown avviene 15
+	   minuti dopo.
+         - Hold & Continue: Con <h>old tiene in memoria per postare in un
+	   momento successivo, con <c>ontinue continua la scrittura del
+	   post. 
+	   L'hold funziona solo con l'editor esterno.
+	   Se ho sia un <h>old che un <q>uote attivi, alla prossima scrittura
+	   di un post con editor esterno, appaiono nell'editor prima il
+	   testo <h>old, seguito dal testo quotato. Ripetendo
+	   alternativamente i due comandi, e' possibile quotare piu' di
+	   un messaggio alla volta.
+	 - Eliminato il messaggio di errore quando si lascia un messaggio
+	   vuoto con l'editor esterno.
+	 - Ritoccata la funzione get_text() per infila un newline in fondo
+	   ad ogni riga e non lasciare una riga in troppo in fondo al
+	   testo.
+	 - Sondaggi & Referendum ultimati.
+	 - Move message: funziona per ora solo per room che sono nello
+	   stesso file messaggi (comunque c'e' un unico FM nella bbs per ora)
+
+27/06/00 - Possibilita' di scegliere se rivisualizzare l'ultimo messaggio
+           letto dopo un reply, tramite la configurazione.
+	 - Quote: dal prompt dei messaggi sono disponibili i comandi: 
+	   <q>uote, quota il messaggio corrente,
+	   <e>xamine quote, per esaminare l'ultimo quote effettuato,
+	   <f>ree quote, per cancellare il quote.
+	 - Chiede conferma quando si modifica la registrazione.
+	 - Referendum e Sondaggi funzionanti: manca solo il controllo per
+	   non permettere piu' di un voto per utente.
+
+                                   o---O---o
+
+* From Cittadella 0.1.13 to 0.1.14
+
+26/06/00 - Comando per espansione file messaggi.
+
+25/06/00 - Mail a Sysop, Aide e Room Aide.
+         - Gestione referendum e sondaggi nelle room.
+
+24/06/00 - Toggle : risponde On/Off.
+         - Beautificato il <W>ho in chat e la configurazione dell'utente.
+	 - Conferma in editing room
+	 - Post automatici di Cittadella.
+	 - Bug Fixes: Editor di default per i post, nome nel 'reply to'.
+
+                                   o---O---o
+
+* From Cittadella 0.1.12 to 0.1.13
+
+22/06/00 - Post di amministrazione come RH, RA, Aide o Sysop.
+         - Nel profile appaiono le room in cui l'utente e' RA o RH.
+           Inoltre al posto del livello appare la qualifica corrispondente.
+	   E' stato introdotto il grassetto per evidenziarne alcune parti.
+	 - Follow Up automatico per gli X (da drogati).
+	   Toggle per attivare/disattivare il follow-up.
+	 - Messo a posto msg prompt dopo X e notifiche.
+	 - Notifica arrivo nuovo mail.
+	 - Autore del messaggio in chat in grassetto.
+         - Semplice pager in lettura dei post, e rispettivo flag.
+
+                                   o---O---o
+
+* From Cittadella 0.1.11 to 0.1.12
+
+21/06/00 - Baco <w>ho corretto.
+         - Baco formattazione mail corretto.
+
+                                   o---O---o
+
+* From Cittadella 0.1.10 to 0.1.11
+
+20/06/00 - Implementati i Reply.
+
+                                   o---O---o
+
+* From Cittadella 0.1.9 to 0.1.10
+
+09/06/00 - Eliminato buffer overflow nella routine per cambiare password.
+         - Implementato grassetto per la leggibilita' (provvisorio)
+         - Il carattere di riconoscimento della room sta ora in room_type.
+
+                                   o---O---o
+
+* From Cittadella 0.1.8 to 0.1.9
+
+04/06/00 - Flag UT_LASTOLD nella configurazione dell'utente per scegliere se
+           leggere l'ultimo messaggio letto prima di quelli nuovi.
+	 - Nel profile appare il numero di mail nuovi dell'utente.
+         - Un paio di bug fixes nei mail (mail a se stessi, errori con la
+	   mailbox vuota)
+
+                                   o---O---o
+
+* From Cittadella 0.1.7 to 0.1.8
+
+30/05/00 - Bug nell'immissione dei subject corretto: ora non dovrebbero piu'
+           apparire messaggi corrotti.
+	 - Cambiato ciclo lettura di post, per non rimanere bloccati se il
+      	   primo post letto contiene un errore o e' cancellato.
+
+29/05/00 - Info editabili da room aide e da room helper.
+         - Entry cmd (save, abort) quando si lascia un post.
+	 - Chiede conferma per cancellare un post.
+	 - Corretto bug in cmd_redt(): ora quando creo una nuova room mi
+	   fornisce le info giuste.
+	 - Bug fixes procedura lettura post.
+
+                                   o---O---o
+
+* From Cittadella 0.1.6 to 0.1.7
+
+24/05/00 - Bug Chat fissato: ora mette l'autore all'inizio del messaggio
+           e formatta bene.
+	 - Corretto procedura di login: viene notificato solo al termine.
+	 - Tronca l'host nel <w>ho se supera la riga.
+	 - Notifica i nuovi mail al login, comando <@> per controllare la
+	   posta, nuovi mail nel profile.
+
+                                   o---O---o
+
+* From Cittadella 0.1.5 to 0.1.6
+
+19/05/00 - Se provo a fare una doppia connessione, mi chiede se voglio
+           andare avanti e uccidere l'altra connessione.
+         - Bug chat fissato (non appariva il nome dell'autore)
+
+18/05/00 - Tab completion non e' piu' case sensitive. Attenzione, uso la
+           funzione strncasecmp(), che e' una GNU extention; andra'
+	   implementata per sistemi non GNU.
+	 - Comando <-> legge gli ultimi n messaggi; cmd_read() migliorato,
+	   ora <r>everse e <b>ack funzionano bene.
+	 - Baco nel delete e baco corretto.
+	 - Corretto baco sesso dei nuovi utenti.
+
+                                   o---O---o
+
+* From Cittadella 0.1.4 to 0.1.5
+
+16/05/00 - Corretto baco mail
+         - Comandi .Sysop Shutdown [ with .Killscript | Now | Stop ]
+
+                                   o---O---o
+
+* From Cittadella 0.1.3 to 0.1.4
+
+15/05/00 - Modificato comandi.c, prompt che spariscono in lettura messaggi,
+           flag 'no_prompt' in lettura messaggi, modo 'non esperto'.
+         - <5> : Read last five messages.
+	 - Toggle commands
+
+                                   o---O---o
+
+* From Cittadella 0.1.2 to 0.1.3
+
+11/05/00 - Implementazione dei mail terminata. Delete post.
+
+                                   o---O---o
+
+* From Cittadella 0.1.1 to 0.1.2
+
+10/05/00 - Funzione logf per log formattati (es: logf("Utente %s", nome);)
+           e funzione serv_putf per inviare una stringa formattata al server.
+
+09/05/00 - Editor di default per editare i post
+         - Iniziato implementazione mail
+
+                                   o---O---o
+
+* First release Cittadella/UX 0.1.1
+
+08/05/00 - Nella lista degli utenti <u> appare il numero di X inviati.
+         - Post anonimi
+	 - versione.c e versione.h per la gestione delle versioni del
+	   client e del server. Ora client e server sono versione 0.1.1
+	   ad ogni modifica incrementa il sublevel, quando Cittadella/UX
+	   avra' tutte le funzioni di base stabili si passera' alla 0.2.0
+
+04/05/00 - Comando <.><a><a> per designare nuovo RA della room corrente.
+         - Comando <.><a><h> per designare un Room Helper per la room
+           corrente.
+	 - Comando <.><a><i> per invitare un utente nella room corrente.
+	 - Implementazione delle room ad invito e delle Guess Room.
+           In <w> manda il nome della room solo se e' conosciuta, 
+           altrimenti invia "[ Boh... ]"
+	 - Definizione dei flag di definizione dei messaggi MF_
+
+03/05/00 - Room corrente in <w>
+         - Aggiunto controlli sulla creazione delle room
+	 - Sistemato la formattazione del'output di <k>
+	 - Non notifica piu' l'uscita degli ospiti
+	 - Configurazione flags delle room da client
+	 - crash_save_perfavore se il server riceve il segnale SIGHUP
+
+02/05/00 - histo.c traccia istogrammi, nelle statistiche del server c'e' ora
+           anche la distribuzione delle chiamate nella giornata, nella
+	   settimana e nei mesi dell'anno.
+
+30/04/00 - Gestione editor esterno per client locale e client remoto.
+         - Caccia tutti gli utenti che sono nella room prima di cancellarla
+	   e lo notifica agli utenti.
+
+29/04/00 - Incorporato text.c nel client: ora i testi vengono manipolati
+           mediante strutture 'text'. Funzione enter_text() per inserire un
+	   testo, con editor interno o esterno, a scelta.
+
+28/04/00 - Modificato i Makefiles e la struttura delle directory.
+           Ora si compila tutto dalla directory principale, con 
+	   make, make cittaclient, make cittaserver, etc.
+	   Si ripuliscono le directory con 'make clean'
+	   Si crea una distribuzionte .tgz con 'make dist'.
+	 - Funzioni per scambiare room di posizione, modificare il numero
+	   di messaggi in una room, e modificare la lunghezza dei
+	   vettori UTR.
+	 - Formattazione output di <k>nown rooms.
+	 - Modificato creazione/editing room.
+
+25/04/00 - Gestione dinamica delle strutture UTR dove vengono memorizzati
+           i dati corrispondenti ad ogni room per gli utenti (fullroom,
+	   room_flags, etc.)
+	 - Funzioni <K>nown room, scan delle room conosciute, gestione
+	   dell'accesso alle room con controllo sul livello, e sugli
+	   altri flags (UTR_KNOWN, UTR_INVITED, UTR_KICKOUT, etc...)
+	 - Gestione dello zapping delle room.
+	 - Room Aide e Room Helper.
+	 - Info per le room e flag di 'nuova generazione' della room.
+
+20/04/00 - Comandi <.> <s>ysop <f>ile messaggi per la gestione del file
+           messaggi da client.
+	 - Comandi per creare ed editare room, tab completion per le room.
+         - March list, e funzioni per leggere/scrivere post
+	 - Nuova struttura degli headers dei sorgenti.
+
+12/04/00 - Struttura dati per le room e funzioni per caricare, salvare i
+           dati e liberare la memoria allocata. (rooms.c & rooms.h)
+
+10/04/00 - Ristrutturato x.c: ora tutti i testi vengono memorizzati nella
+           struttura text definita nel file text.c
+	 - Aggiunto check su EINTR nel select per evitare che il server esca
+      	   con un perror se arriva un segnale (POSIX)
+
+20/03/00 - Modulo text.c con struttura e funzioni per memorizzare e
+           manipolare dei testi.
+
+24/11/99 - Tool di amministrazione dei file messaggi 'fm_admin'; attualmente
+           e' uno strumento importante per testare il funzionamento delle
+	   routines di file_messaggi.c.
+
+22/11/99 - Versione iniziale di file_messaggi.c, con routine per leggere,
+           salvare e creare i file_messaggi etc.
+
+19/11/99 - Security fix: controllo del buffer overflow su tutti gli extract()
+           Da fare ancora controllo su sprintf() e strcpy().
+
+14/11/99 - Statistiche del server.
+
+12/11/99 - Dot commands. Le funzioni di interprete comandi sono ora nel
+           file comandi.c
+
+11/11/99 - Ottimizzato le funzioni extract() e num_parms() (vedi il file
+           ./tmp/extract.c per i test) utilizzando le libc.
+
+07/11/99 - Messo a posto diverse cosette minori (sesso, lungh passwd,
+           carattere | nelle stringhe dell'utente).
+
+02/11/99 - Reboot giornaliero.
+         - Eliminato un bug (ricorrente) che dava segfault. La versione
+           attuale di Cittadella/UX la considero a questo punto stabile,
+	   e prima di proseguire sarebbe bene passare a dei test intensivi.
+
+01/11/99 - make crea due clients: il client locale cittaclient e il 
+           client remoto remote_client usato per collegamenti telnet.
+         - find_remote_host() riscritta in modo piu' serio e veloce.
+	 - parsing delle opzioni di linea di cittaclient mediante getopt()
+	   e aggiunta di diverse opzioni.
+	 - man page cittadella.6 per il client.
+
+30/10/99 - Tab completion per nomi degli utenti nella lista degli utenti e
+           per i nomi degli utenti connessi.
+
+29/10/99 - Impedisce le doppie connessioni.
+         - Implementato una subshell <$> per il client locale.
+         - Vari bachi fissati, flag per (dis)abilitare il beep.
+
+25/10/99 - Implementata una friend-list con 20 utenti. Comando <f> per vedere
+           la lista, <F> per modificarla. Flag UT_XFRIEND, se settato anche
+	   se rifiuto gli X gli utenti nella friend-list possono lo stesso
+	   mandarmi dei X.
+
+23/10/99 - Gestione dei segnali da parte del client.
+           SIGHUP, SIGINT e SIGTERM terminano normalmente il client
+	   SIGTSTP e SIGCONT resettano il terminale con Ctrl-Z.
+
+22/10/99 - <e> per vedere i propri flags di configurazione.
+         - <E> per editare i flags di configurazione.
+	 - Flag per nascondere i dati personali, per rifiutare gli X e
+	   per non ricevere le notifiche di LogIn/Out.
+
+21/10/99 - <M> per editare un profile.
+         - Editor esterno.
+
+19/10/99 - Implementato 'matricola' (eternal number), che viene salvato in
+           un nuovo file di dati del server: ./lib/server/dati_server.
+         - Implementati utente.flags[8] e utente.sflags[8]
+	   flags sono 64 bits di configurazione dell'utente modificabili,
+	   mentre sflags, sempre 64 bits, sono modificabili solo dal server.
+
+17/10/99 - Comando <O> per cambiare la password di un utente. La nuova
+           password viene generata automaticamente da Cittadella e inviata
+	   via e-mail all'utente.
+
+15/10/99 - aggiunto alla struttura sessione il campo char *txtbuf, che viene
+           linkato a un array che contiene il testo in input. L'array viene
+	   allocato dinamicamente quando il server riceve il comando che
+	   segnala un testo in arrivo. NB: valutare se puo' essere
+           conveniente usare gli obstack come nel pager.
+	 - Comando <B> per editare un Bug Report che viene inviato
+           automaticamente a impe@localhost.
+         - Accanto al nome appare un carattere che descrive lo stato attuale
+	   dell'utente quando si fa <W>. (Vedi README).
+
+13/10/99 - Comando <H>elp.
+
+12/10/99 - purge_invalid(): Elimina gli utenti LVL_DA_BUTTARE e gli utenti
+           che non si sono validati entro TEMPO_VALIDAZIONE.
+         - Criptazione e verifica password con la libreria crypt.h. Va
+	   abilitato con -DCRYPT visto che la libreria puo' mancare.
+         - Comandi PWDC e PWDN del server. Comando <P> per cambiare la
+           propria password.
+	 - Lock del terminale <%> (LTRM del server, nuovo stato CON_LOCK).
+         - crash_save_perfavore(); salva i dati degli utenti.
+
+11/10/99 - La chiave di validazione viene inviata tramite Email all'utente.
+
+26/09/99 - Implementazione delle ncurses nel pager, che sono piu' potenti
+           del termcap. Le opzioni -DTERMCAP o -DNCURSES di compilazione
+	   permettono di scegliere che librerie usare nella gestione del
+	   terminale.
+
+25/09/99 - Implementazione termcap nel pager: gestione schermo di dimensione
+           arbitraria, scrolling piu' fluido e gestione dei tasti cursore,
+	   page up/down, home/end.
+
+17/09/99 - Il pager gestisce i segnali dalla tastiera: su/giu' di una riga o
+           di una pagina. E' in grado di trattare righe in input di
+	   dimensione arbitraria.
+
+16/09/99 - E' nato cittapager :). Carica un testo in una lista di righe 
+           bidirezionale allocata dinamicamente con obstack.h
+
+17/07/99 - Livelli minimi di accesso ai vari comandi definiti come costanti
+           in comm.h per poterli modificare piu' facilmente.
+         - Canali chat implementati. Il numero di canali chat e' definito
+           nel server, l'ultimo dei quali e' la SYSOPCHAT. Comandi <a> e
+	   <A> per entrare e uscire dalla chat e <z> per inviare un
+           messaggio nella chat.
+	 - Comando <W>ho: lista utenti in chat.
+	 - <S>hutdown tra N minuti. Gli utenti vengono avvertiti ogni
+           minuto del tempo rimanente prima dello shutdown.
+
+14/07/99 - Comando server MSGS per visualizzare i files standard
+           (hello, disclaimer, etc...), lettura di questi files da client.
+
+13/07/99 - Gestione delle password (manca la parte di criptazione)
+         - Primo utente della BBS automaticamente SYSOP
+         - Procedura di login completata
+
+12/07/99 - Procedura di login modificata, chiede all'utente se e' il nome
+           che vuole utilizzare
+         - Procedura di autovalidazione, comando AVAL del server, 
+	   generazione della validation key
+
+10/07/99 - Notifica all'utente cacciato da chi e' stato buttato fuori
+         - Modificato <W>ho: gestione degli ospiti e dei (login in corso)
+
+09/07/99 - Modificato <W>ho: ora login degli utenti
+         - Modificato <u>serlist: Livello e Lastcall 
+
+08/07/99 - Comando s<Y>slog per visualizzare il syslog
+         - Quando si connette il client confronta la propria versione con
+           quella fornita dal server del client piu' recente. Se e'
+	   obsoleto, avverte l'utente.
+
+31/10/98 - # X-msg inviati da un utente, firstcall, time_online
+         - Comando <t> per ora e data
+	 - Comando <h> di Help
+	 - Routine di lettura di un file e invio al client.
+
+17/04/98 - Comando 'k' per cacciare un utente dalla BBS o tutti gli ospiti.
+           Comando 'K' per eliminare (kill) un utente.
+
+16/04/98 - Comandi sysop per la configurazione del sistema: 'c' visualizza 
+           la configurazione attuale, 'C' permette di editarla.
+
+15/04/98 - Migliorata interfaccia utente per X e broadcasts. Aggiunta ora
+           all'header e scritta funzione di editing apposita.
+
+14/04/98 - in utility.c new_str_def_M e new_str_def_m, come new_str_m, ma
+           con possibilita' di fornire un valore di default.
+         - Comando <R> per modificare la registrazione.
+         - Account guest. Ci sara' un axlevel LVL_GUEST che gli da priorita'
+           minima (da implementare)
+         - 'Esci' al login chiude la connessione
+         - Definizione livelli di accesso al login
+
+13/04/98 - Conclusa la registrazione dei nuovi utenti al login
+
+11/04/98 - Progetto per la gestione dinamica degli slot nei dati degli utenti
+
+10/04/98 - Gestione dati utenti ultimata, con caricamento e salvataggio
+           strutture utenti, comando <U> per la lista degli utenti, comando
+           <p> per il profile e utility varie.
+
+Estate 1997 - Prima versione del client e del server di Cittadella/UX
+              (con routines di comunicazione client/server, ciclo
+	      principale del server, comandi Xmsg e <w>ho)

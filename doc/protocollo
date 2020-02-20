@@ -1,0 +1,802 @@
+            PROTOCOLLO DI COMUNICAZIONE DI CITTADELLA/UX
+            --------------------------------------------
+
+Indice:
+
+1.  VOGLIO SCRIVERE UN SEMPLICE CLIENT PER CITTADELLA. COME DEVO FARE?
+1a. SEMPLICE CLIENT IN PSEUDO CODICE
+2.  PROTOCOLLO DI COMUNICAZIONE TRA CLIENT E SERVER
+3.  COME LOGGARSI CON TELNET
+4.  COME LEGGERE I POST IN CITTADELLA/UX
+5.  INVIARE I MESSAGGI CON CITTADELLA (POST, X, CHAT, ETC..)
+6.  DOCUMENTAZIONE DEGLI ALTRI COMANDI
+7.  LISTA DEI COMANDI ACCETTATI DAL SERVER
+
+______________________________________________________________________________
+
+1. VOGLIO SCRIVERE UN SEMPLICE CLIENT PER CITTADELLA. COME DEVO FARE?
+
+Un client minimale, che permetta all'utente di collegarsi alla bbs, di
+muoversi tra le room e leggere/scrivere post e x-msg si puo' scrivere molto
+rapidamente e senza eccessive difficolta'.
+
+Infatti, non e' necessario implementare tutti i comandi del server ma solo
+un piccolo sottoinsieme, per collegarsi ed effettuare le principali
+operazioni. Per facilitarvi il compito, ho compilato una piccola lista dei
+passi che dovete seguire per ottenere un client. In (0) descrivo brevemente
+la struttura del client, nei punti successivi, nell'ordine, i comandi che
+dovete implementare. Ne bastano 12 per poter collegarsi alla bbs e
+leggere/scrivere post. Aggiungetene altri 3 ed avete gli X! In una serata di
+lavoro, potete avere un client funzionante!
+
+In appendice troverete il listato in pseudocodice di un semplice client.
+
+NB: Tutti i comandi sono descritti dettagliatamente piu' avanti in questo
+    file.
+
+0) Programma di base:
+
+Anzitutto bisogna scrivere una routine che apre una connessione telnet alla
+porta 4000 del cittaserver. In alcuni linguaggi si tratta di un'unica
+istruzione (per esempio in python "tn = telnetlib.Telnet(HOST, PORT)")
+mentre in altri come il C bisogna lavorare a piu' basso livello, ma in ogni
+caso si tratta di poche righe standard, e potete dare un'occhiata al
+cittaclient per vedere come si fa.
+
+Una volta che il programma e' in grado di collegarsi al server, e'
+sufficiente creare un ciclo che prende un comando dall'utente, lo invia al
+server, aspetta la risposta dal server e la formatta a modino sullo schermo.
+
+L'unica difficolta' a questo punto e' che se volete anche ricevere le
+notifiche e gli X dal server in tempo reale, non potete bloccarvi in attesa
+del comando dell'utente, ma dovete ascoltare contemporaneamente sia la
+tastiera che il socket e agire a seconda dell'input che ricevete. Questo e'
+comunque semplice da fare utilizzando comandi del tipo select()
+(puo' variare un  po' da linguaggio a linguaggio...)
+
+Fatto questo dovete implementare i comandi del server. Vi consiglio di
+familiarizzarvi (o sperimentarli) facendo telnet alla porta 4000 del server 
+e dialogando direttamente con lui (vedi punto 3 piu' giu').
+
+a) Comandi per la connessione
+
+INFO (6)  Spedisce al client le informazioni sul server
+USER (2)  Inizio connessione utente
+USR1 (2)  Connesione utente
+CHEK (2)  Invia al client dei dati sull'utente (e termina procedura di login)
+
+b) Comandi base
+
+HWHO (6)  <W> Lista Connessioni (Nome+Host+Ora connessione)
+GOTO (11) Goto commands (Goto, Jump, Skip, Abandon, etc...)
+RKRL (5)  Read Known Room List
+QUIT (2)  Logout dell'utente
+
+c) Comandi per leggere/scrivere post
+
+READ (8)  Legge un post
+PSTB (4)  Inizializza l'invio di un post
+PSTE (4)  Fine Post
+TEXT (4)  Invia una riga di testo
+
+*** SE SIETE ARRIVATI FIN QUI, SIETE IN GRADO DI COLLEGARVI ALLA BBS E
+    LEGGERE E SCRIVERE I POST.... niente male eh?
+
+d) Comandi di comunicazione (X, Chat, Broadcast)
+
+XMSG (15)  X-MeSsaGe
+DEST (15)  destinatario dell'X
+XEND (15)  X-message END
+XINM (15)  X in Mail: invia l'X in mail se il destinatario si e' scollegato.
+
+*** E CON QUESTI AVETE IMPLEMENTATO 15 COMANDI DI CITTADELLA, E QUELLO CHE
+    AVETE CREATO E' UN VERO E PROPRIO CITTACLIENT... Complimenti!!!
+
+e) Chat e Broadcast (Opzionale)
+
+Se siete riusciti ad implementare gli X, allora per voi sara' una bazzecola
+implementare anche la chat e i broadcast:
+
+CASC (4)  Chat ASColta: entra in un canale di chat
+CLAS (4)  Chat LAScia: esce dal canale di chat
+CMSG (4)  Chat: messaggio in chat
+CEND (4)  Chat END: spedisce il messaggio nella chat
+CWHO (4)  Chat WHO: Lista degli utenti connessi ai canali chat
+
+BEND (4)  Broadcast END: spedisce il broadcast
+BRDC (4)  BRoaDCast
+
+*** A QUESTO PUNTO STA A VOI DECIDERE CHE STRADA PRENDERE. CI SONO UN SACCO
+    DI COMANDINI CHE SI IMPLEMENTANO IN UN BATTER D'OCCHIO E CHE RENDONO
+    PIU' DIVERTENTE L'USO DEL CLIENT. ECCO QUALCHE SUGGERIMENTO:
+
+f) Comandi carini molto veloci da implementare
+
+BIFF (9)  Chiede al server il numero di nuovi mail
+EDNG (6)  Edit doing
+HELP (6)  <H> Chiede al server un file di help.
+LBAN (12) Get full Login Banner (server info + Logo + Login Banner)
+LTRM (6)  Lock del terminale
+MSGI (6)  Richiesta messaggi standard e file di help
+RINF (5)  Read INFo sulla room corrente
+RUSR (2)  Lista degli utenti della BBS
+TIME (6)  Invia ora e data al client
+RIRQ (5)  Room Invite ReQuest
+RUZP (5)  UnZap All Rooms.
+RZAP (5)  Zap Room.
+RZPA (5)  Zap All Rooms.
+
+g) Comandi un po' piu' impegnativi ma molto utili:
+
+PRFG (2)  Legge il profile personale di un utente
+PRFL (2)  Invia al client il profile dell'utente richiesto
+CFGG (2)  Get user ConFiGuration
+CFGP (2)  Put user ConFiGuration
+FRDG (2)  Get Friend-list
+FRDP (2)  Put Friend-list
+PRFB (4)  Begin edit profile personale dell'utente
+PRFE (4)  Fine Edit Profile
+GREG (2)  Get REGistration: spedisce la registrazione dell'utente al client
+GUSR (2)  Get USeR: spedisce i dati di un utente al client 
+AVAL (2)  Auto-validazione dell'utente mediante validation key
+MDEL (8)  Cancella il messaggio corrente
+MMOV (8)  Sposta il messaggio corrente in un'altra room
+RIEB (4)  Room Info Edit: Begin
+RIEE (4)  Room Info Edit: End
+MCPY (8)  Copia il messaggio corrente in un'altra room
+
+_____________________________________________________________________________
+
+1a. SEMPLICE CLIENT IN PSEUDO CODICE (in fase di allestimento...)
+
+PROCEDURE login()
+    invia_server("INFO locale|")
+    ricevi(str)
+    prompt("Nome :", nome)
+    invia_server("USER " + nome)
+    ricevi(str)
+    prompt("Password :", pwd)
+    invia_server("USR1 " + nome + pwd)
+    ricevi(str)
+    invia_server("CHEK")
+    ricevi(str)
+
+PROCEDURE invia_x()
+    prompt("Destinatario : ", nick)     # Chiede a chi si vuole mandare l'X
+    invia_server("XMSG " + nick)        # Inizializza invio X
+    ricevi(str);                        # Aspetta risposta del server
+    SE str[0] != '2'                    # Errore! (non accetta X, non conn...)
+        stampa_errore(str)              # Stampa messaggio di errore
+        RETURN                          # Fine invio X
+    invia_server("DEST " + nick)        # Comunica al server il destinatario
+    ricevi(str);                        # Aspetta risposta del server
+    prompt(testo, 5)                    # Chiede all'utente il testo da inviare
+    FOR riga IN testo                   # Invia al server il messaggio,
+        invia_server("TEXT" + riga)     #                    riga per riga.
+    invia_server("XEND" + nick)         # Testo X completo: invia!
+    ricevi(str)
+    SE str[0] == '2'                    # Controlla la risposta del server
+        stampa 'OK, Xmsg inviato!'
+    ALTRIMENTI
+        stampa_errore(str)
+
+PROCEDURE goto()
+  invia_server("GOTO 1")
+(nome_stanza, num_messaggi, nuovi_messaggi) = parsereply("GOTO", reply)
+  
+PROCEDURE who()
+    invia_server("HWHO")
+    ricevi(str)
+
+MAIN
+    telnet(HOST, PORT);
+    login();
+  
+    fine = 0;
+    DO
+        Aspetta_Input(tastiera, socket)
+        SE input da tastiera
+            c = Prendi_Carattere(Tastiera)
+            SWITCH (c)
+                c = 'g'
+	            goto() ; break;
+                c = 'n'
+	            leggi_nuovi() ; break;
+                c = 'w'
+	            who() ; break;
+	        c = 'Q'
+	            fine = 1; break;
+                c = 'x'
+     	            invia_x() ; break;
+        SE input da socket
+                cmd_da_server()
+    WHILE (!fine)
+  
+    telnet_close();
+
+# That's all folk!
+_____________________________________________________________________________
+
+2. PROTOCOLLO DI COMUNICAZIONE TRA CLIENT E SERVER
+ 
+Il protocollo di comunicazione C/S e' molto semplice: il client fa le
+richieste al server inviando stringhe del tipo:
+ 
+"XXXX Arg1|Arg2|...|ArgN\n"
+ 
+Dove 'XXXX' sono quattro caratteri (per ora lettere maiuscole) che
+identificano il comando, Arg1...ArgN sono gli N argomenti del comando
+separati dal carattere '|' (che quindi non puo' apparire negli argomenti)
+e la stringa termina con un Line Feed '\n'
+
+Ad esempio, per chiedere il profile dell'utente Furjo, il client invia una
+stringa fatta nel modo seguente (se ricordo bene)
+"PRFL Furjo\n"
+ 
+Il server risponde nel modo seguente:
+"ABC Arg1|Arg2|...|ArgN\n"
+ 
+dove 'ABC' e' un codice numerico di tre cifre. La prima cifra indica che
+tipo di risposta e':
+
+A == 1 : Errore nell'ultima richiesta del client.
+A == 2 : Ok, gli argomenti che seguono sono la risposta del server
+         (In questo caso se B==1 significa che la risposta continua nelle
+          stringhe successive)
+A == 8 : Comandi di esecuzione immediata da parte del server (Login timeout,
+         shutdown etc.)
+A == 9 : Comandi dal server non urgenti (Xmsg, notifiche, etc...)
+ 
+Le cifre successive B e C permettono di specificare meglio la risposta del
+server (ad esempio, nel caso di un errore, il tipo di errore che si e'
+verificato.)
+
+I comandi riconosciuti dal cittaserver sono elencati nel file di documentazione
+./doc/SERVER, con una breve descrizione del comando e l'indicazione del file in
+cui viene implementato.
+
+_____________________________________________________________________________
+
+3. COME LOGGARSI CON TELNET
+
+E' possibile dialogare direttamente con il server di Cittadella, collegandosi
+direttamente alla porta 4000 del cittaserver con un telnet. E' un ottimo modo
+per familiarizzare con il protocollo Cittadella/UX.
+
+Ecco la procedura di login:
+ 
+telnet ping.science.unitn.it 4000
+INFO locale
+USER nome
+USR1 nome|password
+CHEK
+ 
+e per terminare in bellezza, vediamo chi e' connesso:
+ 
+HWHO
+ 
+e poi usciamo...
+ 
+QUIT
+
+A questo punto potete sbizzarrirvi provando gli altri comandi del server...
+_____________________________________________________________________________
+
+4. COME LEGGERE I POST IN CITTADELLA/UX
+
+ * Legge un messaggio dalla room corrente.
+ *
+ * Sintassi: "READ mode|N"; { N optional for mode = 6, 7 }
+ *           mode: 0 - Forward;  1 - New;     2 - Reverse;     3 - Brief;
+ *                 5 - Last 5;   6 - Last N;  7 - from msg #N;
+ *                10 - Next;    11 - Prev;   12 - Back;
+ *
+ * Restituisce prima l'OK con local number e il numero di messaggi rimanenti,
+ * poi il LISTING_FOLLOWS con l'header del messaggio ed infine il testo del
+ * messaggio terminato con un "000".
+
+Si entra nel modo di lettura dei messaggi inviando al server il comando READ
+con un (mode < 10), come specificato sopra. Una volta nel modo di lettura, i
+messaggi vengono letti in avanti e indietro con "READ 10" e "READ 11"
+rispettivamente, e con "READ 12" si inverte il senso di lettura.
+ 
+Ad esempio, per leggere tutti i messaggi nuovi si inizia inviando
+READ 1
+al server (che significa inizia a leggere dal primo nuovo (o l'ultimo letto,
+a seconda della configurazione di utente)) e poi si leggono tutti gli altri
+post nuovi ripetendo
+READ 10
+Quando il server risponde con un errore ("100"), significa che i messaggi
+sono stati letti tutti.
+_______________________________________________________________________________
+
+5. INVIARE I MESSAGGI CON CITTADELLA (POST, X, CHAT, ETC..)
+
+Il protocollo per inviare i messaggi in Cittadella si suddivide in tre fasi:
+ 
+1) Inizializzazione del messaggio: dire a Cittadella che tipo di messaggio
+   si invia, a chi, etc...
+2) Invio del messaggio vero e proprio.
+3) Segnalare al server che il messaggio e' completo e confermare l'invio.
+ 
+La fase (2) e' comune a tutti i tipi di messaggio, e si effettua utilizzando
+il comando TEXT: "TEXT riga_di_testo" invia una riga di testo al server.
+Il comando va ripetuto per ogni riga di testo.
+ 
+- Ad esempio, per inviare un Xmsg, la sequenza di comandi da inviare e':
+ 
+"XMSG"               : inizializza invio X-msg
+"DEST nome"          : destinatario dell'X e' l'utente "nome"
+"TEXT riga_di_testo" : invia una riga di testo (ripetuto per ogni riga)
+"XEND"               : fine immissione X e conferma invio.
+ 
+- Analogamente per i Broadcast:
+ 
+BRDC
+TEXT riga_di_testo
+BEND
+ 
+- E per i messaggi in chat:
+ 
+CASC num              : Entra nel canale chat # num
+...
+CMSG                  : Inizializza invio messaggio in chat
+TEXT riga_di_testo    : x ogni riga
+CEND                  : conferma invio messaggio
+...
+CLAS                  : lascia il canale chat.
+ 
+- Per inviare un post l'inizializzazione e' un po' piu' complessa perche'
+  bisogna dire un po' di cose al server. Si utilizza il comando PSTB:
+ 
+  Sintassi: "PSTB utente|reply|aide|sysopmail"
+      utente: nome destinatario del mail
+            reply : 1 se il post e' un reply, 0 altrimenti.
+            aide  : 1 RA o RH post, 2 aide post, 3 sysop post, 0 normal post
+    sysopmail: 1 post ai sysop, 2 post agli Aide), 3 post ai Room Aide)
+                       0 mail normale.
+       
+  Solo se e' un mail vanno utilizzati i 4 argomenti, altrimenti "utente" e
+  "sysopmail" vanno lasciati nulli: "PSTB |reply|aide|"
+ 
+  Al solito, se la risposta del server e' 2xx, l'operazione e' stata
+  accettata, e se invece inizia con 1xx l'operazione e' abortita a causa
+  di un errore o di privilegi insufficienti.
+  
+  Il testo del messaggio si invia come al solito con ripetuti "TEXT riga",
+  e si termina poi l'immissione del testo con il comando PSTE:
+  
+  Sintassi: "PSTE subject|anonym|reply|aide|sysopmail"
+            subject: si descrive da solo, no?
+    anonym : 1 messaggio anonimo, 0 altrimenti.
+    reply, aide e sysopmail come sopra.
+ 
+E questo e' tutto... buon divertimento ;-)
+_____________________________________________________________________________
+
+6. DOCUMENTAZIONE DEGLI ALTRI COMANDI
+
+-----------------------------------------------------------------------------
+Comando    : CFGP
+Server cmd : cmd_cfgp(session, arg)                       File : utente_cmd.c
+Descrizione: Modifica la configurazione dell'utente
+Livello Min: MINLVL_USERCFG
+Sintassi   : "CFGP mode|Flag0|...|Flag7"
+Argomenti  : mode = 0, torna semplicemente in modo comandi,
+             mode = 1, salva le modifiche.
+             Flag0 .. Flag7: flag di configurazione dell'utente/
+Restituisce: OK
+-----------------------------------------------------------------------------
+Comando    : CHEK
+Server cmd : cmd_chek(session)                            File : utente_cmd.c
+Descrizione: Procedura di Login, Passo #3 (ultimo passo)
+             Completa la procedura di login: notifica l'entrata agli altri
+	     utenti ed invia dati sull'utente al client.
+Livello Min: NOCHECK
+Sintassi   : "USR1 nome|password"
+Argomenti  : nome     : nickname utente
+	     password : password dell'utente
+Restituisce: - "100" ERROR            : se USR1 non eseguito oppure se
+                                        Livello <= LVL_OSPITE
+             - Altrimenti la procedura di login e' terminata con successo e
+	       restituisce al client:
+	       "200 conn|matricola|livello|chiamate|lastcall|lasthost|newmail"
+	       conn : numero totale di utenti connessi alla bbs
+	       matricola : numero di matricola dell'utente
+	       livello   : livello dell'utente
+	       chiamate  : numero di chiamate alla bbs effettuate dall'utente
+	       lastcall  : ora e data dell'ultima chiamata alla bbs
+	       lasthost  : provenienza dell'ultima chiamata dell'utente
+	       newmail   : numero di nuove mail nella mailbox dell'utente
+-----------------------------------------------------------------------------
+Comando    : GOTO
+Server cmd : cmd_goto(session, arg)   File : march.c   Include: march.h
+Descrizione: vai alla prossima room conosciuta.
+             Restituisce il nome della nuova room, il numero di messaggi
+             presenti e il numero di quelli ancora non letti.
+Livello Min: L'utente deve essere connesso.
+Sintassi   : "GOTO mode|nome|tipo"
+Argomenti  : mode: 0 - goto -> set all messages read.
+                   1 - skip -> leave fullroom unchanged.
+                   2 - abandon -> only set read the effectively read msgs.
+                   3 - Scan -> next known room, even if there are no new
+                               messages.
+                   4 - Home -> Torna alla Lobby) senza modificare il fullroom.
+                   5 - Mail -> Vai nella Mailroom.
+                   (Nei modi 0, 1 e 2 va nelle room con nuovi messaggi)
+             nome: nome della room o del floor di destinazione. Se (null),
+                   va nella prossima room o prossimo floor.
+             tipo: 0 - room
+                   1 - floor
+Restituisce: "%d Nomeroom>|NumMsg|NewMsg|Newgen|RoomFlags|New|Zap"
+             con Newgen=1 se la room e' di nuova generazione, 0 altrimenti.
+                 New e` il numero di room con messaggi da leggere,
+                 Zap e` il numero di room zappate.
+                 New e Zap vengono calcolati e inviati solo se l'utente e`
+                 finito nella Baseroom (lobby) altrimenti sono settati a 0.
+-----------------------------------------------------------------------------
+Comando    : HWHO
+Server cmd : cmd_hwho(session)                         File : generic.c
+Descrizione: Lista connessioni con host
+Livello Min: NOCHECK
+Sintassi   : "HWHO"
+Argomenti  : 
+Restituisce: 1) SEGUE_LISTA (210)
+               poi per ogni connessione:
+             2) "200 socket_desc|nome||login|room|chat"
+                "200 host"
+                socket_desc: (int) descrittore socket (for debugging purposes)
+                nome       : nome utente (con indicatore di stato)
+                login      : (long) ora login
+                room       : Nome room (ultimo carattere: tipo room)
+		chat       : # canale chat (0 se non ascolta chat)
+                host       : host dal quale e' connesso (o doing se settato)
+		NB: argomento 2 della prima risposta libero per future
+		    estensioni del comando.
+             3) "000" per terminare la lista di connessioni
+               e infine
+             4) "OK ospiti"
+                dove 'ospiti' e' il numero di ospiti attualmente connessi.
+-----------------------------------------------------------------------------
+Comando    : INFO
+Server cmd : cmd_info(session, arg)                         File : generic.c
+Descrizione: Richiede informazioni sul server
+Livello Min: NOCHECK
+Sintassi   : "INFO client_type|compressione" per il client locale
+             "INFO client_type|rhost"        per il client remoto
+Argomenti  : client_type: tipo di client. Attualmente sono accettati i
+             valori 'remoto' e 'locale'.
+Restituisce: "OK citta_soft|server_v|nodo|dove|client_v|chat|maxpost|maxbx|"
+             "server_flags|compressione"
+     citta_soft: nome software
+     server_v  : codice versione server
+     nodo      : nome nodo server
+     dove      : posizione geografica del server
+     client_v  : codice versione client
+     chat      : numero canali chat
+     maxpost   : numero massimo di righe per post accettate
+     maxbx     : numero massimo di righe per messaggio X, chat, broad
+     server_flags: flags di configurazione server (validation key,
+                   floors, referendum, memstats)
+     compressione: restituisce la modalita' di compressione della connessione
+   vedi ./share/server_flags.h
+-----------------------------------------------------------------------------
+Comando    : PSTB
+Server cmd : cmd_pstb(session, arg)                                File : x.c
+Descrizione: Inizializza l'invio di un post nella room corrente.
+Livello Min: MINLVL_POST + Permesso scrittura nella room corrente
+Sintassi   : "PSTB utente|reply|aide|sysopmail"
+Argomenti  : utente: nome destinatario del mail
+             reply : 1 se il post e' un reply, 0 altrimenti.
+	     aide  : 1 RA o RH post, 2 aide post, 3 sysop post, 0 normal post
+	     sysopmail: 1 - post ai sysop,      2 - post agli Aide),
+	                3 - post ai Room Aide)  0 - mail normale
+	     NB: se non e' un mail, 'utente' e 'sysopmail' vuoti:
+	         "PSTB |reply|aide|"
+Restituisce: - "120" ERROR+ACC_PROIBITO         : Livello insufficiente
+	     - "121" ERROR+ACC_PROIBITO+NO_MAIL : Destinatario mail non ha
+	                                          una mailbox
+	     - "140" ERROR+ARG_NON_VAL          : Mail self
+             - "230 flags|reply_num|reply_to|reply_subj" : OK
+	            230       : INVIA_TESTO
+	            flags     : flags della room (vedi share/room_flags.h)
+		    reply_num : numero post al quale si replica
+		    reply_to  : autore  '   '    '   '     '
+		    reply_subj: subject del post al quale si replica
+                Se il post non e' un reply, gli ultimi tre argomenti sono
+                vuoti.
+-----------------------------------------------------------------------------
+Comando    : PSTE
+Server cmd : cmd_pste(session, arg)                                File : x.c
+Descrizione: Termina l'invio di un post nella room corrente.
+Livello Min: MINLVL_POST + Permesso scrittura nella room corrente
+Sintassi   : "PSTE subject|anonym|reply|aide|sysopmail"
+Argomenti  : subject: subject del post
+             anonym : 1 messaggio anonimo, 0 altrimenti.
+             reply  : 1 se il post e' un reply, 0 altrimenti.
+	     aide   : 1 RA o RH post, 2 aide post, 3 sysop post, 0 normal post
+	     sysopmail: 1 - post ai sysop,      2 - post agli Aide),
+	                3 - post ai Room Aide)  0 - mail normale
+	     NB: se non e' un mail, 'sysopmail' si lascia vuoto.
+Restituisce: - "100 stringa" ERROR : Messaggio non inizializzato, o messaggio
+                             annullato se non e' stato inviato TEXT.
+			     O problema file messaggi.
+			     Oppure accesso negato
+	       NB: Evidentemente il messaggio di errore "100" va raffinato.
+	           Per ora in stringa trovate la descrizione dell'errore.
+	     - "150" ERROR+NO_SUCH_USER : destinatario mail inesistente.
+             - "200" OK                 : messaggio postato
+-----------------------------------------------------------------------------
+Comando    : QUIT
+Server cmd : cmd_quit(session, arg)                       File : utente_cmd.c
+Descrizione: Esce dalla bbs e chiude la sessione
+Livello Min: NOCHECK
+Sintassi   : "QUIT"
+Argomenti  :
+Restituisce: OK
+-----------------------------------------------------------------------------
+Comando    : RALL
+Server cmd : cmd_rall(session)                              File : room_ops.c
+Descrizione: Read ALL: Segna tutti i post nuovi nelle room conosciute come
+             letti, tranne i post in Lobby, Mail e nelle room in cui
+             l'utente e` RA o RH. Aide e utenti di livello superiore non
+	     possono utilizzare questo comando.
+Livello Min: LVL_NORMALE
+Sintassi   : "RALL"
+Argomenti  :
+Restituisce: ERROR se Aide o Sysop, altrimenti OK.
+-----------------------------------------------------------------------------
+Comando    : READ
+Server cmd : cmd_rkrl(session, arg)                         File : messaggi.c
+Descrizione: Legge un messaggio dalla room corrente.
+Livello Min: L'utente deve avere una struttura t->utente + Permesso di
+             lettura nella room
+Sintassi   : "READ mode|N"
+Argomenti  : mode:  0 - Forward;  1 - New;     2 - Reverse;     3 - Brief;
+                    5 - Last 5;   6 - Last N;  7 - from msg #N;
+                   10 - Next;    11 - Prev;   12 - Back;
+             N   : da specificare solo per i modi 6 e 7.
+Restituisce: - "100" ERROR : Se non ci sono altri post da leggere nella room
+             - Se il READ ha successo, la risposta si articola in 4 passi:
+	       1) "200 local|rimanenti"                   OK
+	          local     : numero locale del post che si legge
+		  rimanenti : numero di post che rimangono da leggere
+	       2) "210  Room_Name|Author|Date|Subject|Flags|Recipient|"
+	               "Reply_to|Reply_lnum|righe"        SEGUE_LISTA
+                  flags : flag del post (vedi share/msg_flags.h)
+		  righe : numero di righe del post
+	       3) "200 riga_di_testo" per ogni riga di testo del post
+	       4) "000" fine testo
+             - "Nome Room|Num Room|Zap" per ogni room corrispondente al modo
+	       con Zap = 1 se zappata, altrimenti 0
+             - "000" per terminare la lista
+Note       : Si entra nel modo di lettura dei messaggi inviando al server il
+             comando READ con un (mode < 10), come specificato sopra. Una
+	     volta nel modo di lettura, i messaggi vengono letti in avanti e
+	     indietro con "READ 10" e "READ 11" rispettivamente, e con "READ
+	     12" si inverte il senso di lettura.
+-----------------------------------------------------------------------------
+Comando    : RKRL
+Server cmd : cmd_rkrl(session, arg)                         File : room_ops.c
+Descrizione: Invia la lista delle room conosciute.
+             Restituisce il nome, numero di matricola e flag di zap per ogni
+	     room conoscita e che soddisfa la confizione 'mode'.
+Livello Min: L'utente deve avere una struttura t->utente
+Sintassi   : "RKRL mode"
+Argomenti  : mode : 0 - Tutte le room conosciute (anche zappate)
+                    1 - con messaggi nuovi
+            	    2 - senza messaggi nuovi
+  		    3 - room zappate
+Restituisce: - "210" SEGUE_LISTA
+             - "Nome Room|Num Room|Zap" per ogni room corrispondente al modo
+	       con Zap = 1 se zappata, altrimenti 0
+             - "000" per terminare la lista
+-------------------------------------------------------------------------------
+Comando    : RNEW (Room NEW)
+Server cmd : cmd_rnew(session, arg)   File : room_ops.c  Include : room_ops.h
+Descrizione: Crea una nuova room.
+Livello Min: MINLVL_NEWROOM (Aide di default)
+Sintassi   : "RNEW roomname|fmnum|maxmsg"
+Argomenti  : roomname: Nome nuova room
+             fmnum   : file messaggi associato alla room
+             maxmsg  : Numero di messaggi nella room
+Restituisce: "OK num" dove num e' il numero di matricola della nuova room
+             oppure messaggio di errore.
+-----------------------------------------------------------------------------
+Comando    : TEXT
+Server cmd : cmd_text(session, arg)                                File : x.c
+Descrizione: Invia al server una riga di testo
+Livello Min: L'utente deve aver inizializzato l'invio di un testo (ad esempio
+             con i comandi XMSG o PSTB)
+Sintassi   : "TEXT riga"
+Argomenti  : riga : una riga di testo (ovvero una qualunque stringa di
+                    caratteri stampabili, senza nessun '\n' o '\r'
+Restituisce: "100" ERRORE : se non e' stato inizializzato l'invio di un testo.
+             QUESTO E' L'UNICO COMANDO CHE NON RICEVE RISPOSTA DA SERVER SE
+	     NON CI SONO STATI ERRORI, PERCHE' IL SERVER ASPETTA ALTRI COMANDI
+	     "TEXT riga" FINCHE' NON RICEVE IL COMANDO DI FINE INVIO TESTO.
+-----------------------------------------------------------------------------
+Comando    : USER
+Server cmd : cmd_user(session, arg)                       File : utente_cmd.c
+Descrizione: Procedura di Login, Passo #1
+             Comunica al server il nome dell'utente
+Livello Min: NOCHECK
+Sintassi   : "USER nome"
+Argomenti  : nome : nickname utente
+Restituisce: - "100" ERROR            : sessione gia' loggata con un altro
+	       	     		        utente oppure nome e' ""
+	     - "220" NUOVO_UTENTE     : se name non e' registrato
+             - "221" UT_OSPITE        : se l'utente e' un Ospite
+	     - "222 col" NON_VALIDATO : name registrato ma non validato
+	     - "223 col" UT_VALIDATO  : name registrato e validato
+	     dove 'col' = 1 se l'utente e' gia' collegato in altra sessione,
+	     altimenti 'col' = 0.
+-----------------------------------------------------------------------------
+Comando    : USR1
+Server cmd : cmd_usr1(session, arg)                       File : utente_cmd.c
+Descrizione: Procedura di Login, Passo #2
+             Verifica la password e associa alla sessione la struct utente
+             (o la crea se utente nuovo). Carica tutti i dati dell'utente.
+Livello Min: NOCHECK
+Sintassi   : "USR1 nome|password"
+Argomenti  : nome     : nickname utente
+	     password : password dell'utente
+Restituisce: - "100" ERROR            : sessione gia' loggata con altro utente
+	     - "130" ERROR+PASSWORD   : password errata
+             - "200" OK               : password corretta (se ospite o nuovo
+	                                utente risponde sempre OK)
+_______________________________________________________________________________
+
+7. LISTA DEI COMANDI ACCETTATI DAL SERVER
+
+Un numero indica il file in cui viene implementato il comando:
+ (1) cittaserver.c   (2) utente_cmd.c   (3) sysconfig.c   (4) x.c
+ (5) room_ops.c      (6) generic.c      (7) fm_cmd.c      (8) messaggi.c
+ (9) mail.c         (10) urna.c        (11) march.c      (12) banner.c
+(13) floor_ops.c    (14) post.c        (15) express.c    (16) find.c
+(17) blog.c          (*) da implementare
+
+ATXT (4)  Abort TeXT: interrompe l'invio di un testo e torna in CON_COMANDI.
+AVAL (2)  Auto-validazione dell'utente mediante validation key
+BEND (15) Broadcast END: spedisce il broadcast
+BIFF (9)  Chiede al server il numero di nuovi mail
+?BLGB (17) BLoG Begin enter message
+?BLGE (17) BLoG End enter message
+BLGG (17) BLoG Goto
+BLGL (17) BLoG List
+BRDC (15) BRoaDCast
+BREG (2)  Mette l'utente nello stato di registrazione
+BUGB (1)  BUG report Begin
+BUGE (1)  BUG report End
+CASC (15) Chat ASColta: entra in un canale di chat
+CEND (15) Chat END: spedisce il messaggio nella chat
+CFGG (2)  Get user ConFiGuration
+CFGP (2)  Put user ConFiGuration
+CHEK (2)  Invia al client dei dati sull'utente
+CLAS (15) Chat LAScia: esce dal canale di chat
+CMSG (15) Chat: messaggio in chat
+CUSR (2)  Caccia USeR: caccia dalla BBS un utente connesso
+CWHO (15) Chat WHO: Lista degli utenti connessi ai canali chat
+DEST (15) Aggiunge un destinatario per l'invio di un multi X.
+ECHO      Invia un testo al client
+EDNG (6)  Edit doing
+ESYS (3)  Edit SYSconfig: modifica la configurazione del server
+EUSR (2)  Edit USeR: modifica i dati di un utente
+FAID (13) Floor Aide   (AIDE ONLY)
+FDEL (13) Floor Delete (FLOORAIDE ONLY)
+FEDT (13) Floor Edit   (FLOORAIDE ONLY)
+FIEB (4)  Floor Info Enter Begin: inizializza immissione nuove Floor Info.
+FIEE (4)  Floor Info Enter End: termina immissione nuove Floor Info.
+FIND (16) FIND: cerca espressione nei messaggi, crea room virtuale con risultati
+FINF (13) Invia le Info del floor corrente.
+FKRL (13) Lista room conosciute nel floor corrente.
+FLST (13) Invia la lista dei Floor con la loro configurazione (FLOORAIDE ONLY).
+FMCR (7)  Crea un nuovo file messaggi (SYSOP ONLY)
+FMDP (7)  Delete Post (fmnum, msgnum, msgpos) (SYSOP ONLY)
+FMHD (7)  Restituisce la lista degli headers di un file messaggi (SYSOP ONLY)
+FMRI (7)  Read info on file messages (SYSOP ONLY)
+FMRM (7)  Elimina un file messaggi (SYSOP ONLY)
+FMRP (7)  Legge il messaggio con dati pos. e num. da un FM. (SYSOP ONLY)
+FMVR (13) Floor Move Room: Cambia floor alla room corrente. (FLOORAIDE ONLY)
+FMXP (7)  Espande un file messaggi (SYSOP ONLY)
+FNEW (13) Crea un nuovo floor (AIDE ONLY)
+FRDG (2)  Get Friend-list
+FRDP (2)  Put Friend-list
+FSCT (1)  Force script execution at reboot/shutdown (SYSOP ONLY)
+GMTR (2)  Get Matricola: restituisce la matricola o zero se l'utente non esiste
+GOTO (11) Goto commands (Goto, Jump, Skip, Abandon, etc...)
+GREG (2)  Get REGistration: spedisce la registrazione dell'utente al client
+GUSR (2)  Get USeR: spedisce i dati di un utente al client 
+GVAL (2)  Genera Validation Key
+HELP (6)  <H> Invia al client il file di Help
+HWHO (6)  <W> Lista Connessioni (Nome+Host+Ora connessione)
+INFO (6)  Spedisce al client le informazioni sul server
+KUSR (2)  Kill USeR: Elimina definitivamente un utente
+LBAN (12) Get full Login Banner (server info + Logo + Login Banner)
+ ***LBCH (12) Create Hash table for login banner
+ ***LBAD (12) Add Login Banner
+LBEB (4)  Login Banner Edit Begin
+LBEE (4)  Login Banner Edit End
+LBGT (12) Get Login Banner file
+LSSH (6)  Subshell locale per l'utente.
+LTRM (6)  Lock del terminale
+MCPY (8)  Copia il messaggio corrente in un'altra room
+MDEL (8)  Cancella il messaggio corrente
+MMOV (8)  Sposta il messaggio corrente in un'altra room
+ ***MSGS (6)  Messaggi standard
+MSGI (6)  Richiesta messaggi standard e files di help
+NOOP      NO OPeration
+NWSB (4)  Begin trasmissione News
+NWSE (4)  End trasmissione News
+PRFB (4)  Begin edit profile personale dell'utente
+PRFE (4)  Fine Edit Profile
+PRFG (2)  Legge il profile personale di un utente
+PRFL (2)  Invia al client il profile dell'utente richiesto
+PSTB (14) Inizializza l'invio di un post
+PSTE (14) Fine Post
+ ***PSTS (4)  Fine Post a Sysop, Aide o RA
+PWDC (2)  Check password
+PWDN (2)  New password
+PWDU (2)  Change password to an user
+QUIT (2)  Logout dell'utente
+RAID (5)  Setta Room Aide per room corrente
+RALL (5)  Read ALL: setta tutti i messaggi come letti.
+RDEL (5)  Cancella una room
+READ (8)  Legge un post
+REDT (5)  Room EDiT
+RGST (2)  Riceve i dati dell'utente dal client e modifica la struttura dati_ut
+RIEB (4)  Room Info Edit: Begin
+RIEE (4)  Room Info Edit: End
+RINF (5)  Read INFo sulla room corrente
+RINV (5)  Room INVite user
+RINW (5)  Room INvite user Who : lista utenti con invito nella room.
+RIRQ (5)  Room Invite ReQuest
+RKOB (5)  Room Kick Out Begin : toglie l'accesso a un utente
+RKOE (5)  Room Kick Out End : restituisce l'accesso a un utente
+RKOW (5)  Room Kick Out Who : lista utenti cacciati dalla room corrente
+RKRL (5)  Read Known Room List
+RLEN (5)  Modify Room Length
+RLST (5)  Read room list
+RNEW (5)  Room NEW
+RNRH (5)  Designa un nuovo room helper per la room corrente
+RSLG (3)  Read SysLoG: spedisce al client il file di log del server
+RSST (3)  Read Server STatistics
+RSWP (5)  Room SWaP
+RSYS (3)  Read SYSconfig: spedisce al client la configurazione del server
+RUSR (2)  Lista degli utenti della BBS
+RUZP (5)  UnZap All Rooms.
+RZAP (5)  Zap Room.
+RZPA (5)  Zap All Rooms.
+SCVL (10) Invia la lista dei sondaggi votabili (Can Vote List)
+SCPU (10) Dice se un utente puo` iniziare un referendum o no.
+SDEL (10) Cancella un sondaggio
+SDWN (6)  ShutDoWN del server
+SINF (10) Richiede informazioni su di un particolare sondaggio
+SLST (10) Lista dei sondaggi in corso
+SPST (10) Posticipa un sondaggio
+SRIS (10) Risponde sondaggio
+SRNB (10) Nuovo sondaggio : inizia l'invio
+SRNE (10) Nuovo sondaggio : termina l'invio
+SSTP (10) Interrompe un sondaggio
+TABC (6)  Tab completion "buf|num|mode" cerca l'occorrenza #num di buf
+TEXT (4)  Invia una riga di testo
+TIME (6)  Invia ora e data al client
+UPGR (6)  Resetta il flag SUT_UPGRADE dell'utente.
+UPGS (6)  Setta il flag SUT_UPGRADE degli utenti, per riconf client
+USER (2)  Inizio connessione utente
+USR1 (2)  Connesione utente
+XEND (15) X-message END
+XINM (15) X in Mail: invia l'X in mail se il destinatario si e' scollegato.
+XMSG (15) X-MeSsaGe inizializza
+
+Comandi che inizializzano l'invio di un testo:
+
+BRDC BUGB CMSG FIEB LBEB NWSB
+PRFB PSTB RIEB SRNB XMSG
+
+------------------------------------------------------------------------------
+Last modified:
+
+26/11/2002 HWHO protocol changed (MMC)
+26/02/2003 Aggiornato lista comandi.
+18/12/2003 Aggiornato lista comandi, modificato protocollo Xmsg.
