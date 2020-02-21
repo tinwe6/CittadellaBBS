@@ -38,8 +38,8 @@
 /* Prototipi delle funzioni in questo file */
 int new_str_M(char *prompt, char *str, int max);
 int new_str_m(char *prompt, char *str, int max);
-int new_str_def_M(char *prompt, char *def, char *str, int max);
-int new_str_def_m(char *prompt, char *def, char *str, int max);
+int new_str_def_M(char *prompt, char *str, int max);
+int new_str_def_m(char *prompt, char *str, int max);
 void get_number(char *str, bool neg, bool enter);
 int get_int(bool enter);
 long get_long(bool enter);
@@ -105,43 +105,52 @@ const char *mese_esteso[] = { "Gennaio", "Febbraio", "Marzo", "Aprile",
  *                   stringa in input e' nulla, restituisce il default.
  * Suffisso: _m: lascia com'e', _M: maiuscola inizio parole.
  *
- * Le funzioni con default restituiscono 1 se la stringa e' stata modificata,
- * 0 se l'utente ha scelto di mantenere il default.
+ * Le funzioni restituiscono il numero di caratteri immessi (senza contare
+ * lo 0 finale) o -1 se l'immissione e' stata abortita
+ * Se l'utente sceglie di mantenere il default, le funzioni _def_
+ * restituiscono 0 (che comunque e' il numero di caratteri immessi)
+ *
  */
 int new_str_M(char *prompt, char *str, int max)
 {
-        strcpy(str, "");
+        str[0] = '\0';
         cml_printf("%s", prompt);
         return c_getline(str, max, true, false);
 }
 
 int new_str_m(char *prompt, char *str, int max)
 {
-        strcpy(str, "");
+        str[0] = '\0';
         cml_printf("%s", prompt);
         return c_getline(str, max, false, false);
 }
 
-int new_str_def_M(char *prompt, char *def, char *str, int max)
+int new_str_def_M(char *prompt, char *str, int max)
 {
-        cml_printf("%s [%s]: ", prompt, def);
-        c_getline(str, max, true, false);
-        if (str[0] == '\0') {
-                strncpy(str, def, ((max > 0) ? max : -max) + 1);
-		return 0;
+        int n;
+        char buf[256];
+
+        cml_printf("%s [%s]: ", prompt, str);
+        n = c_getline(buf, max, true, false);
+        if (n > 0) {
+	        int len = (max > 0) ? max : -max;
+	        strncpy(str, buf, len + 1);
 	}
-	return 1;
+	return n;
 }
 
-int new_str_def_m(char *prompt, char *def, char *str, int max)
+int new_str_def_m(char *prompt, char *str, int max)
 {
-        cml_printf("%s [%s]: ", prompt, def);
-        c_getline(str, max, false, false);
-        if (str[0] == '\0') {
-                strncpy(str, def, ((max > 0) ? max : -max) + 1);
-		return 0;
+        int n;
+        char buf[256];
+
+        cml_printf("%s [%s]: ", prompt, str);
+        n = c_getline(buf, max, false, false);
+        if (n > 0) {
+	        int len = (max > 0) ? max : -max;
+	        strncpy(str, buf, len + 1);
 	}
-	return 1;
+	return n;
 }
 
 /*************************************************************************/

@@ -73,11 +73,13 @@ static void help_line_edit(void);
 
 /***************************************************************************/
 /*
- *  Prende una stringa dallo stdinput, lunga |max|, se max<0 visualizza
- *  asterischi al posto delle lettere, se special = 0 non accetta
- *  i caratteri speciali utilizzati dalla connessione server/client
- *  (per ora solo '|'). Se maiuscole!=0, il primo carattere di ogni parola
- *  e' automaticamente convertito in maiuscola.
+ * Prende una stringa dallo stdinput, lunga |max|, se max<0 visualizza
+ * asterischi al posto delle lettere, se special = 0 non accetta
+ * i caratteri speciali utilizzati dalla connessione server/client
+ * (per ora solo '|'). Se maiuscole == true, il primo carattere di ogni
+ * parola e' automaticamente convertito in maiuscola.
+ *
+ * Restituisce il numero di caratteri immessi, o -1 se abortito.
  *
  * NB: prende max caratteri, la stringa deve aver allocato per lo meno
  *     (max + 1) bytes per contenere anche lo '\0' finale.
@@ -90,6 +92,7 @@ inline int c_getline(char *str, int max, bool maiuscole, bool special)
 /* getline + Ctrl-P + Ctrl-U + Ctrl-X + gestione dei prompt            */
 /* restituisce -1 se e` stato abortito                                 */
 /* wrap == 1 => usato da gettext con wrap, altrimenti getline normale. */
+/* Restituisce il numero di caratteri immessi, o -1 se abortito.       */
 #define GETLINE_ABORT -1
 #define GETLINE_ERROR -2
 #define GETLINE_END   -3

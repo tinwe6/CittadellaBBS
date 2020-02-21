@@ -33,8 +33,8 @@
 /* Prototipi delle funzioni in utility.c */
 int new_str_M(char *prompt, char *str, int max);
 int new_str_m(char *prompt, char *str, int max);
-int new_str_def_M(char *prompt, char *def, char *str, int max);
-int new_str_def_m(char *prompt, char *def, char *str, int max);
+int new_str_def_M(char *prompt, char *str, int max);
+int new_str_def_m(char *prompt, char *str, int max);
 void get_number(char *str, bool neg, bool enter);
 int get_int(bool enter);
 long get_long(bool enter);

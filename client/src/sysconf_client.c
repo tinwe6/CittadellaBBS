@@ -176,22 +176,22 @@ void edit_sysconfig(void)
 
 	case '2': /* 2 - Info sul server */
 		extract(aaa,buf,2);
-		new_str_def_m(_("Software"),aaa,aaa,49);
+		new_str_def_m(_("Software"), aaa, 49);
 		extract(bbb,buf,3);
-		new_str_def_m(_("Versione"),bbb,bbb,9);
+		new_str_def_m(_("Versione"), bbb, 9);
 		extract(ccc,buf,4);
-		new_str_def_m(_("Versione dell'ultimo client"),ccc,ccc,9);
+		new_str_def_m(_("Versione dell'ultimo client"), ccc, 9);
 		extract(ddd,buf,5);
-		new_str_def_m(_("Nodo"),ddd,ddd,49);
+		new_str_def_m(_("Nodo"), ddd, 49);
 		extract(eee,buf,6);
-		new_str_def_m(_("Dove"),eee,eee,49);
+		new_str_def_m(_("Dove"), eee, 49);
 		sprintf(cmd,"ESYS 2|%s|%s|%s|%s|%s", aaa, bbb, ccc,
 			ddd, eee);
 		break;
 
 	case '3': /* 3 - Path dei files */
 		extract(aaa,buf,2);
-		new_str_def_M(_("File dei dati degli utenti"),aaa,aaa,49);
+		new_str_def_M(_("File dei dati degli utenti"), aaa, 49);
 		sprintf(cmd,"ESYS 3|1|%s",aaa);
 		break;
 		
@@ -210,24 +210,24 @@ void edit_sysconfig(void)
 		
 	case '5': /* 5 - Nome rooms principali */
 		extract(aaa,buf,2);
-		new_str_def_M(_("Lobby"), aaa, aaa, ROOMNAMELEN - 1);
+		new_str_def_M(_("Lobby"), aaa, ROOMNAMELEN - 1);
 		extract(bbb, buf, 3);
-		new_str_def_M(_("Room dei Sysop"), bbb, bbb, ROOMNAMELEN - 1);
+		new_str_def_M(_("Room dei Sysop"), bbb, ROOMNAMELEN - 1);
 		extract(ccc, buf, 4);
-		new_str_def_M(_("Room degli Aide"),ccc,ccc, ROOMNAMELEN - 1);
+		new_str_def_M(_("Room degli Aide"), ccc, ROOMNAMELEN - 1);
 		extract(ddd, buf, 5);
-		new_str_def_M(_("Room dei Room Aide"), ddd, ddd,
+		new_str_def_M(_("Room dei Room Aide"), ddd,
 			      ROOMNAMELEN - 1);
 		extract(eee, buf, 6);
-		new_str_def_M(_("Posta"), eee, eee, ROOMNAMELEN - 1);
+		new_str_def_M(_("Posta"), eee, ROOMNAMELEN - 1);
 		extract(fff, buf, 7);
-		new_str_def_M(_("Room rompiballe"),fff,fff, ROOMNAMELEN - 1);
+		new_str_def_M(_("Room rompiballe"), fff, ROOMNAMELEN - 1);
 		extract(ggg, buf, 8);
-		new_str_def_M(_("Cestino"), ggg, ggg, ROOMNAMELEN - 1);
+		new_str_def_M(_("Cestino"), ggg, ROOMNAMELEN - 1);
 		extract(hhh, buf, 8);
-		new_str_def_M(_("Risultati Ricerca"),hhh,hhh, ROOMNAMELEN - 1);
+		new_str_def_M(_("Risultati Ricerca"), hhh, ROOMNAMELEN - 1);
 		extract(iii, buf, 8);
-		new_str_def_M(_("Blog"), iii, iii, ROOMNAMELEN - 1);
+		new_str_def_M(_("Blog"), iii, ROOMNAMELEN - 1);
 		sprintf(cmd, "ESYS 5|%s|%s|%s|%s|%s|%s|%s|%s|%s", aaa, bbb,
 			ccc, ddd, eee, fff, ggg, hhh, iii);
 		break;

@@ -61,17 +61,13 @@ int login(void)
 	}
 
         while(ok == LOGIN_FAILED) {
-                if (*nome == '\0') {
+                if (*nome == 0) {
                         printf(_("\nInserire il nome che si vuole utilizzare presso la bbs oppure 'Ospite' \n"
 				 "nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"));
                         do {
-				if (strlen(def) == 0)
-					new_str_M(_("\nNome    : "), nome,
-						  MAXLEN_UTNAME - 1);
-				else
-					new_str_def_M(_("\nNome"), def, nome,
-						      MAXLEN_UTNAME - 1);
-                        } while (strlen(nome) == 0);
+			        new_str_def_M(_("\nNome"), nome,
+					      MAXLEN_UTNAME - 1);
+                        } while (*nome == 0);
 
                         if ((!strcmp(nome,"Esci"))||(!strcmp(nome,"Off")))
                                 pulisci_ed_esci();
