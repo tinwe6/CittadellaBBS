@@ -1,0 +1,121 @@
+ \input texinfo   @c -*-texinfo-*-
+     @c %**start of header
+     @setfilename urna_specs.texi
+     @settitle Specifiche di urna
+     @setchapternewpage odd
+     @c %**end of header
+     
+     @ifinfo
+     
+QUel che l'e`
+
+- urna-stat
+
+@node urna-rw
+
+-funzioni:
+	-load_urne: carica tutte le urne:
+		load_stat (viene inizializzato urne_slot)
+		ciclo su urne_slot
+				load_urna(i)
+
+	-load_stat (fallisce solo quando i dati sembrano esserci ma non
+                riesce a leggerli)
+		carica urne_slot
+		inzializza urne_votanti (**)
+		
+    -load_urna:
+		carica dati,conf. prop no(non serve)
+	
+	-load_conf:
+		carica conf
+		voci 
+    -load_voci:
+		--
+    -read_dati:
+	   carica votanti + visti	
+		carica voti
+		(giudizi, ovvero il singolo voto sul tipo "voto",
+	     per ora e` lasciato perdere)
+
+
+---
+	-azzera_stat
+		azzera ustat (ma votanti viene allocato
+
+	
+
+
+
+	-read_prop
+===
+	per i save = poco da dire, tranne
+    che per save_prop, che fa un append,
+   per il formato-> vedi il file
+
+================================================================================
+
+@node urna-file
+
+-save_file
+-load_file
+-append_file
+aprono, (w,r,w>>) il file e tornano il descrittore. se 0<est<100000,-est
+
+-esiste dice se esiste il file. (0 esiste >0, -1 non esiste, 1 esiste vuoto,
+		-2 altro)
+
+-backup crea un backup
+-canc_file cancella un file (ma non i bk!)
+
+write,check magic number ovvi
+
+crea_nome: crea il nome secondo la regola dell'estensione (serve
+
+
+================================================================================
+
+@node urna-struttura
+ dealloca_urna
+ rs_del_conf
+ rs_del_voci
+ rs_del_voti
+ rs_del_dati
+ rs_del_prop
+Cancella le strutture di urna
+
+ rs_expire
+
+ rs_trova
+trova la posizione nel vettore dell'urna numero =progressivo
+
+int rs_ha_votato(struct urna *u, long user);
+int rs_ha_visto(struct urna *u, long user);
+ovvi
+
+void cod_lettera(unsigned char lettera, char * let);
+unsigned char lettera_cod(char *stringa);
+
+
+void deall_prop(struct urna_prop *upr);
+void deall_dati(struct urna_dati *udt);
+void deall_conf(struct urna_conf* ucf);
+
+void rs_free_data();
+libera tutto
+void rs_free_urne();
+libera le urna
+void rs_free_stat();
+libera stat
+================================================================================
+@node urna-posta.c (in creazione)
+
+posta su room
+--------------------
+@node urna-comm.c
+In urna-comm si sono i file di comunicazione (parte di essi) con 
+il client
+cmd_slst
+--------------------
+@node urna-crea.c
+@node urna-fine.c
