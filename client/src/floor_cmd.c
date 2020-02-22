@@ -587,9 +587,10 @@ void floor_edit(int mode)
 		/* maxmsg = extract_long(buf+4, 5); */
 		flags = extract_long(buf+4, 6);
 		extractn(floor_master, buf+4, 7, MAXLEN_UTNAME-1);
-		if (mode)
-			new_str_def_M(_("Nome del Floor"), name, name,
+		if (mode) {
+			new_str_def_M(_("Nome del Floor"), name,
 				      ROOMNAMELEN-1);
+		}
 		rlvl = new_int_def(_("Livello minimo per lettura"), rlvl);
 		wlvl = new_int_def(_("Livello minimo per scrittura"), wlvl);
                 /*

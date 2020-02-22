@@ -51,27 +51,23 @@ int login(void)
 
 	if (USER_NAME && (USER_NAME[0] != '\0')) {
 		strncpy(nome, client_cfg.name, MAXLEN_UTNAME);
-		nome[MAXLEN_UTNAME-1] = '\0';
+		nome[MAXLEN_UTNAME - 1] = '\0';
 	} else {
 		nome[0] = '\0';
-		if (USER_PWD && (USER_PWD[0]!='\0')) {
+		if (USER_PWD && (USER_PWD[0] != '\0')) {
 			Free(USER_PWD);
 			USER_PWD = strdup("");
 		}
 	}
 
         while(ok == LOGIN_FAILED) {
-                if (*nome == '\0') {
+                if (*nome == 0) {
                         printf(_("\nInserire il nome che si vuole utilizzare presso la bbs oppure 'Ospite' \n"
 				 "nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"));
                         do {
-				if (strlen(def) == 0)
-					new_str_M(_("\nNome    : "), nome,
-						  MAXLEN_UTNAME - 1);
-				else
-					new_str_def_M(_("\nNome"), def, nome,
-						      MAXLEN_UTNAME - 1);
-                        } while (strlen(nome) == 0);
+			        new_str_M(_("\nNome    : "), nome,
+					  MAXLEN_UTNAME - 1);
+                        } while (*nome == 0);
 
                         if ((!strcmp(nome,"Esci"))||(!strcmp(nome,"Off")))
                                 pulisci_ed_esci();
@@ -101,7 +97,7 @@ int login(void)
                         ok = login_validato();
                         break;
                 }
-                if (ok == 0) {
+                if (ok == LOGIN_FAILED) {
 			strcpy(def, nome);
                         nome[0] = 0;
 		}

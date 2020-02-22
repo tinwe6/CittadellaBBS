@@ -369,8 +369,8 @@ void room_edit(int mode)
 		flags = extract_long(&buf[4], 6);
 		extract(room_master, buf+4, 7);
 		if (mode)
-			new_str_def_M(_("Nome della Room"), name, name,
-				      ROOMNAMELEN-1);
+			new_str_def_M(_("Nome della Room"), name,
+				      ROOMNAMELEN - 1);
 		rlvl = new_int_def(_("Livello minimo per lettura"), rlvl);
 		wlvl = new_int_def(_("Livello minimo per scrittura"), wlvl);
                 /*

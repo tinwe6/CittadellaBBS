@@ -123,7 +123,7 @@ void lista_utenti(void)
 void registrazione(bool nuovo)
 {
 	int c;
-	char buf[LBUF], tmp[LBUF];
+	char buf[LBUF];
 	char nome_reale[MAXLEN_RNAME] = ""; /* Nome 'Real-life'             */
 	char via[MAXLEN_VIA] = "";	    /* Street address               */
 	char citta[MAXLEN_CITTA] = "";	    /* Municipality                 */
@@ -133,7 +133,6 @@ void registrazione(bool nuovo)
 	char email[MAXLEN_EMAIL] = "";	    /* Indirizzo E-mail             */
 	char url[MAXLEN_URL] = "";	    /* Home page URL                */
 
-        nome_reale[0] = 0;
 	if (!nuovo) {
 		/* Avverte il server che vogliamo editare la registrazione */
 		serv_puts("BREG");
@@ -160,14 +159,14 @@ void registrazione(bool nuovo)
 	if (nuovo)
 		do {
 			new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
-				      nome_reale, MAXLEN_RNAME-1);
+				      MAXLEN_RNAME-1);
 			if (nome_reale[0] == 0) {
 				printf(_("Devi inserire il tuo nome reale, altrimenti non verrai validato.\nSe vuoi solo dare un'occhiata entra come 'Ospite'.\n"));
 			}
 		} while (nome_reale[0] == 0);
 	else
 		new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
-			      nome_reale, MAXLEN_RNAME-1);
+			      MAXLEN_RNAME-1);
 	printf(_("Sesso: (M/F) "));
 	if (nuovo)
 		printf(": ");
@@ -192,11 +191,11 @@ void registrazione(bool nuovo)
 		putchar('\n');
 	}
 
-	new_str_def_M(_("Indirizzo"), via, via, MAXLEN_VIA-1);
-	new_str_def_M(_("Citt&agrave;"), citta, citta, MAXLEN_CITTA-1);
-	new_str_def_m(_("Codice di avviamento postale"),cap,cap, MAXLEN_CAP-1);
-	new_str_def_M(_("Stato"), stato, stato, MAXLEN_STATO-1);
-	new_str_def_m(_("Numero di telefono"), tel, tel, MAXLEN_TEL-1);
+	new_str_def_M(_("Indirizzo"), via, MAXLEN_VIA - 1);
+	new_str_def_M(_("Citt&agrave;"), citta, MAXLEN_CITTA - 1);
+	new_str_def_m(_("Codice di avviamento postale"), cap, MAXLEN_CAP - 1);
+	new_str_def_M(_("Stato"), stato, MAXLEN_STATO - 1);
+	new_str_def_m(_("Numero di telefono"), tel, MAXLEN_TEL-1);
 
 	if (nuovo)
 		cml_print(_(
@@ -208,17 +207,15 @@ void registrazione(bool nuovo)
 	c = 0;
 	do {
 		c++;
-		tmp[0] = '\0';
-		new_str_def_m(_("Indirizzo e-mail"),email,tmp,MAXLEN_EMAIL-1);
+		new_str_def_m(_("Indirizzo e-mail"), email, MAXLEN_EMAIL - 1);
 
 		/* Verifica se l'email e` ben formato */
-		if (!check_email_syntax(tmp))
+		if (!check_email_syntax(email))
 			cml_print(_(
 "L'indirizzo Email fornito non &egrave; valido.\n"
 "L'indirizzo Email &egrave; essenziale per ottenere una chiave di validazione.\n"));
 		else {
 			c = 0;
-			strcpy(email, tmp);
 		}
 	} while (c && (c < 3));
 	if (c) { /* Email non valido */
@@ -230,7 +227,7 @@ void registrazione(bool nuovo)
 			printf(_("\nOk, teniamo il vecchio Email visto che non riesci a digitare quello nuovo :-)\n\n"));
 	}
 	
-	new_str_def_m(_("URL della Home Page"), url, url, MAXLEN_URL-1);
+	new_str_def_m(_("URL della Home Page"), url, MAXLEN_URL - 1);
 	
 	if (!nuovo) {
 	        printf(sesso ? _("Sei sicura di voler mantenere le modifiche? ") : _("Sei sicuro di voler mantenere le modifiche? "));
@@ -684,22 +681,21 @@ void edit_user(void)
         divieti = extract_int(buf+4, 11);
 
  	if (secpmsg == 0)
- 			msgph = 0;
- 		else
- 			msgph = (int) ((3600/STEP_POST) / secpmsg);
+	      msgph = 0;
+	else
+ 	      msgph = (int) ((3600/STEP_POST) / secpmsg);
 
         setcolor(C_CONFIG_H);
 	printf(_("\nRegistrazione:\n"));
         setcolor(C_CONFIG_B);
-	new_str_def_M(_(" Nome e Cognome (VERI)"), nome_reale, nome_reale,
-		      MAXLEN_RNAME-1);
-	new_str_def_M(_(" Indirizzo"), via, via, MAXLEN_VIA-1);
-	new_str_def_M(_(" Citt&agrave;"), citta, citta, MAXLEN_CITTA-1);
-	new_str_def_m(_(" Codice di avviamento postale"), cap, cap, MAXLEN_CAP-1);
-	new_str_def_M(_(" Stato"), stato, stato, MAXLEN_STATO-1);
-	new_str_def_m(_(" Numero di telefono"), tel, tel, MAXLEN_TEL-1);
-	new_str_def_m(_(" Indirizzo e-mail"), email, email, MAXLEN_EMAIL-1);
-	new_str_def_m(_(" URL della Home Page"), url, url, MAXLEN_URL-1);
+	new_str_def_M(_(" Nome e Cognome (VERI)"), nome_reale, MAXLEN_RNAME-1);
+	new_str_def_M(_(" Indirizzo"), via, MAXLEN_VIA - 1);
+	new_str_def_M(_(" Citt&agrave;"), citta, MAXLEN_CITTA - 1);
+	new_str_def_m(_(" Codice di avviamento postale"), cap, MAXLEN_CAP - 1);
+	new_str_def_M(_(" Stato"), stato, MAXLEN_STATO - 1);
+	new_str_def_m(_(" Numero di telefono"), tel, MAXLEN_TEL - 1);
+	new_str_def_m(_(" Indirizzo e-mail"), email, MAXLEN_EMAIL - 1);
+	new_str_def_m(_(" URL della Home Page"), url, MAXLEN_URL - 1);
 	
         setcolor(C_CONFIG_H);
         cml_printf(_("\nPropriet&agrave; utente:\n"));
@@ -736,10 +732,9 @@ void edit_user(void)
         /* Nickname */
 	printf(_(" Vuoi modificare il nickname dell'utente? "));
 	if (si_no() == 's') {
-                new_str_def_M(_(" Nuovo nickname"), nick, newnick,
-                              MAXLEN_RNAME-1);
+                new_str_M(_(" Nuovo nickname"), newnick, MAXLEN_UTNAME - 1);
                 if (!strncmp(newnick, nick, MAXLEN_UTNAME))
-                        cml_printf(_(" <b>Ricordati di avvertirel'utente che il suo nick &egrave cambiato!!</b>\n"));
+                        cml_printf(_(" <b>Ricordati di avvertire l'utente che il suo nick &egrave cambiato!!</b>\n"));
         }
         putchar('\n');
 
