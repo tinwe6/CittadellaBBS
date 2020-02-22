@@ -25,7 +25,7 @@
 #include "cml_entities.h"
 
 /* TODO Trovare modo di eliminare la seguente def!!! */
-#define USE_MEM_STAT
+//#define USE_MEM_STAT
 
 #include "macro.h"
 

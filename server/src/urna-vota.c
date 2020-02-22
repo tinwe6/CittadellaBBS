@@ -27,7 +27,7 @@
 #include "urna-vota.h"
 #include "urna_errori.h"
 #include "parm.h"
-#include "memstat.h"
+#include "config.h"
 
 
 int rs_vota(struct sessione *t, struct urna_conf *ucf);
@@ -108,7 +108,7 @@ int del_votante(int num, long int matricola){
 		while(p!=NULL &&p->utente!=matricola){
 				q=p;
 				p=p->next;
-			};
+			}
 
 		if (p==NULL)
 				return -1;
@@ -152,7 +152,7 @@ int cerca_votante(int num,unsigned char flag){
 				}
 		}
 		return ret;
-};
+}
 
 int rs_inizia_voto(struct sessione *t, int num){
 
@@ -417,7 +417,7 @@ int rs_add_proposta(struct urna *u, struct sessione* t)
  if(pars2strsd(upr->proposte,t,"prop",MAXLEN_PROPOSTA,-num_prop)!=num_prop){
    citta_log("SYSLOG: errori nelle proposte");
    return -1;
- };
+ }
 
 
 /*

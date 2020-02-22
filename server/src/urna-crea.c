@@ -82,10 +82,10 @@ int init_urna(struct sessione *t)
             p = q;
             ut_definende--;
             continue;
-         };
-      };
+         }
+      }
       p = p->next;
-   };
+   }
 
    /*
     * * controlla che non ci sia gia` l'utente
@@ -97,8 +97,8 @@ int init_urna(struct sessione *t)
       if(p->sessione == t) {
          p->inizio = time(NULL);
          return (0);
-      };
-   };
+      }
+   }
 #endif
 
    if(ustat.attive >= MAX_REFERENDUM)
@@ -124,14 +124,14 @@ int init_urna(struct sessione *t)
       ut_definende++;
 
       return (0);
-   };
+   }
 
    citta_logf("questo non puo` succedere (fine di init_urna)");
    return (-1);
 #endif
 
    return 0;
-};
+}
 
 /* inizializza un nuovo referendum 
  * il server ha gia` ricevuto tutti
@@ -163,7 +163,7 @@ int rs_new(struct sessione *t, char *buf, char *lettera)
       citta_logf("ustat.ut_definende<0!!!");
       u_err(t,NON_INIT_DEF);
       return (-1);
-   };
+   }
 #endif
 
    /* 
@@ -173,12 +173,12 @@ int rs_new(struct sessione *t, char *buf, char *lettera)
    if((testa = add_urne_slot()) == NULL) {
       u_err(t,RISORSE);
       return -1;
-   };
+   }
 
    if(num_parms(buf) < 7) {
      u_err(t, URNAPOCHIDATI);
       return -1;
-   };
+   }
 
    /* creazione dell'urna */
 
@@ -198,13 +198,13 @@ int rs_new(struct sessione *t, char *buf, char *lettera)
       dealloca_urna(u);
       Free(u);
       return -1;
-   };
+   }
 
    if(!(u->dati = rs_new_udt(u->conf))) {
       dealloca_urna(u);
       Free(u);
       return -1;
-   };
+   }
 
  /*
   * aggiunge a chi ha visto gli utenti
@@ -244,7 +244,7 @@ int rs_new(struct sessione *t, char *buf, char *lettera)
 
    u->semaf |= SEM_U_ATTIVA;
    return (u->progressivo);
-};
+}
 
 /*
  * elimina urna e tutti 
@@ -283,7 +283,7 @@ int rs_del(struct urna *u)
    ustat.modificata = 1;
 
    return (0);
-};
+}
 
 /*
  * postpone la scadenza
@@ -296,22 +296,22 @@ void rs_postpone(struct sessione *t, struct urna_dati *udt, time_t stop)
    if(udt->posticipo > MAX_POSTICIPI) {
       u_err(t, TROPPI_POSTICIPI);
       return;
-   };
+   }
 
    if(stop < time(0)) {
       u_err(t, E_NEL_PASSATO);
       return;
-   };
+   }
 
    if(stop < udt->stop) {
       u_err(t, E_UN_ANTICIPO);
       return;
-   };
+   }
 
    udt->stop = stop;
    udt->posticipo++;
 
-};
+}
 
 /*
  * Cancella un Sondaggio.  
@@ -338,20 +338,20 @@ void cmd_sdel(struct sessione *t, char *buf)
    if((pos = rs_trova(num)) == -1) {
       u_err(t,U_NOT_FOUND);
       return;
-   };
+   }
    u = ustat.urna_testa + pos;
 
    if((t->utente->livello < MINLVL_REF_DEL)
       && (t->utente->matricola != (*u)->conf->proponente)) {
       u_err(t,NOT_AUTH_DEL);
       return;
-   };
+   }
 
    rs_del(*u);
    *u = NULL;
    cprintf(t, "%d\n", OK);
    return;
-};
+}
 
 /*
  * Posticipa un sondaggio Il sondaggio puo' venire posticipato
@@ -373,13 +373,13 @@ void cmd_spst(struct sessione *t, char *buf)
    if((pos = rs_trova(n)) == -1) {
       u_err(t,U_NOT_FOUND);
       return;
-   };
+   }
 
    u = *(ustat.urna_testa + pos);
    if(u->semaf & SEM_U_PRECHIUSA) {
       u_err(t,NOT_AUTH_SPS);
       return;
-   };
+   }
 
    rm=room_findn(u->conf->room_num);
    if(rm==NULL)
@@ -394,7 +394,7 @@ void cmd_spst(struct sessione *t, char *buf)
    rs_postpone(t, u->dati, stop);       /* errori gestiti in rs_Post */
    cprintf(t, "%d %ld\n", OK, n);
    return;
-};
+}
 
 /*
  * chiude un Sondaggio in anticipo 
@@ -422,7 +422,7 @@ void cmd_sstp(struct sessione *t, char *buf)
    if((pos = rs_trova(n)) == -1) {
       u_err(t,U_NOT_FOUND);
       return;
-   };
+   }
    u = ustat.urna_testa + pos;
 
    if((t->utente->livello < MINLVL_REF_STOP)
@@ -434,7 +434,7 @@ void cmd_sstp(struct sessione *t, char *buf)
  * rs_expire();
  */
    cprintf(t, "%d\n", OK);
-};
+}
 
 /* 
  * crea una nuova conf
@@ -455,7 +455,7 @@ struct urna_conf *rs_new_ucf(char *buf, struct sessione *t)
       Free(ucf);
 	  u_err(t,RISORSE);
       return NULL;
-   };
+   }
 
    ucf->proponente = t->utente->matricola;
    ucf->room_num = t->room->data->num;
@@ -477,31 +477,31 @@ struct urna_conf *rs_new_ucf(char *buf, struct sessione *t)
       ucf->val_crit.tempo = (time_t) extract_long(buf, POS_VAL_CRITERIO);
    } else {
       ucf->val_crit.numerico = extract_long(buf, POS_VAL_CRITERIO);
-   };
+   }
 
    if(ucf->stop < ucf->start + TEMPO_MINIMO) {
       u_err(t, TROPPOVICINO);
       Free(ucf);
       return NULL;
-   };
+   }
 
    if(ucf->tipo != TIPO_REFERENDUM && ucf->tipo != TIPO_SONDAGGIO) {
       u_err(t,PROTO);
       Free(ucf);
       return NULL;
-   };
+   }
 
    if(ucf->modo < 0 && ucf->modo > NUM_MODI) {
       u_err(t, URNADATIERRATI);
       Free(ucf);
       return NULL;
-   };
+   }
 
    if(ucf->num_voci > MAX_VOCI) {
       u_err(t, TROPPEVOCI);
       Free(ucf);
       return (0);
-   };
+   }
 
    /* 
     * *non documentato - se bianca/astensione non sono 0=> sono 1
@@ -520,36 +520,36 @@ struct urna_conf *rs_new_ucf(char *buf, struct sessione *t)
       u_err(t, POCHEVOCI);
       Free(ucf);
       return NULL;
-   };
+   }
 
    if(ucf->modo == MODO_SCELTA_SINGOLA && ucf->num_voci < 2) {
       u_err(t, POCHEVOCI);
       Free(ucf);
       return NULL;
-   };
+   }
 
    if(ucf->modo == MODO_PROPOSTA && ucf->num_prop < 1) {
       u_err(t, POCHEVOCI);
       Free(ucf);
       return NULL;
-   };
+   }
 
    if(ucf->max_voci > ucf->num_voci) {
       ucf->max_voci = ucf->num_voci;
-   };
+   }
 
    if(ucf->max_voci == 0 && ucf->modo != MODO_PROPOSTA) {
       ucf->max_voci = 1;
-   };
+   }
 
    if(ucf->modo == MODO_PROPOSTA && ucf->maxlen_prop > MAXLEN_PROPOSTA) {
       ucf->maxlen_prop = MAXLEN_PROPOSTA;
-   };
+   }
 
    if(rs_ucf_parm(ucf, t)) {
       u_err(t,POCHIDATI);
       return NULL;
-   };
+   }
 /*
  * controlla che il titolo 
  * contenga almeno 3 lettere
@@ -567,7 +567,7 @@ struct urna_conf *rs_new_ucf(char *buf, struct sessione *t)
 
 	
    return ucf;
-};
+}
 
 /*
  * legge i parametri
@@ -584,7 +584,7 @@ int rs_ucf_parm(struct urna_conf *ucf, struct sessione *t)
 
    if((l=par2strd(ucf->titolo, t, "titolo", LEN_TITOLO)) > 1) {
       citta_logf("titolo troncato, %d-%d",l,LEN_TITOLO);
-   };
+   }
 
 
    for(i = MAXLEN_QUESITO - 1; i >= 0; i--)
@@ -599,10 +599,10 @@ int rs_ucf_parm(struct urna_conf *ucf, struct sessione *t)
    for(i = 0; i < MAXLEN_QUESITO; i++) {
       if(strlen(ucf->testo[i]) == 0) {
          continue;
-      };
+      }
       strncpy((ucf->testo)[j], (ucf->testo)[i], LEN_TESTO);
       j++;
-   };
+   }
 
    for(; j < MAXLEN_QUESITO; j++)
       strcpy(ucf->testo[j], "");
@@ -616,7 +616,7 @@ int rs_ucf_parm(struct urna_conf *ucf, struct sessione *t)
       strcpy(*(ucf->voci + CODIFICA_SI), SI);
       strcpy(*(ucf->voci + CODIFICA_NO), NO);
       return 0;
-   };
+   }
 
    CREATE((ucf->voci), char *, (ucf->num_voci), TYPE_HEAD_VOCI);
 
@@ -630,7 +630,7 @@ int rs_ucf_parm(struct urna_conf *ucf, struct sessione *t)
       par2strd(*(ucf->voci + i), t, nome_voce, MAXLEN_VOCE);
    }
    return 0;
-};
+}
 
 /* 
  *crea la struttura urna_dati
@@ -676,10 +676,10 @@ struct urna_dati *rs_new_udt(struct urna_conf *ucf)
       if(ucf->modo == MODO_VOTAZIONE)
          CREATE(voto->giudizi, long, NUM_GIUDIZI, TYPE_LONG);
 #endif
-   };
+   }
 
    return udt;
-};
+}
 
 /*
  * alla partenza urna_prop
@@ -692,7 +692,7 @@ struct urna_prop *rs_new_prop()
 
    upr = NULL;
    return upr;
-};
+}
 
 unsigned char lettera_successiva()
 {
@@ -724,7 +724,7 @@ unsigned char lettera_successiva()
 
    if(ustat.ultima_lettera <= 25) {
       lettera = ustat.ultima_lettera + 1;
-   };
+   }
 
    /* 
     * * ciclo su tutto l'alfabeto, partendo da ultima_lettera+1
@@ -749,7 +749,7 @@ unsigned char lettera_successiva()
 
    citta_log("finite le lettere!!!");
    return 255;
-};
+}
 
 /* 
  * controlla che l'utente
@@ -767,7 +767,7 @@ int check_init(struct sessione *t)
    for(p = ut_def; p != NULL; q = p, p = p->next) {
       if(p->sessione == t)
          break;
-   };
+   }
 
    if(p == NULL) {
       err(t, NONINIT);
@@ -775,13 +775,13 @@ int check_init(struct sessione *t)
       citta_logf("SYSLOG: in rs_new, Non inizializzata");
 #endif
       return (-1);
-   };
+   }
 
    if(q != NULL) {
       q->next = p->next;
    } else {
       ut_def = p->next;
-   };
+   }
 
    Free(p);
    return 0;
@@ -805,7 +805,7 @@ struct urna **add_urne_slot()
       CREATE(ustat.urna_testa, struct urna *, LEN_SLOTS, TYPE_POINTER);
 
       return ustat.urna_testa;
-   };
+   }
 
    slots = ustat.urne_slots * LEN_SLOTS;
    testa = ustat.urna_testa;
@@ -814,24 +814,24 @@ struct urna **add_urne_slot()
       if(*testa == NULL)
          break;
       testa++;
-   };
+   }
 
    if(pos == slots) {
       if(ustat.urne_slots == MAX_SLOT) {
          citta_logf("troppe urne");
          return (NULL);
-      };
+      }
 
       ustat.urne_slots++;
       slots = ustat.urne_slots * LEN_SLOTS;
       RECREATE(ustat.urna_testa, struct urna *, slots);
       memset(ustat.urna_testa + pos, 0, LEN_SLOTS * sizeof(struct urna **));
       testa = (ustat.urna_testa + pos);
-   };
+   }
 
    if(*testa != NULL) {
       citta_log("questo non puo` succedere (urna-crea.c)");
       return NULL;
-   };
+   }
    return testa;
 }

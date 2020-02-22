@@ -60,7 +60,7 @@ void stampa_quesito(struct text *quesito);
 void stampa_voci(const struct urna_client *dati);
 void urna_prendi_testo(struct urna_client *dati);
 void ordina_ref(int n_rs,struct elenco_ref *elenco[], char *format);
-int cmp_ref(struct elenco_ref **a, struct elenco_ref **b);
+static int cmp_ref(const void *a, const void *b);
 int print_sondaggio(struct elenco_ref *ref, const char *format, int maxtit);
 
 /*
@@ -261,7 +261,7 @@ void debugga_dati(struct urna_client *u, int n)
    printf(_("STOP  %ld\n"), u->stop);
    printf(_("NUM_VOCI  %d\n"), u->num_voci);
    printf(_("MAX_VOCI  %d\n"), u->max_voci);
-   printf(_("TESTA VOCI  %p\n"), u->testa_voci);
+   printf(_("TESTA VOCI  %p\n"), (void *)u->testa_voci);
    printf(_("ANZIANITA  %ld\n"), u->anzianita);
    printf(_("BIANCA  %d\n"), u->bianca);
    printf(_("ASTENSIONE_VOTO  %d\n"), u->ast_voto);
@@ -284,7 +284,7 @@ void debugga_dati(struct urna_client *u, int n)
          tq = txt_get(u->testo);
       }
    }
-};
+}
 
 /*
  * inserisce in **risposte
@@ -343,7 +343,7 @@ int chiedi_scelte(char *risposte[], int min_scelte, int maxlen,
          cml_printf(_(" (<b>invio</b> per finire"));
       } else {
       		cml_printf(_("\nnon bastano..."));
-	};
+	}
       if(risp != 0) {
          cml_printf(_(", lettera <b>a</b>-<b>%c</b> per cambiare il testo"),
 		    'a' + risp - 1);
@@ -352,7 +352,7 @@ int chiedi_scelte(char *risposte[], int min_scelte, int maxlen,
       if(risp < max_scelte) {
          cml_printf(_(",\n  lettera <b>%c</b> per aggiungerne un'altra"),
 		    'a' + risp);
-      };
+      }
       printf("): ");
 
 
@@ -373,7 +373,7 @@ int chiedi_scelte(char *risposte[], int min_scelte, int maxlen,
                risposte[pos] =
                  (char *)myCalloc(maxlen+2, sizeof(char));
             }
-         };
+         }
 	if(pos+1==risp)
          printf(_("\nAggiungi la %s: (^X per cancellarla)\n"), prompt);
 	 else
@@ -420,7 +420,7 @@ int chiedi_scelte(char *risposte[], int min_scelte, int maxlen,
       risp = j;
    }
    return risp;
-};
+}
 
 /*
  * libera la struttura dati
@@ -449,7 +449,7 @@ void free_dati(struct urna_client *dati)
       txt_rewind(dati->testo);
       txt_free(&dati->testo);
    }
-};
+}
 
 void azzera_dati(struct urna_client *dati)
 {
@@ -459,7 +459,7 @@ void azzera_dati(struct urna_client *dati)
    for(i = 0; i < MAX_VOCI; i++) {
       dati->testa_voci[i] = NULL;
       dati->testa_proposte[i] = NULL;
-   };
+   }
 
    dati->parm = NULL;
 
@@ -559,7 +559,7 @@ int get_elenco_ref(struct elenco_ref *elenco[], char tipo)
       }
    }
    return n_rs;
-};
+}
 
 /* 
  * Sceglie un referendum tra quelli di elenco_voti
@@ -600,7 +600,7 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
   }
   if(strcmp(str, "") == 0) {
     return -1;
-  };
+  }
 
   num = trim(str);
   while((i < n_rs) && (num != elenco[i]->num) &&
@@ -613,7 +613,7 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
     return -1;
   }
   return i;
-};
+}
 
 /*
  * stampa i referendum
@@ -636,28 +636,29 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
  */
 
 
-void ordina_ref(int n_rs,struct elenco_ref *elenco[], char *format)
+void ordina_ref(int n_rs, struct elenco_ref *elenco[], char *format)
 {
-        qsort(elenco, n_rs, sizeof(struct elenco_ref *), (void *)cmp_ref);
+        qsort(elenco, n_rs, sizeof(struct elenco_ref *), cmp_ref);
 }
 
-int cmp_ref(struct elenco_ref **a, struct elenco_ref **b){
-		struct elenco_ref *ap;
-		struct elenco_ref *bp;
-		ap=*a;
-		bp=*b;
-		if(ap->tipo==TIPO_REFERENDUM&& bp->tipo==TIPO_SONDAGGIO){
-				return -1;
-		}
-		if(ap->tipo==TIPO_SONDAGGIO&& bp->tipo==TIPO_REFERENDUM){
-				return +1;
-		}
+static int cmp_ref(const void *a, const void *b){
+        struct elenco_ref *ap;
+	struct elenco_ref *bp;
 
-	if(ap->num<bp->num){
-			return -1;
+	ap = *(struct elenco_ref **)a;
+	bp = *(struct elenco_ref **)b;
+	if (ap->tipo == TIPO_REFERENDUM && bp->tipo == TIPO_SONDAGGIO) {
+	        return -1;
 	}
-	if(ap->num>bp->num){
-			return +1;
+	if(ap->tipo == TIPO_SONDAGGIO && bp->tipo == TIPO_REFERENDUM) {
+	        return +1;
+	}
+
+	if (ap->num < bp->num) {
+	        return -1;
+	}
+	if (ap->num > bp->num) {
+	        return +1;
 	}
 	return 0;
 }
@@ -677,8 +678,8 @@ void print_ref(int n_rs, struct elenco_ref *elenco[], const char *format)
       ref = elenco[i];
        if(strlen(ref->titolo)>maxtit)
 		   maxtit=strlen(ref->titolo);
-	   };
-   };
+	   }
+   }
 
    for(i = 0; i < n_rs; i++){
            printf("\n");
@@ -687,9 +688,9 @@ void print_ref(int n_rs, struct elenco_ref *elenco[], const char *format)
 			hit_any_key();
 			linee=0;
 	}
-   };
+   }
    return;
-};
+}
 
 /*
  * secondo tentativo di formattare
@@ -837,7 +838,7 @@ int trim(char *str)
    if (str[0]==0){
 		   str[0]='0';
 		   str[1]=0;
-   };
+   }
    for(str2 = str; (*str2 == ' ' && *str2 != 0); str2++);
 
    /*

@@ -162,14 +162,14 @@ static reflist_t *ptotLook4Word(ptree_t *pt, ptnode_t *t,
 	    for (i = 0, v = t->reflist; v; v = v->next, i++) {
 		rlAddReference(pt, &r, v->ref, 1);
 	    }
-//	    printf("Found %d References.\n", i);
+	    /* printf("Found %d References.\n", i); */
 	} 
 	if (!exact)
 	    for (i = 0; i < t->nkids; i++) {
 		if ( (v = ptotLook4Word(pt, &(t->kids[i]), w, exact)) ) {
-		  //reflist_t *lp;
+		  /* reflist_t *lp; */
 
-		  //lp=NULL;
+		  /* lp=NULL; */
 		    for (l = v; l; l = rlNext(l)) 
 			rlAddReference(pt, &r, l->ref, 1);
 		} 
@@ -241,7 +241,7 @@ reference_t *refCreate(void *data, size_t n) {
   CREATE(r, reference_t, 1, TYPE_PTREF);
   /*r = (reference_t *)malloc(sizeof(reference_t));*/
   CREATE(r->data, void *, n, TYPE_VOIDSTAR);
-  //r->data = (void *)malloc(n); /* (*) Qui CREATE non puo' essere usato?? */
+  /*r->data = (void *)malloc(n);*/ /* (*) Qui CREATE non puo' essere usato?? */
   memcpy(r->data, data, n);
   r->counter = 0;
   return(r);

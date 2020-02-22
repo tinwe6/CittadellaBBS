@@ -14,6 +14,18 @@ client/bin/*
 server/bin/cittaserver
 server/bin/citta_inetd
 
+# old files to eliminate
+server/src/conv_0.1.22.c
+server/src/conv_0.2.?.c
+server/src/conv_0.3.?.c
+server/src/conv_conv*
+server/src/conv_new*
+server/src/conv_read*
+server/src/conv_urna*
+server/src/multiserver.c
+server/src/testa-parm.c
+server/src/urna-parm.c-old
+
 # these files are copied from doc/ with bininstall
 server/lib/help/dot_commands
 server/lib/help/lista_comandi
@@ -21,3 +33,7 @@ server/lib/help/manuale
 
 # tarballs
 cittadella-*.tgz
+
+# personal files
+private/
+snippets/

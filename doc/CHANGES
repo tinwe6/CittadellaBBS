@@ -1,3 +1,6 @@
+21/02/20 - bugfix registrazione, doesn't crash anymore when leaving an empty
+           field. Rewrote new_str_def_m and new_str_def_M functions.
+
 11/02/20 - bugfix the pager receives the correct text length from receive_msg()
 
 10/02/20 - bugfix server blog_num_post() (lowest was not used)

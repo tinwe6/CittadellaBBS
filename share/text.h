@@ -45,18 +45,6 @@ void txt_jump(struct text *txt, long n);
 long txt_rpos(struct text *txt);
 struct text *txt_dup(struct text *src);
 struct text * txt_load(char *filename);
-#if 0
-struct text *txt_createn(long lstr, long max);
-void txt_putc(struct text *txt, char c);
-char *txt_getr(struct text *txt, int i);
-int txt_append(struct text *txt1, struct text *txt2);
-char *txt_read(struct text *txt, int num);
-char *txt_prev(struct text *txt);
-long txt_tell(struct text *txt);
-char txt_ins(struct text *txt, char *str, int num);
-char txt_del(struct text *txt, char *str, int num);
-void txt_print(struct text *txt);
-#endif
 
 /* Restituisce il numero di righe allocate nella struttura *txt. */
 /* #define txt_max(txt) (txt)->max */

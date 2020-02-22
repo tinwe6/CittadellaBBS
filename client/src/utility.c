@@ -13,7 +13,6 @@
 * File : utility.c                                                          *
 *        routines varie, manipolazione stringhe, prompts,  etc etc..        *
 ****************************************************************************/
-#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -71,10 +70,6 @@ void stampa_datall(long ora);
 void stampa_data_smb(long ora);
 void stampa_ora(long ora);
 char * astrcat(char *str1, char *str2);
-inline void Perror(const char *str);
-inline void * Calloc(size_t num, unsigned long size, int tipo);
-inline void * Realloc(void *ptr, size_t size);
-inline void Free(void *ptr);
 int min_lungh(char *str , int min);
 
 /* Costanti globali */
@@ -573,18 +568,12 @@ void stampa_ora(long ora)
 /****************************************************************************/
 /* Creates dynamically (unconstrained allocation with malloc) a string
  * which is the concatenation of str1 and str2.
- * Remember to free() the result!                                           */
+ * Remember to Free() the result!                                           */
 char * astrcat(char *str1, char *str2)
 {
 	char *dup;
 
-	dup = (char *) malloc(strlen(str1) + strlen(str2) + 1);
-
-	if (dup == NULL) {
-		Perror("malloc failure in astrcat");
-		abort();
-	}
-
+	CREATE(dup, char, strlen(str1) + strlen(str2) + 1, 0);
 	strcat(strcpy(dup, str1), str2);
 
 	return(dup);
@@ -756,36 +745,14 @@ int new_date(struct tm *data,int pos)
 	return(0);
 }
 
-int min_lungh(char *str , int min){
-         int l=0;
-         char *s;
-	 for(s=str;*s;s++)
-	      if (*s>32 && *s<127)
-		l++;
+int min_lungh(char *str , int min) {
+        int l = 0;
+	char *s;
+
+	for(s = str; *s; s++)
+	        if (*s > 32 && *s < 127)
+		        l++;
 		
-        return (l>=min);
+	return (l >= min);
 }
 
-/****************************************************************************/
-/*
- * Wrap functions per perror(), calloc(), realloc() e free().
- */
-inline void Perror(const char *str)
-{
-	perror(str);
-}
-
-inline void * Calloc(size_t num, unsigned long size, int tipo)
-{
-	return calloc(num, size);
-}
-
-inline void * Realloc(void *ptr, size_t size)
-{
-	return realloc(ptr, size);
-}
-
-inline void Free(void *ptr)
-{
-	free(ptr);
-}

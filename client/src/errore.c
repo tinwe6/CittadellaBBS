@@ -127,7 +127,7 @@ void print_err_fm(char *str)
 		printf(_("\nNon riesco ad aprire il file dei messaggi #%ld.\n"), fmnum);
 		break;
 	case FMERR_NOFM:
-		printf(_("\nIl file dei messaggi #\%ld non esiste!!\n"), fmnum);
+		printf(_("\nIl file dei messaggi #%ld non esiste!!\n"), fmnum);
 		break;
 	case FMERR_CHKSUM:
 	case FMERR_MSGNUM:

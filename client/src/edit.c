@@ -84,7 +84,7 @@ static void help_line_edit(void);
  * NB: prende max caratteri, la stringa deve aver allocato per lo meno
  *     (max + 1) bytes per contenere anche lo '\0' finale.
  */
-inline int c_getline(char *str, int max, bool maiuscole, bool special)
+int c_getline(char *str, int max, bool maiuscole, bool special)
 {
 	return getline_wrap(str, max, maiuscole, special, false, 0);
 }
@@ -859,7 +859,7 @@ static void Editor_Attr_Toggle(int *curr_col, int *curs_col, int attr)
 static int getline_col_wrap(int **str0, int **col0, int max, bool maiuscole,
 			    bool special, bool wrap, int pos);
 
-inline char * getline_col(int max, bool maiuscole, bool special)
+char * getline_col(int max, bool maiuscole, bool special)
 {
 	int *str;
 	int *col;

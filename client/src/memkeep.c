@@ -36,7 +36,7 @@ void * CalloC(size_t nmemb, size_t size, int line, char * nome){
 	testa_memoria=memp;
 	testa_memoria->next=old;
 	return pointer;
-};
+}
 
 
 void FreE(void *prt, int line, char* dove){

@@ -156,7 +156,7 @@ int rs_end(struct urna *u)
    }
    if(prechiusa) {
       txt_put(txt, "(&Egrave; stato chiuso in anticipo)");
-   };
+   }
 
    txt_put(txt, " ");
    txt_put(txt, "*** Risultati:");
@@ -253,7 +253,7 @@ int rs_end(struct urna *u)
    } else {
      strncat(buf,buf1,LBUF);
      txt_put(txt, buf);
-   };
+   }
    txt_put(txt, " ");
    txt_putf(txt, "(Il quesito &egrave stato proposto da <b>%s</b>.)",
             nome_utente_n(matricola));
@@ -454,7 +454,7 @@ int res_scelta_multipla(struct urna *u, int nvoti, struct text *txt,
 #endif
    return 0;
 
-};
+}
 
 #ifdef USA_RES_URNA
 int res_votazione(struct urna *u, int nvoti, struct text *txt,
@@ -570,4 +570,4 @@ int res_proposta(struct urna *u, int nvoti, struct text *txt)
 	   free(testo);
 
    return 0;
-};
+}

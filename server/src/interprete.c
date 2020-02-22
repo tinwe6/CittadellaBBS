@@ -70,6 +70,7 @@ static inline void clear_idle(struct sessione *t);
 typedef union {
 	void (*no_arg) (struct sessione *t);
 	void (*pass_arg) (struct sessione *t, char *buf);
+        char (*special) (struct sessione *t, char *buf, char c);
 } cmd_ptr;
 
 struct comando {
@@ -81,153 +82,153 @@ struct comando {
 };
 
 static const struct comando cmd_list[] = {
-{ "ATXT", { (void *)&cmd_atxt }, NO_ARG,   CON_MASK_TEXT, ILC_UTENTE },
+{ "ATXT", { cmd_atxt }, NO_ARG,   CON_MASK_TEXT, ILC_UTENTE },
 #ifdef USE_VALIDATION_KEY
-{ "AVAL", { (void *)&cmd_aval }, PASS_ARG, CON_COMANDI, LVL_NON_VALIDATO },
+{ "AVAL", { cmd_aval }, PASS_ARG, CON_COMANDI, LVL_NON_VALIDATO },
 #endif
-{ "BEND", { (void *)&cmd_bend }, NO_ARG,   CON_BROAD,   MINLVL_BROADCAST },
-{ "BIFF", { (void *)&cmd_biff }, PASS_ARG, CON_COMANDI, MINLVL_BIFF },
+{ "BEND", { cmd_bend }, NO_ARG,   CON_BROAD,   MINLVL_BROADCAST },
+{ "BIFF", { .pass_arg = cmd_biff }, PASS_ARG, CON_COMANDI, MINLVL_BIFF },
 #ifdef USE_BLOG
-{ "BLGL", { (void *)&cmd_blgl }, NO_ARG,   CON_COMANDI, MINLVL_BLOG },
+{ "BLGL", { cmd_blgl }, NO_ARG,   CON_COMANDI, MINLVL_BLOG },
 #endif
-{ "BRDC", { (void *)&cmd_brdc }, NO_ARG,   CON_COMANDI, MINLVL_BROADCAST },
-{ "BREG", { (void *)&cmd_breg }, NO_ARG,   CON_COMANDI, MINLVL_REGISTRATION },
-{ "BUGB", { (void *)&cmd_bugb }, NO_ARG,   CON_COMANDI, MINLVL_BUGREPORT },
-{ "BUGE", { (void *)&cmd_buge }, NO_ARG,   CON_BUG_REP, MINLVL_BUGREPORT },
-{ "CASC", { (void *)&cmd_casc }, PASS_ARG, CON_COMANDI, MINLVL_CHAT },
-{ "CEND", { (void *)&cmd_cend }, NO_ARG,   CON_CHAT,    MINLVL_CHAT },
-{ "CFGG", { (void *)&cmd_cfgg }, PASS_ARG, CON_NOCHECK, MINLVL_USERCFG },
-{ "CFGP", { (void *)&cmd_cfgp }, PASS_ARG, CON_COMANDI|CON_CONF,    MINLVL_USERCFG },
-{ "CHEK", { (void *)&cmd_chek }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
-{ "CLAS", { (void *)&cmd_clas }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
-{ "CMSG", { (void *)&cmd_cmsg }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
-{ "CUSR", { (void *)&cmd_cusr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*veder*/
-{ "CWHO", { (void *)&cmd_cwho }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
-{ "DEST", { (void *)&cmd_dest }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },
-{ "ECHO", { (void *)&cmd_echo }, PASS_ARG, CON_NOCHECK, ILC_NOCHECK },
-{ "EDNG", { (void *)&cmd_edng }, PASS_ARG, CON_LIC|CON_COMANDI, MINLVL_DOING },
-{ "ESYS", { (void *)&cmd_esys }, PASS_ARG, CON_COMANDI, MINLVL_EDITCONFIG },
-{ "EUSR", { (void *)&cmd_eusr }, PASS_ARG, CON_EUSR,    MINLVL_EDITUSR },
-{ "FBKD", { (void *)&cmd_fbkd }, PASS_ARG, CON_UPLOAD,  MINLVL_DOWNLOAD },
-{ "FIND", { (void *)&cmd_find }, PASS_ARG, CON_COMANDI, MINLVL_FIND },
-{ "FMCR", { (void *)&cmd_fmcr }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
-{ "FMDP", { (void *)&cmd_fmdp }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
-{ "FMHD", { (void *)&cmd_fmhd }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
-{ "FMRI", { (void *)&cmd_fmri }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
-{ "FMRM", { (void *)&cmd_fmrm }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
-{ "FMRP", { (void *)&cmd_fmrp }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
-{ "FMXP", { (void *)&cmd_fmxp }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
-{ "FDNL", { (void *)&cmd_fdnl }, PASS_ARG, CON_COMANDI, MINLVL_DOWNLOAD },
+{ "BRDC", { cmd_brdc }, NO_ARG,   CON_COMANDI, MINLVL_BROADCAST },
+{ "BREG", { cmd_breg }, NO_ARG,   CON_COMANDI, MINLVL_REGISTRATION },
+{ "BUGB", { cmd_bugb }, NO_ARG,   CON_COMANDI, MINLVL_BUGREPORT },
+{ "BUGE", { cmd_buge }, NO_ARG,   CON_BUG_REP, MINLVL_BUGREPORT },
+{ "CASC", { .pass_arg = cmd_casc }, PASS_ARG, CON_COMANDI, MINLVL_CHAT },
+{ "CEND", { cmd_cend }, NO_ARG,   CON_CHAT,    MINLVL_CHAT },
+{ "CFGG", { .pass_arg = cmd_cfgg }, PASS_ARG, CON_NOCHECK, MINLVL_USERCFG },
+{ "CFGP", { .pass_arg = cmd_cfgp }, PASS_ARG, CON_COMANDI|CON_CONF, MINLVL_USERCFG },
+{ "CHEK", { cmd_chek }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
+{ "CLAS", { cmd_clas }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
+{ "CMSG", { cmd_cmsg }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
+{ "CUSR", { .special = cmd_cusr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*veder*/
+{ "CWHO", { cmd_cwho }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
+{ "DEST", { .pass_arg = cmd_dest }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },
+{ "ECHO", { .pass_arg = cmd_echo }, PASS_ARG, CON_NOCHECK, ILC_NOCHECK },
+{ "EDNG", { .pass_arg = cmd_edng }, PASS_ARG, CON_LIC|CON_COMANDI, MINLVL_DOING },
+{ "ESYS", { .pass_arg = cmd_esys }, PASS_ARG, CON_COMANDI, MINLVL_EDITCONFIG },
+{ "EUSR", { .pass_arg = cmd_eusr }, PASS_ARG, CON_EUSR,    MINLVL_EDITUSR },
+{ "FBKD", { .pass_arg = cmd_fbkd }, PASS_ARG, CON_UPLOAD,  MINLVL_DOWNLOAD },
+{ "FIND", { .pass_arg = cmd_find }, PASS_ARG, CON_COMANDI, MINLVL_FIND },
+{ "FMCR", { .pass_arg = cmd_fmcr }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
+{ "FMDP", { .pass_arg = cmd_fmdp }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
+{ "FMHD", { .pass_arg = cmd_fmhd }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
+{ "FMRI", { .pass_arg = cmd_fmri }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
+{ "FMRM", { .pass_arg = cmd_fmrm }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
+{ "FMRP", { .pass_arg = cmd_fmrp }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
+{ "FMXP", { .pass_arg = cmd_fmxp }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },/* log */
+{ "FDNL", { .pass_arg = cmd_fdnl }, PASS_ARG, CON_COMANDI, MINLVL_DOWNLOAD },
 #ifdef USE_FLOORS
-{ "FAID", { (void *)&cmd_faid }, PASS_ARG, CON_COMANDI, LVL_AIDE    },
-{ "FDEL", { (void *)&cmd_fdel }, PASS_ARG, CON_COMANDI, MINLVL_DELFLOOR },
-{ "FEDT", { (void *)&cmd_fedt }, PASS_ARG, CON_COMANDI|CON_FLOOR_EDIT, ILC_NOCHECK }, /* IS_FH() */
-{ "FIEB", { (void *)&cmd_fieb }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*veder*/
-{ "FIEE", { (void *)&cmd_fiee }, NO_ARG,   CON_FLOOR_INFO, ILC_NOCHECK }, /* vedere  */
-{ "FINF", { (void *)&cmd_finf }, NO_ARG,   CON_COMANDI, ILC_LOGGED_IN },
-{ "FKRA", { (void *)&cmd_fkra }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "FKRL", { (void *)&cmd_fkrl }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "FKRM", { (void *)&cmd_fkrm }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "FLST", { (void *)&cmd_flst }, PASS_ARG, CON_COMANDI, MINLVL_FLOORAIDE },
-{ "FMVR", { (void *)&cmd_fmvr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_FA*/
-{ "FNEW", { (void *)&cmd_fnew }, PASS_ARG, CON_COMANDI, MINLVL_NEWFLOOR },
+{ "FAID", { .pass_arg = cmd_faid }, PASS_ARG, CON_COMANDI, LVL_AIDE    },
+{ "FDEL", { .pass_arg = cmd_fdel }, PASS_ARG, CON_COMANDI, MINLVL_DELFLOOR },
+{ "FEDT", { .pass_arg = cmd_fedt }, PASS_ARG, CON_COMANDI|CON_FLOOR_EDIT, ILC_NOCHECK }, /* IS_FH() */
+{ "FIEB", { cmd_fieb }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*veder*/
+{ "FIEE", { cmd_fiee }, NO_ARG,   CON_FLOOR_INFO, ILC_NOCHECK }, /* vedere  */
+{ "FINF", { cmd_finf }, NO_ARG,   CON_COMANDI, ILC_LOGGED_IN },
+{ "FKRA", { .pass_arg = cmd_fkra }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "FKRL", { .pass_arg = cmd_fkrl }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "FKRM", { .pass_arg = cmd_fkrm }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "FLST", { .pass_arg = cmd_flst }, PASS_ARG, CON_COMANDI, MINLVL_FLOORAIDE },
+{ "FMVR", { .pass_arg = cmd_fmvr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_FA*/
+{ "FNEW", { .pass_arg = cmd_fnew }, PASS_ARG, CON_COMANDI, MINLVL_NEWFLOOR },
 #endif
-{ "FRDG", { (void *)&cmd_frdg }, NO_ARG,   CON_NOCHECK, MINLVL_FRIENDS },
-{ "FRDP", { (void *)&cmd_frdp }, PASS_ARG, CON_COMANDI, MINLVL_FRIENDS },
-{ "FSCT", { (void *)&cmd_fsct }, NO_ARG,   CON_COMANDI, MINLVL_SHUTDOWN },
-{ "FUPB", { (void *)&cmd_fupb }, PASS_ARG, CON_POST,    MINLVL_DOWNLOAD },
-{ "FUPE", { (void *)&cmd_fupe }, PASS_ARG, CON_UPLOAD,  MINLVL_DOWNLOAD },
-{ "FUPL", { (void *)&cmd_fupl }, PASS_ARG, CON_COMANDI, MINLVL_DOWNLOAD },
-{ "GMTR", { (void *)&cmd_gmtr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
-{ "GOTO", { (void *)&cmd_goto }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "GREG", { (void *)&cmd_greg }, NO_ARG,   CON_REG,     MINLVL_REGISTRATION },
-{ "GUSR", { (void *)&cmd_gusr }, PASS_ARG, CON_COMANDI, MINLVL_EDITUSR },
-{ "GVAL", { (void *)&cmd_gval }, NO_ARG,   CON_COMANDI, ILC_REGISTRATO },/*log*/
-{ "HELP", { (void *)&cmd_help }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
-{ "HWHO", { (void *)&cmd_hwho }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
-{ "INFO", { (void *)&cmd_info }, PASS_ARG, CON_NOCHECK, ILC_NOCHECK },
-{ "KUSR", { (void *)&cmd_kusr }, PASS_ARG, CON_COMANDI, MINLVL_KILLUSR },/*log*/
-{ "LBAN", { (void *)&cmd_lban }, PASS_ARG, CON_LIC,     ILC_NOCHECK }, /* !logged_in */
-{ "LBEB", { (void *)&cmd_lbeb }, NO_ARG,   CON_COMANDI, MINLVL_BANNER },
-{ "LBEE", { (void *)&cmd_lbee }, NO_ARG,   CON_BANNER,  MINLVL_BANNER },
-{ "LBGT", { (void *)&cmd_lbgt }, NO_ARG,   CON_COMANDI, MINLVL_BANNER },
-{ "LSSH", { (void *)&cmd_lssh }, PASS_ARG, CON_COMANDI|CON_SUBSHELL, MINLVL_SUBSHELL },
-{ "LTRM", { (void *)&cmd_ltrm }, PASS_ARG, CON_COMANDI|CON_LOCK, MINLVL_LOCKTERM },
-{ "MCPY", { (void *)&cmd_mcpy }, PASS_ARG, CON_COMANDI, ILC_NOCHECK }, /* Controllare */
-{ "MDEL", { (void *)&cmd_mdel }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "MMOV", { (void *)&cmd_mmov }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "MSGI", { (void *)&cmd_msgi }, PASS_ARG, CON_NOCHECK, ILC_NOCHECK },
-{ "NOOP", { (void *)&cmd_noop }, CMD_NOOP, CON_NOCHECK, ILC_NOCHECK },
-{ "NWSB", { (void *)&cmd_nwsb }, NO_ARG,   CON_COMANDI, MINLVL_NEWS },
-{ "NWSE", { (void *)&cmd_nwse }, NO_ARG,   CON_NEWS,    ILC_NOCHECK },/*veder*/
-{ "PARM", { (void *)&cmd_parm }, PASS_ARG, CON_MASK_PARM, ILC_NOCHECK },/*ved*/
-{ "PRFB", { (void *)&cmd_prfb }, NO_ARG,   CON_COMANDI, MINLVL_EDITPRFL },
-{ "PRFE", { (void *)&cmd_prfe }, NO_ARG,   CON_PROFILE, MINLVL_EDITPRFL },
-{ "PRFG", { (void *)&cmd_prfg }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
-{ "PRFL", { (void *)&cmd_prfl }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
-{ "PSTB", { (void *)&cmd_pstb }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "PSTE", { (void *)&cmd_pste }, PASS_ARG, CON_POST,    ILC_NOCHECK },/*veder*/
-{ "PWDC", { (void *)&cmd_pwdc }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*verif*/
-{ "PWDN", { (void *)&cmd_pwdn }, PASS_ARG, CON_COMANDI, MINLVL_PWDN },
-{ "PWDU", { (void *)&cmd_pwdu }, PASS_ARG, CON_COMANDI, MINLVL_PWDU },/* log */
-{ "QUIT", { (void *)&cmd_quit }, NO_ARG,   CON_NOCHECK, ILC_NOCHECK },
-{ "RAID", { (void *)&cmd_raid }, PASS_ARG, CON_COMANDI, LVL_AIDE    },
-{ "RALL", { (void *)&cmd_rall }, NO_ARG,   CON_COMANDI, LVL_NORMALE },
-{ "RDEL", { (void *)&cmd_rdel }, PASS_ARG, CON_COMANDI, MINLVL_DELROOM },
-{ "READ", { (void *)&cmd_read }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "REDT", { (void *)&cmd_redt }, PASS_ARG, CON_COMANDI|CON_ROOM_EDIT, ILC_NOCHECK }, /* IS_RH() */
-{ "RGST", { (void *)&cmd_rgst }, PASS_ARG, CON_REG,     MINLVL_REGISTRATION },
-{ "RIEB", { (void *)&cmd_rieb }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*veder*/
-{ "RIEE", { (void *)&cmd_riee }, NO_ARG,   CON_ROOM_INFO, ILC_NOCHECK },/*ved*/
-{ "RINF", { (void *)&cmd_rinf }, NO_ARG,   CON_COMANDI, ILC_LOGGED_IN },
-{ "RINV", { (void *)&cmd_rinv }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_RH*/
-{ "RINW", { (void *)&cmd_rinw }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*IS_RH*/
-{ "RIRQ", { (void *)&cmd_rirq }, PASS_ARG, CON_COMANDI, MINLVL_AUTOINV },
-{ "RKOB", { (void *)&cmd_rkob }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },/*IS_RH*/
-{ "RKOE", { (void *)&cmd_rkoe }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },/*IS_RH*/
-{ "RKOW", { (void *)&cmd_rkow }, NO_ARG,   CON_COMANDI, ILC_UTENTE  },/*IS_RH*/
-{ "RKRL", { (void *)&cmd_rkrl }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "RLEN", { (void *)&cmd_rlen }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_RH*/
-{ "RLST", { (void *)&cmd_rlst }, PASS_ARG, CON_COMANDI, LVL_AIDE    },
-{ "RMSG", { (void *)&cmd_rmsg }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "RNEW", { (void *)&cmd_rnew }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*Control*/
-{ "RNRH", { (void *)&cmd_rnrh }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_RA*/
-{ "RSLG", { (void *)&cmd_rslg }, NO_ARG,   CON_COMANDI, MINLVL_R_SYSLOG },/*log*/
-{ "RSST", { (void *)&cmd_rsst }, NO_ARG,   CON_COMANDI, MINLVL_READ_STATS },
-{ "RSWP", { (void *)&cmd_rswp }, PASS_ARG, CON_COMANDI, MINLVL_SWAPROOM },
-{ "RSYS", { (void *)&cmd_rsys }, PASS_ARG, CON_COMANDI, MINLVL_READ_CFG },/*log*/
-{ "RUSR", { (void *)&cmd_rusr }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
-{ "RUZP", { (void *)&cmd_ruzp }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
-{ "RZAP", { (void *)&cmd_rzap }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*veder*/
-{ "RZPA", { (void *)&cmd_rzpa }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
-{ "SDWN", { (void *)&cmd_sdwn }, PASS_ARG, CON_COMANDI, MINLVL_SHUTDOWN },
+{ "FRDG", { cmd_frdg }, NO_ARG,   CON_NOCHECK, MINLVL_FRIENDS },
+{ "FRDP", { .pass_arg = cmd_frdp }, PASS_ARG, CON_COMANDI, MINLVL_FRIENDS },
+{ "FSCT", { cmd_fsct }, NO_ARG,   CON_COMANDI, MINLVL_SHUTDOWN },
+{ "FUPB", { .pass_arg = cmd_fupb }, PASS_ARG, CON_POST,    MINLVL_DOWNLOAD },
+{ "FUPE", { .pass_arg = cmd_fupe }, PASS_ARG, CON_UPLOAD,  MINLVL_DOWNLOAD },
+{ "FUPL", { .pass_arg = cmd_fupl }, PASS_ARG, CON_COMANDI, MINLVL_DOWNLOAD },
+{ "GMTR", { .pass_arg = cmd_gmtr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
+{ "GOTO", { .pass_arg = cmd_goto }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "GREG", { cmd_greg }, NO_ARG,   CON_REG,     MINLVL_REGISTRATION },
+{ "GUSR", { .pass_arg = cmd_gusr }, PASS_ARG, CON_COMANDI, MINLVL_EDITUSR },
+{ "GVAL", { cmd_gval }, NO_ARG,   CON_COMANDI, ILC_REGISTRATO },/*log*/
+{ "HELP", { cmd_help }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
+{ "HWHO", { cmd_hwho }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
+{ "INFO", { .pass_arg = cmd_info }, PASS_ARG, CON_NOCHECK, ILC_NOCHECK },
+{ "KUSR", { .pass_arg = cmd_kusr }, PASS_ARG, CON_COMANDI, MINLVL_KILLUSR },/*log*/
+{ "LBAN", { .pass_arg = cmd_lban }, PASS_ARG, CON_LIC,     ILC_NOCHECK }, /* !logged_in */
+{ "LBEB", { cmd_lbeb }, NO_ARG,   CON_COMANDI, MINLVL_BANNER },
+{ "LBEE", { cmd_lbee }, NO_ARG,   CON_BANNER,  MINLVL_BANNER },
+{ "LBGT", { cmd_lbgt }, NO_ARG,   CON_COMANDI, MINLVL_BANNER },
+{ "LSSH", { .pass_arg = cmd_lssh }, PASS_ARG, CON_COMANDI|CON_SUBSHELL, MINLVL_SUBSHELL },
+{ "LTRM", { .pass_arg = cmd_ltrm }, PASS_ARG, CON_COMANDI|CON_LOCK, MINLVL_LOCKTERM },
+{ "MCPY", { .pass_arg = cmd_mcpy }, PASS_ARG, CON_COMANDI, ILC_NOCHECK }, /* Controllare */
+{ "MDEL", { .pass_arg = cmd_mdel }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "MMOV", { .pass_arg = cmd_mmov }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "MSGI", { .pass_arg = cmd_msgi }, PASS_ARG, CON_NOCHECK, ILC_NOCHECK },
+{ "NOOP", { cmd_noop }, CMD_NOOP, CON_NOCHECK, ILC_NOCHECK },
+{ "NWSB", { cmd_nwsb }, NO_ARG,   CON_COMANDI, MINLVL_NEWS },
+{ "NWSE", { cmd_nwse }, NO_ARG,   CON_NEWS,    ILC_NOCHECK },/*veder*/
+{ "PARM", { .pass_arg = cmd_parm }, PASS_ARG, CON_MASK_PARM, ILC_NOCHECK },/*ved*/
+{ "PRFB", { cmd_prfb }, NO_ARG,   CON_COMANDI, MINLVL_EDITPRFL },
+{ "PRFE", { cmd_prfe }, NO_ARG,   CON_PROFILE, MINLVL_EDITPRFL },
+{ "PRFG", { .pass_arg = cmd_prfg }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
+{ "PRFL", { .pass_arg = cmd_prfl }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
+{ "PSTB", { .pass_arg = cmd_pstb }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "PSTE", { .pass_arg = cmd_pste }, PASS_ARG, CON_POST,    ILC_NOCHECK },/*veder*/
+{ "PWDC", { .pass_arg = cmd_pwdc }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*verif*/
+{ "PWDN", { .pass_arg = cmd_pwdn }, PASS_ARG, CON_COMANDI, MINLVL_PWDN },
+{ "PWDU", { .pass_arg = cmd_pwdu }, PASS_ARG, CON_COMANDI, MINLVL_PWDU },/* log */
+{ "QUIT", { cmd_quit }, NO_ARG,   CON_NOCHECK, ILC_NOCHECK },
+{ "RAID", { .pass_arg = cmd_raid }, PASS_ARG, CON_COMANDI, LVL_AIDE    },
+{ "RALL", { cmd_rall }, NO_ARG,   CON_COMANDI, LVL_NORMALE },
+{ "RDEL", { .pass_arg = cmd_rdel }, PASS_ARG, CON_COMANDI, MINLVL_DELROOM },
+{ "READ", { .pass_arg = cmd_read }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "REDT", { .pass_arg = cmd_redt }, PASS_ARG, CON_COMANDI|CON_ROOM_EDIT, ILC_NOCHECK }, /* IS_RH() */
+{ "RGST", { .pass_arg = cmd_rgst }, PASS_ARG, CON_REG,     MINLVL_REGISTRATION },
+{ "RIEB", { cmd_rieb }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*veder*/
+{ "RIEE", { cmd_riee }, NO_ARG,   CON_ROOM_INFO, ILC_NOCHECK },/*ved*/
+{ "RINF", { cmd_rinf }, NO_ARG,   CON_COMANDI, ILC_LOGGED_IN },
+{ "RINV", { .pass_arg = cmd_rinv }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_RH*/
+{ "RINW", { cmd_rinw }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*IS_RH*/
+{ "RIRQ", { .pass_arg = cmd_rirq }, PASS_ARG, CON_COMANDI, MINLVL_AUTOINV },
+{ "RKOB", { .pass_arg = cmd_rkob }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },/*IS_RH*/
+{ "RKOE", { .pass_arg = cmd_rkoe }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },/*IS_RH*/
+{ "RKOW", { cmd_rkow }, NO_ARG,   CON_COMANDI, ILC_UTENTE  },/*IS_RH*/
+{ "RKRL", { .pass_arg = cmd_rkrl }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "RLEN", { .pass_arg = cmd_rlen }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_RH*/
+{ "RLST", { .pass_arg = cmd_rlst }, PASS_ARG, CON_COMANDI, LVL_AIDE    },
+{ "RMSG", { .pass_arg = cmd_rmsg }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "RNEW", { .pass_arg = cmd_rnew }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*Control*/
+{ "RNRH", { .pass_arg = cmd_rnrh }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*IS_RA*/
+{ "RSLG", { cmd_rslg }, NO_ARG,   CON_COMANDI, MINLVL_R_SYSLOG },/*log*/
+{ "RSST", { cmd_rsst }, NO_ARG,   CON_COMANDI, MINLVL_READ_STATS },
+{ "RSWP", { .pass_arg = cmd_rswp }, PASS_ARG, CON_COMANDI, MINLVL_SWAPROOM },
+{ "RSYS", { .pass_arg = cmd_rsys }, PASS_ARG, CON_COMANDI, MINLVL_READ_CFG },/*log*/
+{ "RUSR", { cmd_rusr }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
+{ "RUZP", { cmd_ruzp }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
+{ "RZAP", { cmd_rzap }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*veder*/
+{ "RZPA", { cmd_rzpa }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
+{ "SDWN", { .pass_arg = cmd_sdwn }, PASS_ARG, CON_COMANDI, MINLVL_SHUTDOWN },
 #ifdef USE_REFERENDUM
-{ "SCPU", { (void *)&cmd_scpu }, NO_ARG,   CON_COMANDI, MINLVL_URNA }, 
+{ "SCPU", { cmd_scpu }, NO_ARG,   CON_COMANDI, MINLVL_URNA }, 
 #if 0
-{ "SCVL", { (void *)&cmd_scvl }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
+{ "SCVL", { .pass_arg = cmd_scvl }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
 #endif
-{ "SDEL", { (void *)&cmd_sdel }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "SINF", { (void *)&cmd_sinf }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
-{ "SLST", { (void *)&cmd_slst }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
-{ "SPST", { (void *)&cmd_spst }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "SRIS", { (void *)&cmd_sris }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
-{ "SREN", { (void *)&cmd_sren }, PASS_ARG, CON_REF_VOTO, MINLVL_URNA },
-{ "SRNB", { (void *)&cmd_srnb }, PASS_ARG, CON_COMANDI, MINLVL_REFERENDUM }, /* vedere */
-{ "SRNE", { (void *)&cmd_srne }, PASS_ARG, CON_REF_PARM, ILC_NOCHECK },
-{ "SSTP", { (void *)&cmd_sstp }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "SDEL", { .pass_arg = cmd_sdel }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "SINF", { .pass_arg = cmd_sinf }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
+{ "SLST", { .pass_arg = cmd_slst }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
+{ "SPST", { .pass_arg = cmd_spst }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "SRIS", { .pass_arg = cmd_sris }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
+{ "SREN", { .pass_arg = cmd_sren }, PASS_ARG, CON_REF_VOTO, MINLVL_URNA },
+{ "SRNB", { .pass_arg = cmd_srnb }, PASS_ARG, CON_COMANDI, MINLVL_REFERENDUM }, /* vedere */
+{ "SRNE", { .pass_arg = cmd_srne }, PASS_ARG, CON_REF_PARM, ILC_NOCHECK },
+{ "SSTP", { .pass_arg = cmd_sstp }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
 #endif
-{ "TABC", { (void *)&cmd_tabc }, PASS_ARG, CON_MASK_TABC, ILC_LOGGED_IN },
-{ "TEXT", { (void *)&cmd_text }, PASS_ARG, CON_MASK_TEXT, ILC_NOCHECK },/*ved.*/
-{ "TIME", { (void *)&cmd_time }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
-{ "TMSG", { (void *)&cmd_tmsg }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "UPGR", { (void *)&cmd_upgr }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
-{ "UPGS", { (void *)&cmd_upgs }, NO_ARG,   CON_COMANDI, LVL_SYSOP   },
-{ "USER", { (void *)&cmd_user }, PASS_ARG, CON_LIC,     ILC_NOCHECK },/*Control*/
-{ "USR1", { (void *)&cmd_usr1 }, PASS_ARG, CON_LIC,     ILC_NOCHECK },/*Control*/
-{ "XEND", { (void *)&cmd_xend }, NO_ARG,   CON_XMSG,    MINLVL_XMSG },
-{ "XINM", { (void *)&cmd_xinm }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },
-{ "XMSG", { (void *)&cmd_xmsg }, NO_ARG,   CON_COMANDI, MINLVL_XMSG },
-{     "", { (void *)   NULL   },    0    ,      0     ,       0     }
+{ "TABC", { .pass_arg = cmd_tabc }, PASS_ARG, CON_MASK_TABC, ILC_LOGGED_IN },
+{ "TEXT", { .pass_arg = cmd_text }, PASS_ARG, CON_MASK_TEXT, ILC_NOCHECK },/*ved.*/
+{ "TIME", { cmd_time }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
+{ "TMSG", { .pass_arg = cmd_tmsg }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
+{ "UPGR", { cmd_upgr }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
+{ "UPGS", { cmd_upgs }, NO_ARG,   CON_COMANDI, LVL_SYSOP   },
+{ "USER", { .pass_arg = cmd_user }, PASS_ARG, CON_LIC,     ILC_NOCHECK },/*Control*/
+{ "USR1", { .pass_arg = cmd_usr1 }, PASS_ARG, CON_LIC,     ILC_NOCHECK },/*Control*/
+{ "XEND", { cmd_xend }, NO_ARG,   CON_XMSG,    MINLVL_XMSG },
+{ "XINM", { .pass_arg = cmd_xinm }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },
+{ "XMSG", { .pass_arg = cmd_xmsg }, PASS_ARG, CON_COMANDI, MINLVL_XMSG },
+{     "", { NULL   },    0    ,      0     ,       0     }
 };
 
 /*****************************************************************************

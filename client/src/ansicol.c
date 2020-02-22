@@ -22,7 +22,7 @@
 #include "macro.h"
 
 /* Variabili globali */
-int  ansicol_mode;
+int ansicol_mode;
 
 const char *hbold;
 const char *hstop;
@@ -113,13 +113,13 @@ void ansi_init(void)
 }
 
 /* Restituisce il colore corrente del cursore. */
-inline int getcolor(void)
+int getcolor(void)
 {
 	return COLOR(ansicol_curr.fg, ansicol_curr.bg, ansicol_curr.at);
 }
 
 /* Ridefinisce il colore corrente del cursore. */
-inline void putcolor(int col)
+void putcolor(int col)
 {
 	if (!USE_COLORS)
 		return;

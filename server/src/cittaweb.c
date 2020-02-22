@@ -481,7 +481,7 @@ static void http_send_index(struct http_sess *p, char *code, int lang)
 		HTML_INDEX_PREAMBLE[lang]);
 	http_send_lang(p, "index", lang);
         
-	wprintf(p, CODA_BODY, "<P><BR></P><TABLE class=\"rooms\" border=\"0\" cellspacing=\"1\"><COLGROUP><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"31\%%\"><COL width=\"7%%\"></COLGROUP><TR>");
+	wprintf(p, CODA_BODY, "<P><BR></P><TABLE class=\"rooms\" border=\"0\" cellspacing=\"1\"><COLGROUP><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"7%%\"></COLGROUP><TR>");
 
 	http_send_room_list(p, lang);
 

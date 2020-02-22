@@ -58,41 +58,41 @@ void urna_read(long n)
 
    azzera_dati(&dati);
 
-/* 
- * per leggere il sondaggio chiede solo le liste non zappate
- * (In ogni caso lo fa il server...)
- */
+   /* 
+    * per leggere il sondaggio chiede solo le liste non zappate
+    * (In ogni caso lo fa il server...)
+    */
 
    setcolor(C_QUESTION);
 
    n_rs=get_elenco_ref(elenco,1);
    if(n_rs == -1) {
 	 return;
-   };
+   }
    if(n_rs == 0) {
 	 printf(_("\nNon ci sono sondaggi che puoi leggere.\n"));
 	 return;
-   };
+   }
 
 
    scelto=scegli_ref(n_rs, elenco,_("scegliere"),this_format);
 
-if(scelto==-1){
- cml_printf(_("Ciao, alla prossima!\n"));
-		 free_elenco_ref(elenco);
- return;
-};
+   if(scelto==-1){
+      cml_printf(_("Ciao, alla prossima!\n"));
+      free_elenco_ref(elenco);
+      return;
+   }
 
-num=elenco[scelto]->num;
-free_elenco_ref(elenco);
+   num=elenco[scelto]->num;
+   free_elenco_ref(elenco);
 
    if(get_ref(&dati, num, "",1) == -1) {
       cml_printf(_("il sondaggio non esiste.\n"));
       return;
    }
    
-if((err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
-		 printf(_("errore %ld\n"),err);
+   if( (err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
+      printf(_("errore %ld\n"),err);
 
 
    dati.testo = txt_create();
@@ -137,7 +137,7 @@ if((err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
    if(dati.modo!=MODO_PROPOSTA){
 		   printf(_("\n%sRisposte possibili:\n%s"), hbold, hstop);
    			stampa_voci(&dati);
-   };
+   }
    printf("\n");
 
    /* 
@@ -194,7 +194,7 @@ if((err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
    cml_print(_("</b>.\n"));
    free_dati(&dati);
    return;
-};
+}
 
 		/*
 		 * Lista dei Sondaggi attivi.
@@ -215,7 +215,7 @@ void urna_list(int level)
 
    print_ref(n_rs,elenco,_("t l#z%t35T%n  m%t35%s termina il% s%n"));
    free_elenco_ref(elenco);
-};
+}
 
 
 		/* Controlla se ci sono sondaggi/referendum da votare.
@@ -227,11 +227,11 @@ void urna_check(void)
    struct elenco_ref * elenco[MAX_URNE];
    if((n_rs=get_elenco_ref(elenco,6))==-1){
 		   return;
-   };
+   }
 
    if((n_rs=get_elenco_ref(elenco,6))==0){
 		   return;
-   };
+   }
 
    for(i=0;i<n_rs;i++){
 		   switch(elenco[i]->tipo){
@@ -261,7 +261,7 @@ void urna_check(void)
 		 break;
 		   default:
 		 cml_printf(_("\nCi sono <b>%d referendum</b> che dovresti votare"), n_r);
-   };
+   }
 
    if(n_r>0 && n_s>0)
 		   cml_printf(_(", e"));
@@ -274,7 +274,7 @@ void urna_check(void)
 		 break;
 		   default:
       cml_printf(_("\nCi sono <b>%d sondaggi</b> ai quali puoi partecipare"), n_s);
-   };
+   }
 
    printf(_(":\n"));
 

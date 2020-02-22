@@ -13,7 +13,7 @@
 * File: memstat.c                                                           *
 *       Funzioni di allocazione e liberazione memoria con statistiche       *
 ****************************************************************************/
-#include "memstat.h"
+#include "config.h"
 
 #ifdef USE_MEM_STAT
 

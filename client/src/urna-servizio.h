@@ -64,6 +64,5 @@ void stampa_quesito(struct text *quesito);
 void stampa_voci(const struct urna_client *dati);
 void urna_prendi_testo(struct urna_client *dati);
 void ordina_ref(int n_rs,struct elenco_ref *elenco[], char *format);
-int cmp_ref(struct elenco_ref **a, struct elenco_ref **b);
 
 #endif /* URNA_SERVIZIO_H */

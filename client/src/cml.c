@@ -25,6 +25,7 @@
 #include "inkey.h"
 #include "macro.h"
 #include "metadata.h"
+#include "utility.h"
 
 /* 
         CML Specifications:
@@ -238,7 +239,7 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 	int ret;
 
 	if (str == NULL)
-		return strdup("");
+		return Strdup("");
 
 	if (totlen != NULL)
 		*totlen = maxlen;
@@ -538,7 +539,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_blogpost(mdlist, strbuf1,num);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_b;
 				break;
@@ -576,7 +577,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_file(mdlist, strbuf1, NULL, num, size, flags);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_f;
 				break;
@@ -624,7 +625,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                              strbuf2, CC_ATTR(*color),
                                              CC_FG(*color), CC_BG(*color));
                                 *str = p;
-				return strdup(tmp);
+				return Strdup(tmp);
 			default:
 				return NULL;
 			}
@@ -647,7 +648,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                      CC_FG(*color), CC_BG(*color));
                         /*md_id = md_insert_post(mdlist, strbuf1, num);*/
                         *str = p;
-                        return strdup(tmp);
+                        return Strdup(tmp);
 		case 'r':
 			switch (curr_state) {
 			case TAG_START:
@@ -662,7 +663,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_room(mdlist, strbuf1);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_REVERSE;
 				break;
@@ -686,7 +687,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_user(mdlist, strbuf1);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_UNDERSCORE;
 				break;
@@ -784,10 +785,10 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
 			if (*p == '>') {
 				*str = p;
 				if (!USE_COLORS)
-					return strdup("");
+					return Strdup("");
 				*(o++) = 'm';
 				*(o++) = '\0';
-				return strdup(tmp);
+				return Strdup(tmp);
 			}
 			*(o++) = ';';
 		        curr_state = TAG_START;	

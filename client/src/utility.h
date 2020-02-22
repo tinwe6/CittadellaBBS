@@ -18,11 +18,15 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 
+#include "macro.h"
+
 #define DELTA_TIME 1000
-#define TEMPO_DEF 60*60*24*7
-#define TEMPO_RAND 4*60*60*24
+#define TEMPO_DEF  (60*60*24*7)
+#define TEMPO_RAND (4*60*60*24)
 
 #define NUM_DIGIT 20 /* Max num cifre nei numeri presi da tastiera */
 #define SI "S&iacute"
@@ -72,23 +76,9 @@ void stampa_ora(long ora);
 int min_lungh(char *str , int min);
 char * astrcat(char *str1, char *str2);
 
-void Perror(const char *str);
-void * Calloc(size_t num, unsigned long size, int tipo);
-void * Realloc(void *ptr, size_t size);
-void Free(void *ptr);
-
 /* Variabili esterne */
-//extern int serv_sock;
+/* extern int serv_sock; */
 
-#if 0 /* Per ora usiamo le funzioni definite inline... */
-/*
- * Wrap Macro per la funzioni perror(), calloc(), realloc() e free().
- */
-#define Perror                    perror
-#define Calloc(NUM, SIZE, TIPO)   calloc((NUM), (SIZE))
-#define Realloc                   realloc
-#define Free                      free
-#endif
 
 /**************************************************************************/
 

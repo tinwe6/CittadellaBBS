@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "memstat.h"
+#include "config.h"
 #include "urna-strutture.h"
 #include "urna-servizi.h"
 #include "utility.h"
@@ -137,7 +137,7 @@ void posta_nuovo_quesito(struct urna_conf *ucf)
 #ifdef DEBUG
    citta_logf("postato in room %ld, subj %s", ucf->room_num, subject);
 #endif
-};
+}
 
 void scrivi_scelte(struct urna_conf *ucf, struct text *avviso)
 {
@@ -145,7 +145,7 @@ void scrivi_scelte(struct urna_conf *ucf, struct text *avviso)
 
    for(i = 0; i < ucf->num_voci; i++)
       txt_putf(avviso, "--- <b>%s</b>", *(ucf->voci + i));
-};
+}
 
 void chipuo(struct urna_conf *ucf, char *buf)
 {
@@ -185,4 +185,4 @@ void chipuo(struct urna_conf *ucf, char *buf)
       else
          sprintf(buf, " <b>femmine</b>.");
    }
-};
+}
