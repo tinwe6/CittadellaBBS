@@ -19,8 +19,11 @@
 #define CFG_FILE_SYSTEM "/system/cittaclient.ini"
 #else
 #ifdef MACOSX        /* MacOS/X path for config file   */
-#define CFG_FILE_USER   "~/Library/Preferences/cittaclient.rc"
-#define CFG_FILE_USER2  "~/Library/Application Support/cittaclient/cittaclient.rc"
+#define CFG_FILE_USER   "~/.cittaclientrc"
+#define CFG_FILE_USER2  "~/Library/Preferences/cittaclient.rc"
+/*
+#define CFG_FILE_USER3  "~/Library/Application Support/cittaclient/cittaclient.rc"
+*/
 #define CFG_FILE_SYSTEM "/etc/cittaclient.rc"
 #else                /* UNIX path for config file      */
 #define CFG_FILE_USER   "~/.cittaclientrc"
@@ -147,6 +150,9 @@ void cfg_read(char *rcfile, bool no_rc)
 	char buf[LBUF], *filename;
 	size_t bufsize = LBUF;
 	int fine, ret;
+#else
+	IGNORE_UNUSED_PARAMETER(rcfile);
+	IGNORE_UNUSED_PARAMETER(no_rc);
 #endif
 
 	cfg_init();
