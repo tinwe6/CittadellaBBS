@@ -40,7 +40,6 @@ struct serv_buffer {
 void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc);
 void crea_connessione(char *host, unsigned int port);
 int conn_server(char *h, int p);
-//void timeout(int signum);
 void serv_gets(char *strbuf);
 int serv_getc_r(struct serv_buffer * buf);
 void serv_puts(const char *string);

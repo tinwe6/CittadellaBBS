@@ -145,7 +145,7 @@ int compress_scrivi_a_client(struct sessione *t, char * testo, unsigned int len)
                 }
 		    
                 /* spedisci i dati compressi */
-                if (z->avail_out < q->size - q->end) {
+                if (z->avail_out < (uInt)q->size - q->end) {
                         q->end = q->size - z->avail_out;
                         if ((wlen = write(t->socket_descr, q->data + q->start,
                                          q->end - q->start)) > 0) {

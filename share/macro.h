@@ -16,11 +16,19 @@
 
 #ifndef _MACRO_H
 #define _MACRO_H   1
+
+#include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define ABS(x)   ((x) > 0 ? (x) : -(x))
+
+/* This macro allows to silence the -Wunused-parameter compiler
+   warning for the parameter 'param.                            */
+#define IGNORE_UNUSED_PARAMETER(param) assert(true || param) 
 
 #ifndef  _MEMSTAT_H
 
@@ -84,27 +92,47 @@ extern void * Realloc(void *ptr, size_t size);
 extern char * Strdup(const char *str);
 extern void Free(void *ptr);
 
-
-
 #define CREATE(result, type, num, tnum) do {                          \
       if (!((result) = (type *) Calloc((num), sizeof(type), (tnum)))) \
        { Perror("Calloc failure"); abort(); } } while(0)
 
-#define RECREATE(result,type,number) do {                                 \
+#define RECREATE(result, type, number) do {                               \
   if (!((result) = (type *) Realloc ((result), sizeof(type) * (number)))) \
                 { Perror("Realloc failure"); abort(); } } while(0)
 
-#else
+extern void Perror(const char *str);
 
-#define Malloc(a,b)   malloc(a);
-#define Calloc(a,b,c)   calloc(a,b);
-#define Realloc  realloc
-#define Free     free
-#define Strdup   strdup
+#else
+#include <string.h>
+
+static inline void * Calloc(size_t num, unsigned long size, int tipo)
+{
+        IGNORE_UNUSED_PARAMETER(tipo);
+	return calloc(num, size);
+}
+
+static inline void * Realloc(void *ptr, size_t size)
+{
+	return realloc(ptr, size);
+}
+
+static inline void Free(void *ptr)
+{
+	free(ptr);
+}
+
+static inline char * Strdup(const char *ptr)
+{
+	return strdup(ptr);
+}
+
+static inline void Perror(const char *str) {
+        perror(str);
+}
 
 #  define CREATE(result, type, num, tnum)   do {                      \
       if (!((result) = (type *) calloc((num), sizeof(type)))) \
-       { Perror("calloc failure"); abort(); } } while(0)
+	{ Perror("calloc failure"); abort(); (void *)tnum; } } while(0)
 
 #  define RECREATE(result, type, number)   do {                      \
       if (!((result) = (type *) realloc(result,number * sizeof(type)))) \
@@ -127,7 +155,5 @@ extern void Free(void *ptr);
 
 #define SESSON(UT) (((UT)->sflags[0] & SUT_SEX) &&            \
                     ((UT)->flags[2] & UT_VSEX)) ? 1 : 0
-
-extern void Perror(const char *str);
 
 #endif /* macro.h */

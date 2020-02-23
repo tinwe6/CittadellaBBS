@@ -170,8 +170,8 @@ void txt_puts(struct text *txt, char *str)
 void txt_putf(struct text *txt, const char *format, ...)
 {
 	va_list ap;
-	size_t len = 128;
 	char *str;
+	int len = 128;
 	int ret, ok = 0;
 
 	/* Uses vsnprintf(), conforms to BSD, ISOC9X, UNIX98 standards */
@@ -237,12 +237,15 @@ void txt_jump(struct text *txt, long n)
 	}
 }
 
-inline long txt_rpos(struct text *txt)
+long txt_rpos(struct text *txt)
 {
-        if (!txt) txt_error();
-	if (txt->rpos)
-		return (txt->rpos->num);
-	return (txt->nlines);
+        if (!txt) {
+	        txt_error();
+	}
+	if (txt->rpos) {
+		return txt->rpos->num;
+	}
+	return txt->nlines;
 }
 
 /* Duplica una struttura di testo */

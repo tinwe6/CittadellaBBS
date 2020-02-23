@@ -49,7 +49,7 @@ int compara(char *a, char *b);
 void azzera_stat();
 void rs_load_data();
 int read_prop(unsigned long progressivo, int nvoti, char ***ptesto);
-int compstr(char **a, char **b);
+static int compstr(const void *a, const void *b);
 extern void qsort();
 
 /* 
@@ -85,7 +85,7 @@ int save_urne(int level)
 {
    struct urna *punto;
    unsigned int totali = 0, salvate = 0, errori = 0;
-   int i;
+   unsigned long i;
 
    citta_log("SYSTEM:salvataggio sondaggi");
 
@@ -95,14 +95,14 @@ int save_urne(int level)
 
    if(save_stat(level)) {
       return -1;
-   };
+   }
 
    for(i = 0; i < LEN_SLOTS * (ustat.urne_slots); i++) {
       punto = *(ustat.urna_testa + i);
       /* salta le urne concluse */
       if(punto == NULL) {
          continue;
-      };
+      }
       totali++;
       switch (save_urna(punto, level)) {
       case -1:
@@ -173,7 +173,7 @@ int save_stat(int level)
 
       if(punto == NULL) {
          continue;
-      };
+      }
 
       *(numeri_urne + j) = punto->progressivo;
       j++;
@@ -226,7 +226,7 @@ int save_conf(struct urna_conf *ucf, int level, int progressivo)
 
    if(level == 0) {
       return 0;
-   };
+   }
 
    if(save_file(URNA_DIR, FILE_UCONF, progressivo, &fp)) {
       citta_logf("SYSLOG: non posso aprire file conf");
@@ -255,7 +255,7 @@ int save_conf(struct urna_conf *ucf, int level, int progressivo)
 
    fclose(fp);
    return 0;
-};
+}
 
 /*
  * voci
@@ -299,7 +299,7 @@ int save_prop(struct urna_prop *upr, int progressivo)
 
    if(upr == NULL) {
       return 0;
-   };
+   }
 
    nuovo = esiste(URNA_DIR, FILE_UPROP, progressivo);
 
@@ -323,7 +323,7 @@ int save_prop(struct urna_prop *upr, int progressivo)
       if(append_file(URNA_DIR, FILE_UPROP, progressivo, &fp)) {
          citta_logf("SYSLOG: non apro file voti di %d", progressivo);
          return (-1);
-      };
+      }
 
       fprintf(fp, "\n");
       break;
@@ -355,7 +355,7 @@ int save_prop(struct urna_prop *upr, int progressivo)
          citta_logf("SYSLOG: errori nelle proposte %d", progressivo);
          fclose(fp);
          return (-1);
-      };
+      }
 
       i = 1;
       prop = testa->proposte;
@@ -369,14 +369,14 @@ int save_prop(struct urna_prop *upr, int progressivo)
             citta_logf("SYSLOG: errori nelle proposte %d, %d", progressivo, i);
             fclose(fp);
             return (-1);
-         };
+         }
       }
 
       if(fprintf(fp, "\n") == 0) {
          citta_logf("SYSLOG: errori nelle proposte %d", progressivo);
          fclose(fp);
          return (-1);
-      };
+      }
    }
    deall_prop(upr);
    fclose(fp);
@@ -404,17 +404,15 @@ int save_dati(struct urna_dati *udt, long int progressivo)
       return (-1);
    }
 
-   if(fwrite(udt->uvot, sizeof(long int),
-             (udt->voti_nslots) * LEN_SLOTS,
-             fp) != (udt->voti_nslots) * LEN_SLOTS) {
+   if(fwrite(udt->uvot, sizeof(long int), (udt->voti_nslots) * LEN_SLOTS, fp)
+      != (unsigned long)(udt->voti_nslots) * LEN_SLOTS) {
       citta_logf("SYSLOG: non scrivo i votanti");
       fclose(fp);
       return (-1);
    }
 
-   if(fwrite
-      (udt->ucoll, sizeof(long int), (udt->coll_nslots) * LEN_SLOTS,
-       fp) != (udt->coll_nslots) * LEN_SLOTS) {
+   if(fwrite(udt->ucoll, sizeof(long int), (udt->coll_nslots) * LEN_SLOTS, fp)
+      != (unsigned long)(udt->coll_nslots) * LEN_SLOTS) {
       citta_logf("SYSLOG: non scrivo i votanti ");
       fclose(fp);
       return (-1);
@@ -442,7 +440,7 @@ int save_voti(struct urna_voti *uvt, int progressivo, int num_voci)
 
    if(uvt == NULL) {
       return 0;
-   };
+   }
 
    if(save_file(URNA_DIR, FILE_UVOTI, progressivo, &fp)) {
       citta_logf("SYSLOG: non apro file voti di %d", progressivo);
@@ -501,7 +499,7 @@ int save_voti(struct urna_voti *uvt, int progressivo, int num_voci)
 int load_stat()
 {
    FILE *fp;
-   unsigned int letto;
+   int letto;
    unsigned int i, j;
    unsigned long progressivo;
    unsigned long int alloc;
@@ -597,7 +595,7 @@ int load_stat()
       progressivo = *(numeri_urne + i);
       if(progressivo ==0) {
          continue;
-      };
+      }
       CREATE(*(ustat.urna_testa + j), struct urna, 1, TYPE_URNA);
 
       (*(ustat.urna_testa + j))->progressivo = progressivo;
@@ -624,14 +622,14 @@ int load_stat()
          if(ustat.complete < 0)
             ustat.complete = 0;
          citta_logf("urne complete =0 messo a %ld", ustat.complete);
-      };
+      }
       if(ustat.totali < ustat.attive + ustat.complete) {
          citta_logf
            ("urne totali (%ld) < attive (%ld) + complete (%ld), messo a %ld",
             ustat.totali, ustat.complete, ustat.attive,
             ustat.attive + ustat.complete);
          ustat.totali = ustat.attive + ustat.complete;
-      };
+      }
    }
 #endif
    return (0);
@@ -710,18 +708,18 @@ int load_urna(struct urna *u, unsigned long progressivo)
    if(!(u->conf = load_conf(progressivo))) {
       dealloca_urna(u);
       return -1;
-   };
+   }
 
    if(!(u->dati = load_dati(progressivo, u->conf->modo))) {
       dealloca_urna(u);
       return -1;
-   };
+   }
 
 #if 0
    if(!(u->prop = load_prop(progressivo, u->conf->modo))) {
       dealloca_urna(u);
       return -1;
-   };
+   }
 #endif
 
 /* le proposte NON vengnono caricate */
@@ -800,6 +798,8 @@ struct urna_prop *load_prop(unsigned long progressivo, int modo)
 {
    struct urna_prop *upr = NULL;
 
+   IGNORE_UNUSED_PARAMETER(progressivo);
+   IGNORE_UNUSED_PARAMETER(modo);
 #if 0
    /*
     * nel caso si volesse fare qualcosa
@@ -810,7 +810,7 @@ struct urna_prop *load_prop(unsigned long progressivo, int modo)
 #endif
 
    return (upr);
-};
+}
 
 /* 
  * legge le proposte
@@ -882,7 +882,7 @@ int read_prop(unsigned long progressivo, int nvoti, char ***ptesto)
          if(fgets(proposta, MAXLEN_PROPOSTA, fp) == NULL) {
             citta_logf("??, proposta vuota %d, posto %d->%d", i, j, prog);
             continue;
-         };
+         }
          if(prog != j) {
             citta_logf("??, proposta %d, posto %d->%d", i, j, prog);
             continue;
@@ -909,16 +909,15 @@ int read_prop(unsigned long progressivo, int nvoti, char ***ptesto)
    }
 
    fclose(fp);
-   qsort(testo, n, sizeof(char *), (void *)compstr);
+   qsort(testo, n, sizeof(char *), compstr);
    *ptesto = testo;
    return (n);
-};
-
-int compstr(char **a, char **b)
-{
-   return strcasecmp(*a, *b);
 }
 
+static int compstr(const void *a, const void *b)
+{
+  return strcasecmp((const char *)*(char **)a, (const char *)*(char **)b);
+}
 
 /* 
  * carica dati
@@ -927,9 +926,8 @@ int compstr(char **a, char **b)
 struct urna_dati *load_dati(unsigned long progressivo, int modo)
 {
    FILE *fp;
-   unsigned long int alloc;
    struct urna_dati *udt;
-   long int letti;
+   long int letti, alloc;
 
    if(load_file(URNA_DIR, FILE_UDATA, progressivo, &fp)) {
       citta_logf("SYSLOG: problemi con %s", FILE_UDATA);
@@ -1022,7 +1020,7 @@ struct urna_voti *load_voti(unsigned long progressivo, int num_voci, int modo)
       CREATE(uvt, struct urna_voti, 1, TYPE_URNA_VOTI);
 
       return uvt;
-   };
+   }
 
    CREATE(uvt, struct urna_voti, num_voci, TYPE_URNA_VOTI);
 
@@ -1056,12 +1054,14 @@ struct urna_voti *load_voti(unsigned long progressivo, int num_voci, int modo)
          fclose(fp);
          return (NULL);
       }
+#else
+      IGNORE_UNUSED_PARAMETER(modo);
 #endif
    }
 
    fclose(fp);
    return (uvt);
-};
+}
 void azzera_stat()
 {
 
@@ -1090,4 +1090,4 @@ void azzera_stat()
    ustat.votanti->utente = -1;
    ustat.votanti->inizio = -1;
    ustat.votanti->next = NULL;
-};
+}

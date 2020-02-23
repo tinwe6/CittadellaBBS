@@ -156,9 +156,9 @@ int inkey_pager(int esegue, char *str, int *c)
                         tv.tv_usec = 0;
 			b = select(serv_sock + 1, &input_set, NULL, NULL, &tv);
 			if (b == -1) {
-                                if (errno == EINTR)
+			        if (errno == EINTR) {
                                         esegui_segnali();
-                                else {
+			        } else {
                                         perror("Select");
                                         exit(1);
                                 }
@@ -170,6 +170,7 @@ int inkey_pager(int esegue, char *str, int *c)
 			switch (elabora_input()) {
 			case NO_CMD:
 				ret |= INKEY_SERVER;
+				serv_gets(str);
 				break;
 			case CMD_IN_CODA:
 				if (!(esegue && esegue_comandi(0))) {

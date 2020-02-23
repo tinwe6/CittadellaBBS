@@ -131,10 +131,12 @@ void cache_insert(Cache *cache, void *key, void *data)
 /*
  * Elimina dalla cache il blocco associato alla chiave 'key'.
  */
+/*
 void cache_remove(Cache *cache, void *key)
 {
 	
 }
+*/
 
 static void cache_enqueue(Cache *cache, Cache_Block *b)
 {

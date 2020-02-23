@@ -45,54 +45,53 @@ void urna_check(void);
  * Restituisce il numero di risposte possibili, -1 se non lo trova.
  * urna dati contiene un puntatore a urna_scelte, che contiene
  */
-
 void urna_read(long n)
+/* TODO: parametro n non implementato */
 {
    struct urna_client dati;
    long num,err;
    struct elenco_ref *elenco[MAX_URNE];
-   int n_rs=0;
+   int n_rs = 0;
    int scelto;
    const char this_format[50]="t%t20l # z%t40Tipo: t%n%s  finisce il% %t20s%n";
    
+   IGNORE_UNUSED_PARAMETER(n);
 
    azzera_dati(&dati);
 
-/* 
- * per leggere il sondaggio chiede solo le liste non zappate
- * (In ogni caso lo fa il server...)
- */
+   /* per leggere il sondaggio chiede solo le liste non zappate
+    * (In ogni caso lo fa il server...)                         */
 
    setcolor(C_QUESTION);
 
    n_rs=get_elenco_ref(elenco,1);
    if(n_rs == -1) {
 	 return;
-   };
+   }
    if(n_rs == 0) {
 	 printf(_("\nNon ci sono sondaggi che puoi leggere.\n"));
 	 return;
-   };
+   }
 
 
    scelto=scegli_ref(n_rs, elenco,_("scegliere"),this_format);
 
-if(scelto==-1){
- cml_printf(_("Ciao, alla prossima!\n"));
-		 free_elenco_ref(elenco);
- return;
-};
+   if(scelto==-1){
+      cml_printf(_("Ciao, alla prossima!\n"));
+      free_elenco_ref(elenco);
+      return;
+   }
 
-num=elenco[scelto]->num;
-free_elenco_ref(elenco);
+   num=elenco[scelto]->num;
+   free_elenco_ref(elenco);
 
    if(get_ref(&dati, num, "",1) == -1) {
       cml_printf(_("il sondaggio non esiste.\n"));
       return;
    }
    
-if((err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
-		 printf(_("errore %ld\n"),err);
+   if( (err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
+      printf(_("errore %ld\n"),err);
 
 
    dati.testo = txt_create();
@@ -137,12 +136,10 @@ if((err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
    if(dati.modo!=MODO_PROPOSTA){
 		   printf(_("\n%sRisposte possibili:\n%s"), hbold, hstop);
    			stampa_voci(&dati);
-   };
+   }
    printf("\n");
-
-   /* 
-	* diventa una funzione?
-	*/
+ 
+   /* diventa una funzione? */
    switch (dati.modo) {
    case MODO_SCELTA_SINGOLA:
 	  cml_printf(_("Si pu&ograve dare una sola risposta.\n"));
@@ -163,9 +160,8 @@ if((err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
    cml_print(_("\n\te si concluder&agrave <b>"));
    stampa_datall(dati.stop);
    cml_print(_("</b>.\n\nPossono votare tutti gli utenti<b>"));
-   /* 
-	* diventa una funzione?
-	*/
+
+   /* diventa una funzione? */
    switch (dati.criterio) {
    case 0:
 	  break;
@@ -194,14 +190,14 @@ if((err=par2strd(dati.titolo,&dati,"titolo",LEN_TITOLO)))
    cml_print(_("</b>.\n"));
    free_dati(&dati);
    return;
-};
+}
 
-		/*
-		 * Lista dei Sondaggi attivi.
-		 * se level =1 tutti
-		 * altrimenti solo quelli delle room non zappate
-		 */
 
+/*
+ * Lista dei Sondaggi attivi.
+ * se level =1 tutti
+ * altrimenti solo quelli delle room non zappate
+ */
 void urna_list(int level)
 {
    int n_rs;
@@ -215,23 +211,23 @@ void urna_list(int level)
 
    print_ref(n_rs,elenco,_("t l#z%t35T%n  m%t35%s termina il% s%n"));
    free_elenco_ref(elenco);
-};
+}
 
 
-		/* Controlla se ci sono sondaggi/referendum da votare.
-		 * Viene eseguita al login.
-		 */
+/* Controlla se ci sono sondaggi/referendum da votare.
+ * Viene eseguita al login.
+ */
 void urna_check(void)
 {
    int i, n_rs = 0, n_s = 0, n_r = 0;
    struct elenco_ref * elenco[MAX_URNE];
    if((n_rs=get_elenco_ref(elenco,6))==-1){
 		   return;
-   };
+   }
 
    if((n_rs=get_elenco_ref(elenco,6))==0){
 		   return;
-   };
+   }
 
    for(i=0;i<n_rs;i++){
 		   switch(elenco[i]->tipo){
@@ -243,14 +239,10 @@ void urna_check(void)
 		   }
    }
 
-   /* 
-	* dovrebbe diventare un
-	* get_ref
-	*/
-
+   /*  dovrebbe diventare un get_ref */
    setcolor(C_URNA);
 
-/* i18n non adeguato...*/
+   /* i18n non adeguato...*/
 
    ordina_ref(n_rs,elenco,"");
    switch (n_r){
@@ -261,7 +253,7 @@ void urna_check(void)
 		 break;
 		   default:
 		 cml_printf(_("\nCi sono <b>%d referendum</b> che dovresti votare"), n_r);
-   };
+   }
 
    if(n_r>0 && n_s>0)
 		   cml_printf(_(", e"));
@@ -274,7 +266,7 @@ void urna_check(void)
 		 break;
 		   default:
       cml_printf(_("\nCi sono <b>%d sondaggi</b> ai quali puoi partecipare"), n_s);
-   };
+   }
 
    printf(_(":\n"));
 
@@ -283,6 +275,8 @@ void urna_check(void)
    free_elenco_ref(elenco);
 
 }
+
+
 /*
 void urna_check(void)
 {

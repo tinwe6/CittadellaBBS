@@ -66,7 +66,7 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc);
 void crea_connessione(char *host, unsigned int port);
 int conn_server(char *h, int p);
 void timeout(int signum);
-inline void serv_gets(char *strbuf);
+void serv_gets(char *strbuf);
 void serv_puts(const char *string);
 void serv_putf(char *format, ...);
 void serv_read(char *buf, int bytes);
@@ -172,7 +172,7 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 
                 case 'F': /* rcfile */
                         if (optarg)
-                                *rcfile = strdup(optarg);
+                                *rcfile = Strdup(optarg);
                         break;
 
                 case 'H': /* help */
@@ -283,8 +283,11 @@ int conn_server(char *host, int porta)
         return(s);
 }
 
+/* Write connection timeout message and exit the client */
+/* Note: the parameter signum is not used               */
 void timeout(int signum) 
 {
+        IGNORE_UNUSED_PARAMETER(signum);
         printf("\rConnection timed out.\n");
         exit(1);
 }
@@ -296,12 +299,12 @@ void timeout(int signum)
  * Continua a leggere tramite elabora_input() finche'
  * non legge qualcosa di diverso da un comando
  */
-inline void serv_gets(char *strbuf)
+void serv_gets(char *strbuf)
 {
 	char *buf;
 
         if (!prendi_da_coda(&server_in, &buf)) {
-                //for ( ; elabora_input() & (NO_CMD|CMD_BINARY); );
+	        /* for ( ; elabora_input() & (NO_CMD|CMD_BINARY); ); */
                 for ( ; elabora_input() != NO_CMD; );
                 prendi_da_coda(&server_in, &buf);
         }
@@ -357,8 +360,8 @@ void serv_puts(const char *string)
 void serv_putf(char *format, ...)
 {
 	va_list ap;
-	size_t len = TMPBUF_LEN;
 	char *str;
+	int len = TMPBUF_LEN;
 	int ret, ok = 0;
 	
 	/* Uses vsnprintf(), conforms to BSD, ISOC9X, UNIX98 standards */
@@ -398,8 +401,8 @@ void serv_write(const char *buf, int bytes, bool progressbar)
                         if ( (ret = write(serv_sock, buf, prog_step)) > 0) {
                                 buf += ret;
                                 bytes -= ret;
-                                //                                if (progressbar) // TODO eliminare
-                                        //      printf("Wrote %d/%d bytes\n", total-bytes, total);
+				/* if (progressbar) *//* TODO eliminare */
+				/* printf("Wrote %d/%d bytes\n", total-bytes, total); */
                         } else {
                                 printf("%s",str_conn_closed);
                                 exit(1);
@@ -480,9 +483,8 @@ static int serv_buffer_has_input(void)
  */
 int elabora_input(void)
 {
-	int len;
-	size_t bufsize = LBUF;
         char *buf;
+	int len, bufsize = LBUF;
 	char ch;
 
         CREATE(buf, char, bufsize, 0);

@@ -81,7 +81,8 @@ void cmd_slst(struct sessione *t, char *arg)
    char lettera[3];
    char votabile = 0, votato = 0;
    int zap = 0;
-   int i, room_zap, tipo, room_aide;
+   int room_zap, tipo, room_aide;
+   unsigned long i;
    char posticipabile = 0;
 
    cprintf(t, "%d\n", SEGUE_LISTA);
@@ -89,7 +90,7 @@ void cmd_slst(struct sessione *t, char *arg)
    if(ustat.urna_testa == NULL) {
       cprintf(t, "000\n");
       return;
-   };
+   }
 
    tipo = extract_int(arg, 0);
    zap = tipo % 2;
@@ -104,51 +105,38 @@ void cmd_slst(struct sessione *t, char *arg)
       udt = u->dati;
 	  if (u->semaf&(SEM_U_PRECHIUSA|SEM_U_CONCLUSA)){
 			  continue;
-	  };
+	  }
       rm = room_findn(ucf->room_num);
 
-/* 
- * se
- * l'urna e`
- * in una stanza
- * cancellata |-> Lobby
- */
-
+      /* se l'urna e` in una stanza cancellata |-> Lobby */
       if(rm == NULL) {
          citta_logf("room %ld cancellata, uso Lobby??", ucf->room_num);
          rm = room_find(lobby);
       }
 
-      /*
-       * * e` etico controllare il criterio livello e non il resto?
-       */
-
+      /* e` etico controllare il criterio livello e non il resto? */
       if((ucf->crit == CV_LIVELLO) &&
          (t->utente->livello < ucf->val_crit.numerico)) {
          continue;
-      };
+      }
 
-      /* 
-       * se l'utente non conosce la stanza salta
-        */
-
-
+      /* se l'utente non conosce la stanza salta */
       if(room_known(t, rm) == 0) {
          continue;
-      };
+      }
 
       if(room_known(t, rm) == 2) {
          if(zap == 0)
             continue;
          room_zap = 1;
-      };
+      }
 
       /*
        * numero, tipo, titolo, modo, termine, lettera, stanza, zappata,
        * votabile, votato, posticipabile, proponente
        */
 
-	  room_aide=rm->data->master;
+      room_aide=rm->data->master;
       /* proponente = (u->dati->posticipo < MAX_POSTICIPI); */
       cod_lettera(ucf->lettera, lettera);
       posticipabile = (u->dati->posticipo < MAX_POSTICIPI);
@@ -157,7 +145,7 @@ void cmd_slst(struct sessione *t, char *arg)
          votabile = (rs_vota(t, ucf) == 0);
          votato = rs_ha_votato(u, t->utente->matricola);
 		 rs_ha_visto(u,t->utente->matricola);
-      };
+      }
 
        if(tipo == 4)
  			  if ((ucf->proponente != t->utente->matricola) &&
@@ -175,7 +163,7 @@ void cmd_slst(struct sessione *t, char *arg)
                         (t->utente->livello < LVL_AIDE)
          )) {
          continue;
-      };
+      }
 
       cprintf(t, "%d %ld|%d|%s"
               "|%d|%ld|%s"
@@ -186,7 +174,7 @@ void cmd_slst(struct sessione *t, char *arg)
               rm->data->name, room_zap, votabile, votato, posticipabile);
    }
    cprintf(t, "000\n");
-};
+}
 
 
 /*
@@ -353,7 +341,7 @@ void urna_vota(struct sessione *t, char *buf)
    if((pos = rs_trova(num)) == -1) {
 		   u_err(t,U_NOT_FOUND);
       return;
-   };
+   }
 
    u = *(ustat.urna_testa + pos);
    modo = u->conf->modo;

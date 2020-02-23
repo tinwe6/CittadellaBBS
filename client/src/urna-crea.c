@@ -107,7 +107,7 @@ void urna_new(void)
      free_dati(dati);
      myFree(dati);
       return;
-   };
+   }
 
    dati->bianca = risp == _('n') ? 0 : 1;
 
@@ -121,7 +121,7 @@ void urna_new(void)
      free_dati(dati);
      myFree(dati);
       return;
-   };
+   }
    if(!min_lungh(dati->titolo,3))
    cml_printf(_("Titolo troppo corto:%s\n"),dati->titolo);
 
@@ -133,7 +133,7 @@ void urna_new(void)
      free_dati(dati);
      myFree(dati);
       return;
-   };
+   }
 
 
    printf(_(_("\nTipo di risposte:\n ")));
@@ -154,7 +154,7 @@ void urna_new(void)
           free_dati(dati);
           myFree(dati);
           return;
-   };
+   }
 
 	 printf(_("%c"),c);
 
@@ -216,7 +216,7 @@ void urna_new(void)
           free_dati(dati);
           myFree(dati);
           return;
-   };
+   }
 
    printf(_("\nTermine ultimo per inviare il voto:\n"));
     new_date(&tmst, 1);
@@ -237,7 +237,7 @@ void urna_new(void)
      myFree(dati);
       interrompi();
       return;
-   };
+   }
 
    strcpy(str_cl,"SRNE ");
    crea_stringa_per_server(str_cl, dati);
@@ -321,7 +321,7 @@ int crea_stringa_per_server(char *str, struct urna_client *dati)
       myFree(client[i]);
    }
    return (0);
-};
+}
 
 void interrompi()
 {
@@ -358,7 +358,7 @@ int scegli_diritto(struct urna_client *dati)
 
    if (c==Ctrl('X')){
          return -1;
-   };
+   }
 
    if(c==10){
          c='1';

@@ -241,6 +241,9 @@ void cr8_virtual_room(struct sessione *t, char *name, long n, long fmnum,
 {
         struct room * room;
 
+	/* TODO: fmnum not used (we are not using multiple msg files) */
+	IGNORE_UNUSED_PARAMETER(fmnum);
+
 	/* Creo ed inizializzo la room. */
 	CREATE(room, struct room, 1, TYPE_ROOM);
         if (rd)

@@ -944,15 +944,20 @@ void enter_profile(void)
 			fclose(fp);
 			unlink(filename);
 			free(filename);
-	} else
-		get_text_full(txt, serverinfo.maxlineeprfl, 79, 0, C_PRFL_PERS,
-                              NULL);
+	} else {
+		get_text_full(txt, serverinfo.maxlineeprfl, 79, false,
+			      C_PRFL_PERS, NULL);
+	}
 
-	printf(sesso ? _("\nSei sicura di voler mantenere le modifiche (s/n)? ") : _("\nSei sicuro di voler mantenere le modifiche (s/n)? "));
+	printf(sesso
+	       ? _("\nSei sicura di voler mantenere le modifiche (s/n)? ")
+	       : _("\nSei sicuro di voler mantenere le modifiche (s/n)? ")
+	       );
 	if (si_no() == 's') {
 		txt_rewind(txt);
-		while ( (str = txt_get(txt)))
+		while ( (str = txt_get(txt))) {
 			serv_putf("TEXT %s", str);
+		}
 		serv_puts("PRFE");
 		serv_gets(buf);
 		print_err_edit_profile(buf);

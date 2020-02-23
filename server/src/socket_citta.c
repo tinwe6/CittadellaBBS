@@ -207,7 +207,7 @@ int scrivi_a_desc_len(int desc, char *txt, size_t totale)
 		return -1;
 	}
 
-	if (questo_giro < totale) {
+	if ((size_t)questo_giro < totale) {
 		memmove(txt, txt+questo_giro, totale-questo_giro);
                 //citta_logf("SADL scritto %ld/%ld", questo_giro, totale);
         }

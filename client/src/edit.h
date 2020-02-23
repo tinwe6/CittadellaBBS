@@ -29,7 +29,7 @@ void edit_file(char *filename);
 int enter_text(struct text *txt, int max_linee, char mode,
                Metadata_List *mdlist);
 void send_text(struct text *txt);
-int get_textl(struct text *txt, int max, int nlines);
+int get_textl(struct text *txt, size_t max, unsigned int nlines);
 int get_textl_cursor(struct text *txt, int max, int nlines, bool chat);
 int getline_scroll(const char *prompt, int color, char *str, int max,
 		   int field, int protect);

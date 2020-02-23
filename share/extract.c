@@ -80,33 +80,11 @@ int num_parms(const char *source)
  *          parmnum = 3 --> "3"
  *          parmnum = 4 --> NULL
  */
-inline void extract(char *dest, const char *source, int parmnum)
+void extract(char *dest, const char *source, int parmnum)
 {
 	extractn(dest, source, parmnum, 256);
 }
 
-#if 0 /* Qui e' extract senza il controllo 256... forse meglio... */
-void extract(char *dest, const char *source, int parmnum)
-{
-	const char *src;
-	const char *end;
-
-	src = source;
-        while (*src && parmnum) {
-		if (*(src++) == '|')
-			parmnum--;
-        }
-	if (*src == '\0') {
-		*dest = '\0';
-		return;
-	}
-	end = src;
-	while (*end && (*end!='|'))
-		end++;
-	memcpy(dest, src, end-src);
-	dest[end-src] = '\0';
-}
-#endif
 
 /*
  * Come extract() ma estrae al piu' 'len' caratteri da source.
@@ -134,10 +112,10 @@ void extractn(char *dest, const char *source, int parmnum, size_t len)
 		return;
 	}
 	end = src;
-	while(*end && (*end!='|') && (end-src < len-1))
+	while(*end && (*end != '|') && (end < src + len - 1))
 		end++;
-	memcpy(dest, src, end-src);
-	dest[end-src] = '\0';
+	memcpy(dest, src, end - src);
+	dest[end - src] = '\0';
 }
 
 /*

@@ -482,18 +482,14 @@ static void X(char *str, long flag)
  * Se detailed == true, da informazioni piu' dettagliate.
  * La descrizione della room viene stampata solo se prof == TRUE
  */
-/* TODO prof is unused, eliminate it */
 void room_info(bool detailed, bool prof)
 {
 	char buf[LBUF], raide[LBUF], rname[LBUF];
 	int  rlvl, wlvl, riga = 0;
 	long local, ct, mt, pt, flags;
-        /* bool blogroom = false; // TODO implementare */
 
-	/*
-        if (rflags & RF_BLOG)
-                blogroom = true;
-	*/
+	/* TODO implementare il flag prof */
+	IGNORE_UNUSED_PARAMETER(prof);
 
         if ((*room_type == ':') && !(rflags & RF_BLOG)) {
                 setcolor(C_ROOM_INFO);
@@ -518,7 +514,6 @@ void room_info(bool detailed, bool prof)
 	extract(raide, buf+4, 6);
 	extract(rname, buf+4, 7);
       	flags = extract_long(buf+4, 8);
-        // "                                                    " 26
 
         printf("\n%63s", "");
         if (detailed)
@@ -717,15 +712,20 @@ void room_edit_info(void)
 			fclose(fp);
 			unlink(filename);
 			free(filename);
-	} else
-		get_text_full(txt, serverinfo.maxlineeroominfo, 79, 0,
+	} else {
+		get_text_full(txt, serverinfo.maxlineeroominfo, 79, false,
 			      C_ROOM_INFO, NULL);
+	}
 
-	printf(sesso ? _("\nSei sicura di voler mantenere le modifiche (s/n)? ") : _("\nSei sicuro di voler mantenere le modifiche (s/n)? "));
+	printf(sesso
+	       ? _("\nSei sicura di voler mantenere le modifiche (s/n)? ")
+	       : _("\nSei sicuro di voler mantenere le modifiche (s/n)? ")
+	       );
 	if (si_no() == 's') {
 		txt_rewind(txt);
-		while ( (str = txt_get(txt)))
+		while ( (str = txt_get(txt))) {
 			serv_putf("TEXT %s", str);
+		}
 		serv_puts("RIEE");
 		serv_gets(buf);
 		print_err_edit_room_info(buf);

@@ -172,7 +172,7 @@ void print_histo_num(long * data, int num, int nrow, int nlabel, char all,
         for (j = 0; j < num; j++)
                 strcat(str, ascisse);
 
-        printf("%s>\n", str);
+        printf("%s> %s\n", str, xlab);
         strcpy(str, "      ");
         for (j = 0; j < num; j++) {
                 sprintf(str1, "%2d ", j);

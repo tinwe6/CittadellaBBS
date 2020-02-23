@@ -436,4 +436,9 @@
 /* Lunghezza standard dei buffers di char                                   */
 #define LBUF 256
 
+#ifdef _MEMSTAT_H
+# error "do not include memstat.h directly, include config.h instead"
+#endif
+#include "memstat.h"
+
 #endif /* config.h */

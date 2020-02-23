@@ -501,6 +501,8 @@ void cmd_fupl(struct sessione *t, char *arg)
 
 void cmd_fupe(struct sessione *t, char *arg)
 {
+	IGNORE_UNUSED_PARAMETER(arg);
+
         t->stato = CON_COMANDI;
         cprintf(t, "%d\n", OK);
 }

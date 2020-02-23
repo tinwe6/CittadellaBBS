@@ -123,7 +123,6 @@ void pager(struct text *txt, bool send, long max, int start, bool cml,
 					ink = inkey_pager(uflags[3] & UT_XPOST,
 							aaa, &c);
 					if (ink & INKEY_SERVER) {
-						serv_gets(aaa);
 						send = pager_newstr(txt, aaa,
                                                               inc_max, mdlist);
 						if ((!send) && (txt_rpos(txt) == txt_len(txt)))

@@ -481,7 +481,7 @@ static void http_send_index(struct http_sess *p, char *code, int lang)
 		HTML_INDEX_PREAMBLE[lang]);
 	http_send_lang(p, "index", lang);
         
-	wprintf(p, CODA_BODY, "<P><BR></P><TABLE class=\"rooms\" border=\"0\" cellspacing=\"1\"><COLGROUP><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"31\%%\"><COL width=\"7%%\"></COLGROUP><TR>");
+	wprintf(p, CODA_BODY, "<P><BR></P><TABLE class=\"rooms\" border=\"0\" cellspacing=\"1\"><COLGROUP><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"7%%\"></COLGROUP><TR>");
 
 	http_send_room_list(p, lang);
 
@@ -539,6 +539,9 @@ static void http_send_userlist(struct http_sess *p, char *code, int lang)
 {
 	struct tm *tmst;
         struct lista_ut *punto;
+
+	/* TODO: implement lang */
+	IGNORE_UNUSED_PARAMETER(lang);
 
 	strcpy(code, "200 OK");                    
 	wprintf(p, CODA_BODY, HTML_HEADER);
@@ -632,6 +635,9 @@ static void http_send_profile(struct http_sess *p, char *req, char *code,
 {
         struct dati_ut *utente;
 	char buf[LBUF];
+
+	/* TODO: implement lang */
+	IGNORE_UNUSED_PARAMETER(lang);
 
 #ifdef DEBUG_CITTAWEB
 	citta_logf("HTTP: richiesta profile %s", req);

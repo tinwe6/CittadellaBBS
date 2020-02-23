@@ -13,6 +13,7 @@
 * File : cml.c                                                              *
 *        Cittadella Markup Language.                                        *
 ****************************************************************************/
+#include <assert.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@
 #include "inkey.h"
 #include "macro.h"
 #include "metadata.h"
+#include "utility.h"
 
 /* 
         CML Specifications:
@@ -89,10 +91,9 @@ int cml_spoiler_print(const char *str, int max, int spoiler)
 
 int cml_printf(const char *format, ...)
 {
-	char *out;
 	va_list ap;
-	size_t len = TMPBUF_LEN;
-	char *str;
+        char *out, *str;
+	int len = TMPBUF_LEN;
 	int ret, totlen, ok = 0, col;
 
 	va_start(ap, format);
@@ -121,9 +122,9 @@ int cml_printf(const char *format, ...)
 
 int cml_sprintf(char *str, const char *format, ...)
 {
-	char *out, *tmp;
 	va_list ap;
-	size_t len = TMPBUF_LEN;
+	char *out, *tmp;
+	int len = TMPBUF_LEN;
 	int ret, totlen, ok = 0, col;
 
 	va_start(ap, format);
@@ -152,10 +153,9 @@ int cml_sprintf(char *str, const char *format, ...)
 
 int cml_nprintf(size_t size, const char *format, ...)
 {
-	char *out;
 	va_list ap;
-	size_t len = TMPBUF_LEN;
-	char *str;
+	char *out, *str;
+	int len = TMPBUF_LEN;
 	int ret, totlen, ok = 0, col;
 
 	va_start(ap, format);
@@ -184,8 +184,8 @@ int cml_nprintf(size_t size, const char *format, ...)
 char * cml_evalf(int *color, const char *format, ...)
 {
 	va_list ap;
-	size_t len = TMPBUF_LEN;
 	char *str, *out;
+	int len = TMPBUF_LEN;
 	int ret, ok = 0;
 
 	va_start(ap, format);
@@ -238,7 +238,7 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 	int ret;
 
 	if (str == NULL)
-		return strdup("");
+		return Strdup("");
 
 	if (totlen != NULL)
 		*totlen = maxlen;
@@ -338,7 +338,7 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 				break;
 			}
 		}
-		if (len > maxlen) {
+		if (maxlen > 0 && len > (size_t)maxlen) {
 			out[pos-1] = '\0';
 			return out;
 		}
@@ -472,7 +472,7 @@ int cml2editor(const char *str, int *outstr, int *outcol, int *totlen,
 				break;
 			}
 		}
-		if (len > maxlen)
+		if (maxlen > 0 && len > (size_t)maxlen)
 			return len;
 	}
 
@@ -482,7 +482,8 @@ int cml2editor(const char *str, int *outstr, int *outcol, int *totlen,
 	return len;
 }
 
-static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
+static char * cml_parse_tag(const char **str, int *color,
+			    Metadata_List *mdlist)
 {
         /* Riconosce i seguenti tag:
            <b> </b> <bg=dig> <fg=dig> <u> </u> <r> </r> <f> </f>
@@ -538,7 +539,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_blogpost(mdlist, strbuf1,num);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_b;
 				break;
@@ -576,7 +577,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_file(mdlist, strbuf1, NULL, num, size, flags);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_f;
 				break;
@@ -624,7 +625,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                              strbuf2, CC_ATTR(*color),
                                              CC_FG(*color), CC_BG(*color));
                                 *str = p;
-				return strdup(tmp);
+				return Strdup(tmp);
 			default:
 				return NULL;
 			}
@@ -647,7 +648,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                      CC_FG(*color), CC_BG(*color));
                         /*md_id = md_insert_post(mdlist, strbuf1, num);*/
                         *str = p;
-                        return strdup(tmp);
+                        return Strdup(tmp);
 		case 'r':
 			switch (curr_state) {
 			case TAG_START:
@@ -662,7 +663,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_room(mdlist, strbuf1);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_REVERSE;
 				break;
@@ -686,7 +687,7 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
                                                      CC_FG(*color), CC_BG(*color));
                                         /*md_id = md_insert_user(mdlist, strbuf1);*/
                                         *str = p;
-                                        return strdup(tmp);
+                                        return Strdup(tmp);
                                 }
 				curr_state = TAG_UNDERSCORE;
 				break;
@@ -784,10 +785,10 @@ static char * cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
 			if (*p == '>') {
 				*str = p;
 				if (!USE_COLORS)
-					return strdup("");
+					return Strdup("");
 				*(o++) = 'm';
 				*(o++) = '\0';
-				return strdup(tmp);
+				return Strdup(tmp);
 			}
 			*(o++) = ';';
 		        curr_state = TAG_START;	
@@ -839,7 +840,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 	char *out, *tmp, mdstr[LBUF];
 
 	max = len;
-	CREATE(out, char, max+1, 0);
+	CREATE(out, char, max + 1, 0);
 
         start = 0;
         if ( (md_id = MDNUM(*color))) {
@@ -850,23 +851,25 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 
 	currcol = *color;
 	pos = 0;
-	for (i = start; i < len; i++) {
+	for (i = start; (size_t)i < len; i++) {
                 while ( (md_id = MDNUM(col[i]))) {
                         /* Inizio del metadata */
                         mdlen = md_convert2cml(mdlist, md_id, mdstr);
+			assert(max >= pos);
                         while ((max - pos) < mdlen) {
                                 max *= 2;
-                                RECREATE(out, char, max+1);
+                                RECREATE(out, char, max + 1);
                         }
-                        for (j = 0; j < mdlen; j++)
+                        for (j = 0; j < mdlen; j++) {
                                 out[pos++] = mdstr[j];
-                        do
+			}
+                        do {
                                 i++;
-                        while (MDNUM(col[i]) == md_id);
+                        } while (MDNUM(col[i]) == md_id);
                 }
                 while ((max - pos) < 24) {
                         max *= 2;
-                        RECREATE(out, char, max+1);
+                        RECREATE(out, char, max + 1);
                 }
                 if (col[i] != currcol) {
 			flag = 0;
@@ -931,7 +934,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 		}
 		if (str[i] > 127) { /* Extended 8-bit ascii char */
 			for (j = 0; cml_entity_tab[j].code; j++)
-				if (str[i] ==  cml_entity_tab[j].code) {
+				if (str[i] == cml_entity_tab[j].code) {
 					out[pos++] = '&';
 					for (tmp = cml_entity_tab[j].str; *tmp;
 					     out[pos++] = *(tmp++));

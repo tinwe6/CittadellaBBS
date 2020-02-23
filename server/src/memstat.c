@@ -13,7 +13,7 @@
 * File: memstat.c                                                           *
 *       Funzioni di allocazione e liberazione memoria con statistiche       *
 ****************************************************************************/
-#include "memstat.h"
+#include "config.h"
 
 #ifdef USE_MEM_STAT
 
@@ -251,6 +251,8 @@ void * Malloc(unsigned long size, int tipo)
 #ifdef MEMSTAT_ON
         mem_ins(mem, tipo, size / type_table[tipo].size);
         memstats.n_alloc++;
+#else
+	IGNORE_UNUSED_PARAMETER(tipo);
 #endif
 
 	return mem;
@@ -269,6 +271,8 @@ void * Calloc(size_t num, unsigned long size, int tipo)
 #ifdef MEMSTAT_ON
         mem_ins(mem, tipo, num*size / type_table[tipo].size);
         memstats.n_alloc++;
+#else
+	IGNORE_UNUSED_PARAMETER(tipo);
 #endif
 
 	return mem;

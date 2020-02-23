@@ -19,7 +19,7 @@ libdir = ../lib
 
 # Compiler flags you want to use (other than profiling, such as -Wall)
 # Flag DEBUG per tenere le parti di codice dedicate al debugging
-MYFLAGS = -g -Wall -DDEBUG
+MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DDEBUG
 
 # Flags for profiling (see hacker.doc for more information)
 #PROFILE = -pg

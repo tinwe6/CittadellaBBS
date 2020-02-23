@@ -16,6 +16,7 @@
 #ifndef _EDITOR_H
 #define _EDITOR_H   1
 
+#include <stdbool.h>
 #include "ansicol.h"
 #include "text.h"
 
@@ -55,7 +56,7 @@ extern int Editor_Vcurs; /*                  ... e verticale.       */
 #include "metadata.h"
 
 /* Prototipi funzioni in questo editor.c */
-int get_text_full(struct text *txt, long max_linee, int max_col, char abortp,
+int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 		  int color, Metadata_List *mdlist);
 
 /***************************************************************************/

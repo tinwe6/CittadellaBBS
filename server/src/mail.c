@@ -304,8 +304,10 @@ int mail_new_name(char *name)
 	return newmail;
 }
 
+/* TODO: do we need this function? */
 void mail_link(struct sessione *t)
 {
+	IGNORE_UNUSED_PARAMETER(t);
   //  cr8_virtual_room(t, "Mail", dati_server.mail_nslot, )
 }
 

@@ -608,6 +608,8 @@ void cmd_mdel(struct sessione *t, char *arg)
 	struct dati_ut *ut;
 	struct text *txt;
 
+	IGNORE_UNUSED_PARAMETER(arg);
+
 	/* Verifica che il messaggio esiste e estrae l'autore. */
 	PUT_USERMAIL(t);
 	msgnum = t->lastread;

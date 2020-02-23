@@ -134,16 +134,16 @@ int cercapar(struct parameter *p, char *id)
  */
 int contapar(struct parameter *p, char *id)
 {
-    struct parameter *q;
-    int tot = 0;
+        struct parameter *q;
+	int tot = 0;
 
-    q = p;
-    while(q) {
-        if(strcmp(q->id, id) == 0)
-	    tot++;
-	q=q->next;
-    }
-    return tot;
+	q = p;
+	while(q) {
+	        if(strcmp(q->id, id) == 0)
+		        tot++;
+		q=q->next;
+	}
+	return tot;
 }
 
 
@@ -158,28 +158,30 @@ int contapar(struct parameter *p, char *id)
 
 long int par2str(char *s, struct parameter *p, char *id, int max)
 {
-   struct parameter *q;
+        struct parameter *q;
 
-   q = p;
-   while(q) {
-      if(strcmp(q->id, id) == 0)
-         break;
-      q = q->next;
-   };
+	assert(max >= 0);
 
-   if(q == NULL) {
-      return -1;
-   };
+	q = p;
+	while(q) {
+	        if(strcmp(q->id, id) == 0)
+		        break;
+		q = q->next;
+	}
 
-   if(strlen(q->val) > max) {
-      strncpy(s, q->val, max - 1);
-      strcat(s, "");
-      p = q;
-      return strlen(q->val);
-   }
-   strcpy(s, q->val);
-   p = q;
-   return 0;
+	if(q == NULL) {
+	        return -1;
+	}
+
+	if(strlen(q->val) > (size_t)max) {
+	        strncpy(s, q->val, max - 1);
+		strcat(s, "");
+		p = q;
+		return strlen(q->val);
+	}
+	strcpy(s, q->val);
+	p = q;
+	return 0;
 }
 
 /*
@@ -197,32 +199,33 @@ long int par2str(char *s, struct parameter *p, char *id, int max)
 int pars2strs(char **s, struct parameter *p, char *id, int max_char,
 			   	int max_par)
 {
+        struct parameter *q;
+	int par = 0;
 
-   struct parameter *q;
-   int par = 0;
+	assert(max_char >= 0);
 
-   q = p;
-   while(q) {
-      if(strcmp(p->id, id) == 0) {
-         if(strlen(q->val) > max_char) {
-            p = q;
-            return -(par + 1);
-         }
-         strcpy(*(s + par), q->val);
-         par++;
-         if(par > max_par) {
-            p = q;
-            return par;
-         };
-      };
-      q = q->next;
-   };
-
-   if(par != 0) {
-      p = NULL;
-   };
-   return par;
-};
+	q = p;
+	while(q) {
+	        if(strcmp(p->id, id) == 0) {
+		        if(strlen(q->val) > (size_t)max_char) {
+			        p = q;
+			        return -(par + 1);
+			}
+			strcpy(*(s + par), q->val);
+			par++;
+			if(par > max_par) {
+			        p = q;
+				return par;
+			}
+		}
+		q = q->next;
+	}
+	
+	if(par != 0) {
+	        p = NULL;
+	}
+	return par;
+}
 
 /*
  * copia tutti i parametri con id=id successivi a p (compreso)
@@ -239,39 +242,39 @@ int pars2strs(char **s, struct parameter *p, char *id, int max_char,
  * p rimane lo stesso
  */
 
-int pars2str(void *s, struct parameter *p, char *id, int max_par, int max_len, char *sep)
+int pars2str(void *s, struct parameter *p, char *id, int max_par, int max_len,
+	     char *sep)
 {
+        struct parameter *q;
+	int len = 0;
+	int tot_len = 0;
+	int par = 0;
+	int len_sep = 0;
 
-   struct parameter *q;
-   int len = 0;
-   int tot_len = 0;
-   int par = 0;
-   int len_sep = 0;
-
-   q = p;
-   len_sep = strlen(sep);
-
-   while(q) {
-      if(strcmp(q->id, id) == 0) {
-         len = strlen(p->val);
-         if(tot_len + len + len_sep > max_len) {
-            return -(par + 1);
-         }
-         strcat(s, sep);
-         strcat(s, p->val);
-         tot_len += len + len_sep;
-         par++;
-         if(par > max_par) {
-            return par;
-         };
-      }
-      q = q->next;
-   }
-   if(par != 0) {
-      p = NULL;
-   };
-   return par;
-};
+	q = p;
+	len_sep = strlen(sep);
+	
+	while (q) {
+	        if (strcmp(q->id, id) == 0) {
+		        len = strlen(p->val);
+			if (tot_len + len + len_sep > max_len) {
+			        return -(par + 1);
+			}
+			strcat(s, sep);
+			strcat(s, p->val);
+			tot_len += len + len_sep;
+			par++;
+			if (par > max_par) {
+			        return par;
+			}
+		}
+		q = q->next;
+	}
+	if (par != 0) {
+	        p = NULL;
+	}
+	return par;
+}
 
 /*
  * stesse funzioni (tranne la prima)
@@ -292,40 +295,41 @@ int pars2str(void *s, struct parameter *p, char *id, int max_par, int max_len, c
 
 long int par2strd(char *s, struct urna_client *dati,char *id, int max_char)
 {
+        struct parameter *q;
+	struct parameter *r;         /*  struct prec */
 
-   struct parameter *q;
-   struct parameter *r;         /*  struct prec */
+	assert(max_char >= 0);
 
-   q=dati->parm;
-   r = NULL;
+	q=dati->parm;
+	r = NULL;
 
-   while(q) {
-      if(strcmp(q->id, id) == 0)
-         break;
-      r = q;
-      q = q->next;
-   };
+	while (q) {
+	        if(strcmp(q->id, id) == 0)
+		        break;
+		r = q;
+		q = q->next;
+	}
 
-   if(q == NULL) {
-      return -1;
-   };
+	if (q == NULL) {
+	        return -1;
+	}
 
-   if(strlen(q->val) > max_char) {
-      strncpy(s, q->val, max_char - 1);
-      strcat(s, "");
-      return strlen(q->val);
-   }
+	if (strlen(q->val) > (size_t)max_char) {
+	        strncpy(s, q->val, max_char - 1);
+		strcat(s, "");
+		return strlen(q->val);
+	}
 
-   strcpy(s, q->val);
+	strcpy(s, q->val);
 
-   if(r == NULL) {
-      dati->parm = q->next;
-   } else {
-      r->next = q->next;
-   };
-   Free(q->val);
-   Free(q);
-   return 0;
+	if (r == NULL) {
+	        dati->parm = q->next;
+	} else {
+	        r->next = q->next;
+	};
+	Free(q->val);
+	Free(q);
+	return 0;
 }
 
 /*
@@ -346,52 +350,53 @@ long int par2strd(char *s, struct urna_client *dati,char *id, int max_char)
 
 
 int pars2strsd(char **ss, struct parameter *p, char *id, 
-				int max_char, int max_par)
+	       int max_char, int max_par)
 {
-   struct parameter *q;
-   struct parameter *r;
-   int par = 0;
-   int mp;
-   int len;
-   mp=max_par;
-   if(mp<0){
-		   mp=-mp;
-   };
+        struct parameter *q;
+	struct parameter *r;
+	int par = 0;
+	int mp;
+	int len;
 
-   q = p;
-   r = NULL;
-   while(q) {
-      if(strcmp(q->id, id) == 0) {
-		 if(par >= mp)
-			 return mp+1;
-		 len=strlen(q->val);
-         if(len > max_char) {
-            return -(par + 1);
-         }
-		 if(max_par<0)
-				 *(ss+par)=(char*)calloc(len+1,sizeof(char));
+	mp = max_par;
+	if (mp < 0) {
+	        mp=-mp;
+	}
 
-         strcpy(*(ss + par), q->val);
-         par++;
-         if(r == NULL) {
-            p = q->next;
-			Free(q->val);
-			Free(q);
-			q=p;
-			continue;
-         } else {
-            r->next = q->next;
-			Free(q->val);
-			Free(q);
-			q=r->next;
-         };
-      };
-      r = q;
-      q = q->next;
-   };
+	q = p;
+	r = NULL;
+	while(q) {
+	        if(strcmp(q->id, id) == 0) {
+		        if(par >= mp)
+			        return mp+1;
+			len=strlen(q->val);
+			if(len > max_char) {
+			        return -(par + 1);
+			}
+			if(max_par<0)
+			        *(ss+par) = (char*)calloc(len+1,sizeof(char));
 
-   return par;
-};
+			strcpy(*(ss + par), q->val);
+			par++;
+			if(r == NULL) {
+			        p = q->next;
+				Free(q->val);
+				Free(q);
+				q=p;
+				continue;
+			} else {
+			        r->next = q->next;
+				Free(q->val);
+				Free(q);
+				q=r->next;
+			}
+		}
+		r = q;
+		q = q->next;
+	}
+
+	return par;
+}
 
 /*
  * copia tutti i parametri con id=id successivi a p (compreso)
@@ -409,49 +414,49 @@ int pars2strsd(char **ss, struct parameter *p, char *id,
  * stesso discorso per del
  */
 
-int pars2strd(void *s, struct parameter *p, char *id, int max_par, int max_len, char *sep)
+int pars2strd(void *s, struct parameter *p, char *id, int max_par,
+	      int max_len, char *sep)
 {
+        struct parameter *q;
+	struct parameter *r;
+	int len = 0;
+	int tot_len = 0;
+	int par = 0;
+	int len_sep = 0;
 
-   struct parameter *q;
-   struct parameter *r;
-   int len = 0;
-   int tot_len = 0;
-   int par = 0;
-   int len_sep = 0;
+	q = p;
+	r = NULL;
+	len_sep = strlen(sep);
 
-   q = p;
-   r = NULL;
-   len_sep = strlen(sep);
-
-   while(q) {
-      if(strcmp(q->id, id) == 0) {
-         if(par >= max_par) 
-            return max_par;
-         len = strlen(q->val);
-         if(tot_len + len + len_sep > max_len) {
-            return -(par + 1);
-         }
-         strcat(s, sep);
-         strcat(s, q->val);
-         tot_len += len + len_sep;
-         par++;
-         if(r == NULL) {
-            p = q->next;
-			Free(q->val);
-			Free(q);
-			q=p;
-			continue;
-         } else {
-            r->next = q->next;
-			Free(q->val);
-			Free(q);
-			q=r->next;
-         };
-      }
-      q = q->next;
-   }
-   return par;
-};
+	while(q) {
+	        if(strcmp(q->id, id) == 0) {
+		  if(par >= max_par) 
+		          return max_par;
+		  len = strlen(q->val);
+		  if(tot_len + len + len_sep > max_len) {
+		          return -(par + 1);
+		  }
+		  strcat(s, sep);
+		  strcat(s, q->val);
+		  tot_len += len + len_sep;
+		  par++;
+		  if(r == NULL) {
+		          p = q->next;
+			  Free(q->val);
+			  Free(q);
+			  q = p;
+			  continue;
+		  } else {
+		          r->next = q->next;
+			  Free(q->val);
+			  Free(q);
+			  q = r->next;
+		  }
+		}
+		q = q->next;
+	}
+	return par;
+}
 
 int printpar(struct parameter *p){
 		int n;

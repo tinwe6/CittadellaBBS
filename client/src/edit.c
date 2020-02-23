@@ -48,7 +48,7 @@
 int c_getline(char *str, int max, bool maiuscole, bool special);
 
 int get_text(struct text *txt, long max_linee, char max_col, bool abortp);
-int get_textl(struct text *txt, int max, int nlines);
+int get_textl(struct text *txt, size_t max, unsigned int nlines);
 int get_textl_cursor(struct text *txt, int max, int nlines, bool chat);
 void edit_file(char *filename);
 int enter_text(struct text *txt, int max_linee, char mode,
@@ -84,7 +84,7 @@ static void help_line_edit(void);
  * NB: prende max caratteri, la stringa deve aver allocato per lo meno
  *     (max + 1) bytes per contenere anche lo '\0' finale.
  */
-inline int c_getline(char *str, int max, bool maiuscole, bool special)
+int c_getline(char *str, int max, bool maiuscole, bool special)
 {
 	return getline_wrap(str, max, maiuscole, special, false, 0);
 }
@@ -482,9 +482,10 @@ int getline_scroll(const char *cmlprompt, int color, char *str, int max,
  *                  ctrl-u  Cancella tutto il testo
  *                  ctrl-x  Abort
  */
-int get_textl(struct text *txt, int max, int nlines)
+int get_textl(struct text *txt, size_t max, unsigned int nlines)
 {
-        int c, len = 0;
+        int c;
+	size_t len = 0;
 	char *str, *rpos;
 	char buf[LBUF], prompt_tmp;
 	
@@ -494,7 +495,7 @@ int get_textl(struct text *txt, int max, int nlines)
 	prompt_tmp = prompt_curr;
 	prompt_curr = P_EDT;
 
-	CREATE(str, char, (max+1)*nlines, 0);
+	CREATE(str, char, (max + 1)*nlines, 0);
 	rpos = str;
 	putchar('>');
         do {
@@ -601,7 +602,7 @@ void edit_file(char *filename)
                 }
                 editor_pid=(-1);
                 term_save();
-                term_mode(1);
+                term_mode();
         } else {
                 printf(_("Inserisci il testo.\n"
 			 "Premi return due volte per terminare.\n"));
@@ -695,7 +696,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
                 }
                 editor_pid = (-1);
                 term_save();
-                term_mode(1);
+                term_mode();
 		if ( (fp = fopen(filename, "r")) ) {
 			riga = 0;
 			if (txt == NULL)
@@ -764,7 +765,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
 				}
 			}
 		}
-		return get_text_full(txt, max_linee, 79, 0, 0, mdlist);
+		return get_text_full(txt, max_linee, 79, false, 0, mdlist);
         }
 	return 1;
 }
@@ -799,6 +800,8 @@ static void refresh_line_curs(const char *prompt, int promptlen, int color,
 {
 	int i;
 	
+	IGNORE_UNUSED_PARAMETER(promptlen);
+
 	printf("\r%s", prompt);
 	for (i = 0; (i < field) && (pos[i] != 0); putchar(pos[i++]));
 	for (   ; i < field; putchar(' '), i++);
@@ -859,7 +862,7 @@ static void Editor_Attr_Toggle(int *curr_col, int *curs_col, int attr)
 static int getline_col_wrap(int **str0, int **col0, int max, bool maiuscole,
 			    bool special, bool wrap, int pos);
 
-inline char * getline_col(int max, bool maiuscole, bool special)
+char * getline_col(int max, bool maiuscole, bool special)
 {
 	int *str;
 	int *col;
@@ -1264,7 +1267,8 @@ int get_text_col(struct text *txt, long max_linee, int max_col, bool abortp)
 			Free(str);
 			Free(col);
 			return (riga == 0) ? 0 : riga+1;
-		} else if (abortp && !strcmp((char *)str, "ABORT")) {/* TODO */
+		} else if (abortp && !strcmp((char *)str, "ABORT")) {
+		        /* TODO */
 			prompt_curr = prompt_tmp;
 			Free(str);
 			Free(col);

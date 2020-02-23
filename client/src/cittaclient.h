@@ -73,7 +73,7 @@ extern char room_type[];
 extern bool cestino;
 extern bool find_vroom;  /* TRUE se in room virtuale con i risultati ricerca */
 extern bool blog_vroom;  /* TRUE se in room virtuale dei blog                */
-//extern bool debug_mode;			   /* TRUE se in debug mode          */
+/* extern bool debug_mode; */  /* TRUE se in debug mode          */
 
 /* Riferimento a post */
 extern char postref_room[];

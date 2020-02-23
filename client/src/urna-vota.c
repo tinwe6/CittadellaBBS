@@ -77,7 +77,7 @@ void urna_vota(void)
       cml_printf(_("Ciao, alla prossima!\n"));
       free_elenco_ref(elenco);
      return;
-   };
+   }
 
    num=elenco[scelto]->num;
    free_elenco_ref(elenco);
@@ -95,7 +95,7 @@ void urna_vota(void)
    if(buf[0]!='2'){
 		   free_dati(&dati);
 		   return;
-   };
+   }
 
    par2strd(votato,&dati,"havotato",1);
 
@@ -113,7 +113,7 @@ void urna_vota(void)
    if(urna_prendi_voci(&dati)) {
      free_dati(&dati);
       return;
-   };
+   }
 
    printf(_("\n%sQuesito:%s\n"), hbold, hstop);
    stampa_quesito(dati.testo);
@@ -122,7 +122,7 @@ void urna_vota(void)
       stampa_voci(&dati);
    } else {
       stampa_proposte(&dati);
-   };
+   }
 
    /* 
     * res = s esci subito
@@ -229,7 +229,7 @@ void urna_vota(void)
    }
    free_dati(&dati);
    return;
-};
+}
 
 void send_proposte(char * testa_proposte[])
 {
@@ -241,7 +241,7 @@ void send_proposte(char * testa_proposte[])
                      continue;
       serv_putf("PARM prop|%s", testa_proposte[i]);
    }
-};
+}
 
 
 void stampa_proposte(struct urna_client *dati)
@@ -334,7 +334,7 @@ char vota_singola(struct urna_client *dati, char *risposta)
 
    if(c == Ctrl('X')) {
       return escidavvero();
-   };
+   }
 
    printf("%s%c%s\n", hbold, c, hstop);
    if(c != '=') {
@@ -385,7 +385,7 @@ char vota_multipla(struct urna_client *dati, char *risposta)
       c = inkey_elenco(elenco_scelte);
       if (c==Ctrl('X')){
            return 0;
-     };
+     }
 
       printf("%s%c%s:", hbold, c, hstop);
       fflush(stdout);
@@ -421,7 +421,7 @@ char vota_multipla(struct urna_client *dati, char *risposta)
       if((scelte_date > dati->max_voci) && !bianca) {
          printf(_("Stai scegliendo troppe voci!\n"));
          c = 0;
-      };
+      }
       printf("\n");
    } while(c != '!' && c != Ctrl('X'));
    return 0;

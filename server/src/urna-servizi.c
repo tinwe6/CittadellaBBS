@@ -65,12 +65,12 @@ void rs_expire(void)
    struct urna *u;
    time_t ora;
    time_t ferma;
-   int i;
+   unsigned long i;
 
    time(&ora);
    if(ustat.urna_testa==NULL){
          return;
-   };
+   }
    for(i=0; i<ustat.urne_slots*LEN_SLOTS; i++){
       u=*(ustat.urna_testa+i);
       if(u==NULL)
@@ -121,15 +121,17 @@ void rs_expire(void)
 int rs_trova(long progressivo)
 {
    struct urna **u;
-   int i;
+   unsigned long i;
+
+   assert(progressivo >= 0);
 
    if(ustat.urna_testa==NULL){
          return -1;
-   };
+   }
 
    for(i=0;i<ustat.urne_slots*LEN_SLOTS;i++){
       u = ustat.urna_testa+i;
-      if((*u)!=NULL && (*u)->progressivo == progressivo){
+      if((*u)!=NULL && (*u)->progressivo == (unsigned long)progressivo){
          return i;
      }
    }
@@ -147,7 +149,7 @@ struct urna *rs_trova_lettera(char strlettera[3])
 
    if(ustat.urna_testa==NULL){
          return NULL;
-   };
+   }
    for(i=0;i<ustat.urne_slots*LEN_SLOTS;i++){
       u = *(ustat.urna_testa+i);
       if(u!=NULL && u->conf->lettera == lettera)
@@ -225,7 +227,7 @@ unsigned char lettera_cod(char *stringa){
       char * strnum;
       if (strlen(stringa)==1){
             return ((unsigned char)stringa[0]-'a'+1);
-      };
+      }
       strnum=stringa+1;
       return (((char)stringa[0]-'a'+1)+26*atoi(strnum));
 }
@@ -242,7 +244,7 @@ void dealloca_urna(struct urna *u){
       u->dati=NULL;
       deall_conf(u->conf);
       u->conf=NULL;
-};
+}
 
 void deall_prop(struct urna_prop *upr){
       int i;
@@ -258,7 +260,7 @@ void deall_prop(struct urna_prop *upr){
                    Free(*(testa->proposte+i));
 
                Free (testa->proposte);
-            };
+            }
             old=testa;
             testa=testa->next;
             Free(old);
@@ -275,10 +277,10 @@ void deall_dati(struct urna_dati *udt){
                    
       if (udt->uvot!=NULL){
             Free(udt->uvot);
-      };
+      }
       if (udt->ucoll!=NULL){
             Free(udt->ucoll);
-      };
+      }
 
 #if URNA_GIUDIZI
       for(i=0;i<udt->num_voci;i++)
@@ -288,7 +290,7 @@ void deall_dati(struct urna_dati *udt){
 
       Free(udt->voti);
       Free(udt);
-};
+}
 
 void deall_conf(struct urna_conf* ucf){
 
@@ -304,16 +306,16 @@ void deall_conf(struct urna_conf* ucf){
                         Free(*(ucf->voci+i));
 
             Free(ucf->voci);
-      };
+      }
       Free(ucf);
-};
+}
 
 int rs_del_conf(struct urna_conf *ucf)
 {
    rs_del_voci(ucf->voci, ucf->num_voci);
    Free(ucf);
    return 0;
-};
+}
 
 int rs_del_voci(char **voci, int num_voci)
 {
@@ -330,10 +332,10 @@ int rs_del_voti(struct urna_voti *uvt)
 {
    if(uvt == NULL) {
       return 0;
-   };
+   }
    Free(uvt);
    return 0;
-};
+}
 
 int rs_del_dati(struct urna_dati *udt)
 {
@@ -344,12 +346,12 @@ int rs_del_dati(struct urna_dati *udt)
          if((udt->voti+i)!=NULL)
                if((udt->voti+i)->giudizi!=NULL)
                Free((udt->voti+i)->giudizi);
-   };
+   }
 #endif
    Free(udt->voti);
    Free(udt);
    return 0;
-};
+}
 
 int rs_del_prop(struct urna_prop *upr)
 {
@@ -364,12 +366,12 @@ int rs_del_prop(struct urna_prop *upr)
       testapr = testa->proposte;
       for(i = 0; i < testa->num; i++) {
          Free(testapr + i);
-      };
+      }
       testa = q->next;
       Free(q);
-   };
+   }
    return 0;
-};
+}
 
 #if U_DEBUG
 void dump_stat(){
@@ -392,7 +394,7 @@ void dump_urna(struct urna *u){
       dump_dati(u->dati);
       dump_prop(u->prop);
 	  return;
-};
+}
 
 void dump_prop(struct urna_prop *upr){
       int i;
@@ -403,7 +405,7 @@ void dump_prop(struct urna_prop *upr){
       testa=upr;
       if(testa==NULL){
             citta_logf("SYSLOG: proposte nulle");
-      };
+      }
       while(testa){
             if (testa->proposte!=NULL){
                   citta_logf("SYSLOG:\t p %d",testa->matricola);
@@ -411,7 +413,7 @@ void dump_prop(struct urna_prop *upr){
                 if((*testa->proposte+i))
                   citta_logf("SYSLOG:\t\t i:%d,%s",i,(*testa->proposte+i));
                }
-            };
+            }
             old=testa;
             testa=testa->next;
       }
@@ -450,7 +452,7 @@ void dump_dati(struct urna_dati *udt){
                         i, uvt->num_voti,uvt->tot_voti,
                         uvt->astensioni);
       }
-};
+}
 
 void dump_conf(struct urna_conf* ucf){
 
@@ -477,22 +479,22 @@ void dump_conf(struct urna_conf* ucf){
       citta_log("SYSLOG: testo");
       for(i=0;i<MAXLEN_QUESITO;i++){
       citta_logf("SYSLOG: testo %s", ucf->testo[i]);
-      };
+      }
 
       if (ucf->voci!=NULL)
             for(i=0;i<ucf->num_voci;i++)
                   citta_logf("SYSLOG: voce %d %s",i,*(ucf->voci+i));
-};
+}
 #endif
 
 void rs_free_data(){
 		rs_free_urne();
 		rs_free_stat();
-};
+}
 
 void rs_free_urne(){
 
-	int i;
+   unsigned long i;
    struct urna *punto;
 
    for(i = 0; i < LEN_SLOTS * (ustat.urne_slots); i++) {
@@ -514,7 +516,7 @@ void rs_free_stat(){
 				Free(p);
 				p=q;
 		}
-};
+}
 
 /*
 *ERRORI

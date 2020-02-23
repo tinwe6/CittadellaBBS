@@ -13,6 +13,7 @@
 * File : aide.c                                                             *
 *        Comandi generici per aide                                          *
 ****************************************************************************/
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,14 +59,20 @@ void bbs_shutdown(int mode, int reboot)
 
 	if (mode == 1) {
 		do {
-			pre = new_sint_def(_("Minuti di preavviso prima dello shutdown"), 15);
+			pre = new_sint_def(_(
+			        "Minuti di preavviso prima dello shutdown"),
+				15);
 			if (pre > (60*24))
-				printf(_("\n *** Massimo preavviso 24 ore!!\n\n"));
+				printf(_(
+				    "\n *** Massimo preavviso 24 ore!!\n\n"));
 		} while (pre > (60*24));
 	} else
 		pre = mode;
 	if (mode >= 0) {
-		printf(sesso ? _("Sei sicura di voler procedere allo shutdown del server? ") : _("Sei sicuro di voler procedere allo shutdown del server? "));
+		printf(sesso
+		? _("Sei sicura di voler procedere allo shutdown del server? ")
+		: _("Sei sicuro di voler procedere allo shutdown del server? ")
+		);
 		if (si_no() == 'n') {
 			printf("Uff...\n");
 			return;
@@ -342,10 +349,13 @@ void edit_news(void)
 			unlink(filename);
 			free(filename);
 	} else
-		get_text_full(txt, serverinfo.maxlineenews, 79, 0, C_NEWS,
+		get_text_full(txt, serverinfo.maxlineenews, 79, false, C_NEWS,
                               NULL); /* TODO sistemare MD */
 
-	printf(sesso ? _("\nSei sicura di voler mantenere le modifiche (s/n)? ") : _("\nSei sicuro di voler mantenere le modifiche (s/n)? "));
+	printf(sesso
+	       ? _("\nSei sicura di voler mantenere le modifiche (s/n)? ")
+	       : _("\nSei sicuro di voler mantenere le modifiche (s/n)? ")
+	       );
 	if (si_no() == 's') {
 		txt_rewind(txt);
 		while ( (str = txt_get(txt)))

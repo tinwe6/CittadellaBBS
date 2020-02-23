@@ -15,7 +15,7 @@
 ****************************************************************************/
 #include <stdlib.h>
 #include "extract.h"
-#include "memstat.h"
+#include "config.h"
 #include "parm.h"
 #include "utility.h"
 #include <string.h>
@@ -136,7 +136,7 @@ int cercapar(struct parameter *p, char *id)
       if(strcmp(q->id, id) == 0)
          break;
       q = q->next;
-   };
+   }
 
    if(q == NULL) {
       return -1;
@@ -183,18 +183,20 @@ long int par2str(char *s, struct parameter *p, char *id, int max)
 
    struct parameter *q;
 
+   assert(max >= 0);
+
    q = p;
    while(q) {
       if(strcmp(q->id, id) == 0)
          break;
       q = q->next;
-   };
+   }
 
    if(q == NULL) {
       return -1;
-   };
+   }
 
-   if(strlen(q->val) > max) {
+   if(strlen(q->val) > (size_t)max) {
       strncpy(s, q->val, max - 1);
       strcat(s, "");
       p = q;
@@ -220,14 +222,15 @@ long int par2str(char *s, struct parameter *p, char *id, int max)
 int pars2strs(char **s, struct parameter *p, char *id, int max_char,
 			   	int max_par)
 {
-
    struct parameter *q;
    int par = 0;
+
+   assert(max_char >= 0);
 
    q = p;
    while(q) {
       if(strcmp(p->id, id) == 0) {
-         if(strlen(q->val) > max_char) {
+	 if(strlen(q->val) > (size_t)max_char) {
             p = q;
             return -(par + 1);
          }
@@ -236,16 +239,16 @@ int pars2strs(char **s, struct parameter *p, char *id, int max_char,
          if(par > max_par) {
             p = q;
             return par;
-         };
-      };
+         }
+      }
       q = q->next;
-   };
+   }
 
    if(par != 0) {
       p = NULL;
-   };
+   }
    return par;
-};
+}
 
 /*
  * copia tutti i parametri con id=id successivi a p (compreso)
@@ -286,15 +289,15 @@ int pars2str(void *s, struct parameter *p, char *id, int max_par, int max_len, c
          par++;
          if(par > max_par) {
             return par;
-         };
+         }
       }
       q = q->next;
    }
    if(par != 0) {
       p = NULL;
-   };
+   }
    return par;
-};
+}
 
 /*
  * stesse funzioni (tranne la prima)
@@ -321,6 +324,8 @@ long int par2strd(char *s, struct sessione *t, char *id, int max_char)
    struct parameter *r;         /*  struct prec */
    char newid[MAXLEN_PARM];
 
+   assert(max_char >= 0);
+
    q = t->parm;
    r = NULL;
    while(q) {
@@ -328,13 +333,13 @@ long int par2strd(char *s, struct sessione *t, char *id, int max_char)
          break;
       r = q;
       q = q->next;
-   };
+   }
 
    if(q == NULL) {
       return -1;
-   };
+   }
 
-   if(strlen(q->val) > max_char) {
+   if(strlen(q->val) > (size_t)max_char) {
       strncpy(s, q->val, max_char - 1);
       strcat(s, "");
 	  strncpy(newid,"bad-", MAXLEN_PARM);
@@ -347,7 +352,7 @@ long int par2strd(char *s, struct sessione *t, char *id, int max_char)
       t->parm = q->next;
    } else {
       r->next = q->next;
-   };
+   }
    Free(q->val);
    Free(q);
    return 0;
@@ -382,7 +387,7 @@ int pars2strsd(char **ss, struct sessione *t, char *id,
    mp=max_par;
    if(mp<0){
 		   mp=-mp;
-   };
+   }
 
    q = t->parm;
    r = NULL;
@@ -413,14 +418,14 @@ int pars2strsd(char **ss, struct sessione *t, char *id,
 			Free(q->val);
 			Free(q);
 			q=r->next;
-         };
-      };
+         }
+      }
       r = q;
       q = q->next;
-   };
+   }
 
    return par;
-};
+}
 
 /*
  * copia tutti i parametri con id=id successivi a p (compreso)
@@ -475,12 +480,12 @@ int pars2strd(void *s, struct sessione *t, char *id, int max_par, int max_len, c
 			Free(q->val);
 			Free(q);
 			q=r->next;
-         };
+         }
       }
       q = q->next;
    }
    return par;
-};
+}
 
 int printpar(struct sessione *t)
 {

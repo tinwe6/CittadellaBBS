@@ -18,7 +18,7 @@
 
 /* Prototipi delle funzioni in terminale.c */
 void reset_term(void);
-void term_mode(int mode);
+void term_mode(void);
 void term_save(void);
 
 /* Variabili globali */

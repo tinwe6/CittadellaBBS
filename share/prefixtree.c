@@ -162,14 +162,14 @@ static reflist_t *ptotLook4Word(ptree_t *pt, ptnode_t *t,
 	    for (i = 0, v = t->reflist; v; v = v->next, i++) {
 		rlAddReference(pt, &r, v->ref, 1);
 	    }
-//	    printf("Found %d References.\n", i);
+	    /* printf("Found %d References.\n", i); */
 	} 
 	if (!exact)
 	    for (i = 0; i < t->nkids; i++) {
 		if ( (v = ptotLook4Word(pt, &(t->kids[i]), w, exact)) ) {
-		  //reflist_t *lp;
+		  /* reflist_t *lp; */
 
-		  //lp=NULL;
+		  /* lp=NULL; */
 		    for (l = v; l; l = rlNext(l)) 
 			rlAddReference(pt, &r, l->ref, 1);
 		} 
@@ -190,15 +190,15 @@ static void refFree(reference_t *r) {
 }
 
 
-static void rlDeallocate(ptree_t *pt, reflist_t *v) {
-  for (; v; v = rlNext(v));
+static void rlDeallocate(reflist_t *v) {
+        for (; v; v = rlNext(v));
 }
 
 
 static void ptotDeallocate(ptree_t *pt, ptnode_t *t) {
     int i;
 
-    if (t->reflist) rlDeallocate(pt, t->reflist);
+    if (t->reflist) rlDeallocate(t->reflist);
 
     for (i = 0; i < t->nkids; i++)
 	ptotDeallocate(pt, &(t->kids[i]));
@@ -209,9 +209,10 @@ static void ptotDeallocate(ptree_t *pt, ptnode_t *t) {
 /* INTERFACE */
 
 int _rfDefCmp(void *a, void *b) {
+    IGNORE_UNUSED_PARAMETER(a);
+    IGNORE_UNUSED_PARAMETER(b);
     return(-1);
 }
-
 
 ptree_t *ptCreate(int (*rfcmp)(void *, void *)) {
     ptree_t *t;
@@ -227,7 +228,7 @@ ptree_t *ptCreate(int (*rfcmp)(void *, void *)) {
     t->tree->reflist=NULL;
     t->tree->nkids=0;
     t->tree->kids=NULL;
-    t->refCmp   = rfcmp?rfcmp:_rfDefCmp;
+    t->refCmp = rfcmp ? rfcmp : _rfDefCmp;
 
     return(t);
 
@@ -241,7 +242,7 @@ reference_t *refCreate(void *data, size_t n) {
   CREATE(r, reference_t, 1, TYPE_PTREF);
   /*r = (reference_t *)malloc(sizeof(reference_t));*/
   CREATE(r->data, void *, n, TYPE_VOIDSTAR);
-  //r->data = (void *)malloc(n); /* (*) Qui CREATE non puo' essere usato?? */
+  /*r->data = (void *)malloc(n);*/ /* (*) Qui CREATE non puo' essere usato?? */
   memcpy(r->data, data, n);
   r->counter = 0;
   return(r);

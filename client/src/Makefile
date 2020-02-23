@@ -40,7 +40,7 @@ WFLAGS = -ansi -pedantic -W -Wtraditional -Wshadow -Wpointer-arith \
 #MYFLAGS = -g -Wall -pedantic -Wstrict-prototypes -Wmissing-prototypes \
 #		  -Wconversion
 #MYFLAGS = -Wall -DUTMPLIB -O3 -fomit-frame-pointer
-MYFLAGS = -g -Wall -DUTMPLIB
+MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DUTMPLIB
 
 #flags for profiling (see hacker.doc for more information)
 #PROFILE = -pg

@@ -19,8 +19,10 @@
 #define CFG_FILE_SYSTEM "/system/cittaclient.ini"
 #else
 #ifdef MACOSX        /* MacOS/X path for config file   */
-#define CFG_FILE_USER   "~/Library/Preferences/cittaclient.rc"
-#define CFG_FILE_USER2  "~/Library/Application Support/cittaclient/cittaclient.rc"
+#define CFG_FILE_USER   "~/.cittaclientrc"
+#define CFG_FILE_USER2  "~/.cittaclient/cittaclient.rc"
+#define CFG_FILE_USER3  "~/Library/Preferences/cittaclient.rc"
+#define CFG_FILE_USER4  "~/Library/Application Support/cittaclient/cittaclient.rc"
 #define CFG_FILE_SYSTEM "/etc/cittaclient.rc"
 #else                /* UNIX path for config file      */
 #define CFG_FILE_USER   "~/.cittaclientrc"
@@ -51,7 +53,13 @@
 #ifdef LOCAL
 /* Vettore dei path ai file di configurazione standard. Il client legge
  * il primo di questi che trova.                                        */
-static const char * cfg_stdrc[] = { CFG_FILE_USER, CFG_FILE_USER2,
+
+static const char * cfg_stdrc[] = { CFG_FILE_USER,
+				    CFG_FILE_USER2,
+#ifdef MACOSX
+				    CFG_FILE_USER3,
+				    CFG_FILE_USER4,
+#endif
 				    CFG_FILE_SYSTEM, NULL };
 
 static int cfg_line_num; /* Here is stored the line number being parsed. */
@@ -147,6 +155,9 @@ void cfg_read(char *rcfile, bool no_rc)
 	char buf[LBUF], *filename;
 	size_t bufsize = LBUF;
 	int fine, ret;
+#else
+	IGNORE_UNUSED_PARAMETER(rcfile);
+	IGNORE_UNUSED_PARAMETER(no_rc);
 #endif
 
 	cfg_init();
@@ -163,8 +174,10 @@ void cfg_read(char *rcfile, bool no_rc)
 				fprintf(stderr, LEGGO_FCONF, CFG_FILE_USER);
 			} else
 				fprintf(stderr, _("\nFile di configurazione %s non trovato.\nUso default.\n"), rcfile);
-		} else /* Cerca i file di configurazione standard. */
+		} else {
+		        /* Cerca i file di configurazione standard. */
 			fp = cfg_open();
+		}
 
 		if (fp != NULL) {
 			/* Parse configuration file */
@@ -381,7 +394,7 @@ static int cfg_parse_line(const char *buf, size_t bufsize)
 	bool path;
 
 	toklen = cfg_toklen(buf, bufsize);
-	arg = buf+toklen+1;
+	arg = buf + toklen + 1;
 	while (*config[i].token != '\0') {
 		path = false;
 		if (!strncmp(config[i].token, buf, toklen)) {
@@ -476,7 +489,7 @@ static int cfg_getline(char *buf, size_t *bufsize, FILE *fp)
 
 	register char *p, *i;
 	register int curr_state;
-	int n = 0; /* num char written in buf */
+	size_t n = 0; /* num char written in buf */
 	char line[LBUF];
 
 	i = buf;
@@ -485,8 +498,11 @@ static int cfg_getline(char *buf, size_t *bufsize, FILE *fp)
 	while( fgets(line, LBUF, fp) != NULL) {
 		cfg_line_num++;
 		curr_state = CFG_TOKEN;
-		for (p = line; (*p) && (curr_state != CFG_END) &&
-			     (curr_state != CFG_CONTINUE); p++) {
+		for (p = line;
+		     (*p) && (n < *bufsize - 1)
+		       && (curr_state != CFG_END)
+		       && (curr_state != CFG_CONTINUE);
+		     p++) {
 			switch (*p) {
 			case '#':
 			case '\r':
