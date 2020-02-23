@@ -85,7 +85,7 @@ int save_urne(int level)
 {
    struct urna *punto;
    unsigned int totali = 0, salvate = 0, errori = 0;
-   int i;
+   unsigned long i;
 
    citta_log("SYSTEM:salvataggio sondaggi");
 
@@ -404,17 +404,15 @@ int save_dati(struct urna_dati *udt, long int progressivo)
       return (-1);
    }
 
-   if(fwrite(udt->uvot, sizeof(long int),
-             (udt->voti_nslots) * LEN_SLOTS,
-             fp) != (udt->voti_nslots) * LEN_SLOTS) {
+   if(fwrite(udt->uvot, sizeof(long int), (udt->voti_nslots) * LEN_SLOTS, fp)
+      != (unsigned long)(udt->voti_nslots) * LEN_SLOTS) {
       citta_logf("SYSLOG: non scrivo i votanti");
       fclose(fp);
       return (-1);
    }
 
-   if(fwrite
-      (udt->ucoll, sizeof(long int), (udt->coll_nslots) * LEN_SLOTS,
-       fp) != (udt->coll_nslots) * LEN_SLOTS) {
+   if(fwrite(udt->ucoll, sizeof(long int), (udt->coll_nslots) * LEN_SLOTS, fp)
+      != (unsigned long)(udt->coll_nslots) * LEN_SLOTS) {
       citta_logf("SYSLOG: non scrivo i votanti ");
       fclose(fp);
       return (-1);
@@ -501,7 +499,7 @@ int save_voti(struct urna_voti *uvt, int progressivo, int num_voci)
 int load_stat()
 {
    FILE *fp;
-   unsigned int letto;
+   int letto;
    unsigned int i, j;
    unsigned long progressivo;
    unsigned long int alloc;
@@ -800,6 +798,8 @@ struct urna_prop *load_prop(unsigned long progressivo, int modo)
 {
    struct urna_prop *upr = NULL;
 
+   IGNORE_UNUSED_PARAMETER(progressivo);
+   IGNORE_UNUSED_PARAMETER(modo);
 #if 0
    /*
     * nel caso si volesse fare qualcosa
@@ -926,9 +926,8 @@ static int compstr(const void *a, const void *b)
 struct urna_dati *load_dati(unsigned long progressivo, int modo)
 {
    FILE *fp;
-   unsigned long int alloc;
    struct urna_dati *udt;
-   long int letti;
+   long int letti, alloc;
 
    if(load_file(URNA_DIR, FILE_UDATA, progressivo, &fp)) {
       citta_logf("SYSLOG: problemi con %s", FILE_UDATA);
@@ -1055,6 +1054,8 @@ struct urna_voti *load_voti(unsigned long progressivo, int num_voci, int modo)
          fclose(fp);
          return (NULL);
       }
+#else
+      IGNORE_UNUSED_PARAMETER(modo);
 #endif
    }
 

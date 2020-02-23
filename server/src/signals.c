@@ -121,6 +121,8 @@ void logsig(void)
 
 void handler_messaggio(int sig)
 {
+	IGNORE_UNUSED_PARAMETER(sig);
+
         signal(SIGUSR1, handler_messaggio);
 	segnale_messaggio = true;
 }

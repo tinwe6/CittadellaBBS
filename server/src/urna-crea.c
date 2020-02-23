@@ -99,6 +99,8 @@ int init_urna(struct sessione *t)
          return (0);
       }
    }
+#else
+   IGNORE_UNUSED_PARAMETER(t);
 #endif
 
    if(ustat.attive >= MAX_REFERENDUM)
@@ -705,7 +707,7 @@ unsigned char lettera_successiva()
                                          * * * lo 0 e il 255 non sono usati
                                          */
 
-   for(i = 0; i < ustat.urne_slots * LEN_SLOTS; i++) {
+   for(i = 0; (unsigned long)i < ustat.urne_slots * LEN_SLOTS; i++) {
       testa = *(ustat.urna_testa + i);
       if(testa != NULL) {
          lettera = testa->conf->lettera;

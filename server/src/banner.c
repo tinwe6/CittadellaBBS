@@ -227,7 +227,8 @@ void cmd_lbgt(struct sessione *t)
  */
 void cmd_lbad(struct sessione *t, char *cmd)
 {
-
+        IGNORE_UNUSED_PARAMETER(cmd);
+        cprintf(t, "%d Not yet implemented\n", ERROR);
 }
 
 /*
@@ -235,7 +236,8 @@ void cmd_lbad(struct sessione *t, char *cmd)
  */
 void cmd_lbch(struct sessione *t, char *cmd)
 {
-
+        IGNORE_UNUSED_PARAMETER(cmd);
+        cprintf(t, "%d Not yet implemented\n", ERROR);
 }
 
 void save_banners(struct sessione *t)

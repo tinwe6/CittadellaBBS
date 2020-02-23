@@ -540,6 +540,9 @@ static void http_send_userlist(struct http_sess *p, char *code, int lang)
 	struct tm *tmst;
         struct lista_ut *punto;
 
+	/* TODO: implement lang */
+	IGNORE_UNUSED_PARAMETER(lang);
+
 	strcpy(code, "200 OK");                    
 	wprintf(p, CODA_BODY, HTML_HEADER);
 
@@ -632,6 +635,9 @@ static void http_send_profile(struct http_sess *p, char *req, char *code,
 {
         struct dati_ut *utente;
 	char buf[LBUF];
+
+	/* TODO: implement lang */
+	IGNORE_UNUSED_PARAMETER(lang);
 
 #ifdef DEBUG_CITTAWEB
 	citta_logf("HTTP: richiesta profile %s", req);

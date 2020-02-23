@@ -365,6 +365,7 @@ void cripta(char *pwd)
         /* Encrypt the password */
         pwd = crypt(pwd, salt);
 #else
+	IGNORE_UNUSED_PARAMETER(pwd);
         return;
 #endif
 }

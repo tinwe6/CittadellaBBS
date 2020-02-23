@@ -45,12 +45,4 @@ extern char livello_iniziale; /* DA SPOSTARE IN SYSCONFIG */
 extern long TIC_TAC;
 extern int FREQUENZA;
 
-/*
-#define TIC_TAC   10000
- */
-       /* il server esegue 100 cicli/sec */
-/*
-#define FREQUENZA   100
-*/
-
 #endif /* global.h */

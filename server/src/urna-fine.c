@@ -128,7 +128,9 @@ int rs_end(struct urna *u)
    voti_validi = nvoti - bianche;
    l_max = 0;
    for(i = 0; i < ucf->num_voci; i++) {
-      l_max = l_max > strlen(*(voce + i)) ? l_max : strlen(*(voce + i));
+      l_max = (unsigned long)l_max > strlen(*(voce + i))
+	      ? l_max 
+	      : strlen(*(voce + i));
    }
 
    l_max += 3;
@@ -469,6 +471,8 @@ int res_votazione(struct urna *u, int nvoti, struct text *txt, int l_max)
    struct urna_voti *uvt;
    char **voce;
    int num_voci;
+
+   IGNORE_UNUSED_PARAMETER(nvoti);
 
    uvt = u->dati->voti;
    voce = u->conf->voci;

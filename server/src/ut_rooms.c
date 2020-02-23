@@ -160,13 +160,13 @@ void utr_save(struct sessione *t)
 {
 	FILE *fp;
 	char filename[LBUF], bak[LBUF];
-	long nslot;
+	unsigned long nslot;
 	unsigned int err=0;
 	
 	if ((t->utente == NULL) || (t->utente->livello < LVL_NON_VALIDATO))
 		return;
 
-	nslot = dati_server.utr_nslot;
+	nslot = (unsigned long)dati_server.utr_nslot;
 	if (nslot == 0)
 		return;
 	
@@ -181,9 +181,9 @@ void utr_save(struct sessione *t)
 		rename(bak, filename);
 		return;
 	}
-	err+=(fwrite(t->fullroom, sizeof(long), nslot, fp)!=nslot);
-	err+=(fwrite(t->room_flags, sizeof(long), nslot, fp)!=nslot);
-	err+=(fwrite(t->room_gen, sizeof(long), nslot, fp)!=nslot);
+	err += (fwrite(t->fullroom, sizeof(long), nslot, fp) != nslot);
+	err += (fwrite(t->room_flags, sizeof(long), nslot, fp) != nslot);
+	err += (fwrite(t->room_gen, sizeof(long), nslot, fp) != nslot);
 	fclose(fp);
 	if(err){
 		  citta_logf("UTR_DATA errore in scrittura del file utente #%ld.",

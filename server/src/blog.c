@@ -333,7 +333,7 @@ static unsigned long blog_newmsg(blog_t *blog, long user,
         fullroom = dfr_getfullroom(blog->msg->dfr, user);
 	lowest = fm_lowest(blog->room_data->fmnum);
 
-	for (i = 0; i < blog->room_data->maxmsg; i++)
+	for (i = 0; i < (unsigned long)blog->room_data->maxmsg; i++)
 		if (blog->msg->num[i] >= lowest) {
 			(*nummsg)++;
 			if (blog->msg->num[i] > fullroom)
@@ -594,7 +594,10 @@ static void dfr_expand(dfr_t *dfr)
 /* TODO : da scrivere! */
 static void dfr_clean(dfr_t *dfr, long lowest)
 {
-        /*
+        IGNORE_UNUSED_PARAMETER(dfr);
+        IGNORE_UNUSED_PARAMETER(lowest);
+
+#if 0
         int i;
 
 	for (i = 0; i < dfr->num; i += 2) {
@@ -605,7 +608,7 @@ static void dfr_clean(dfr_t *dfr, long lowest)
 			i -= 2;
 		}
 	}
-        */
+#endif
 }
 
 #endif /* USE_BLOG */

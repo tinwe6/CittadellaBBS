@@ -24,7 +24,7 @@ VPATH = $(libdir)
 # Flag SANE_STAT to check ustat: remember to create a file sane_stat
 # in server/lib/urna/
 #MYFLAGS = -g -Wall -DDEBUG -D_GNU_SOURCE
-MYFLAGS = -g -std=c99 -pedantic -Wall -DDEBUG -D_GNU_SOURCE -DSANE_STAT
+MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DDEBUG -D_GNU_SOURCE -DSANE_STAT
 
 # Flags for profiling (see hacker.doc for more information)
 #PROFILE =

@@ -97,6 +97,8 @@ void cmd_rlst(struct sessione *t, char *cmd)
         struct room *punto;
 	struct dati_ut *ra;
 
+	IGNORE_UNUSED_PARAMETER(cmd);
+
 	cprintf(t, "%d Lista Room (RLST)\n", SEGUE_LISTA);
 
 	for (punto = lista_room.first; punto; punto = punto->next) {
@@ -291,7 +293,9 @@ void cmd_rdel(struct sessione *t, char *cmd)
 {
 	struct room *r, *room;
 	struct text *txt;
-	
+
+	IGNORE_UNUSED_PARAMETER(cmd);
+
 	if (t->utente->livello < t->room->data->wlvl) {
 		cprintf(t, "%d\n", ERROR+ACC_PROIBITO);
 		return;

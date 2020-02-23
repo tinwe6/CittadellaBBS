@@ -235,6 +235,7 @@ static const struct comando cmd_list[] = {
 *****************************************************************************/
 void cmd_noop(struct sessione *t)
 {
+        IGNORE_UNUSED_PARAMETER(t);
 }
 
 void cmd_echo(struct sessione *t, char *buf)

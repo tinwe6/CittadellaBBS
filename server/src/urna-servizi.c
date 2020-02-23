@@ -65,7 +65,7 @@ void rs_expire(void)
    struct urna *u;
    time_t ora;
    time_t ferma;
-   int i;
+   unsigned long i;
 
    time(&ora);
    if(ustat.urna_testa==NULL){
@@ -121,7 +121,9 @@ void rs_expire(void)
 int rs_trova(long progressivo)
 {
    struct urna **u;
-   int i;
+   unsigned long i;
+
+   assert(progressivo >= 0);
 
    if(ustat.urna_testa==NULL){
          return -1;
@@ -129,7 +131,7 @@ int rs_trova(long progressivo)
 
    for(i=0;i<ustat.urne_slots*LEN_SLOTS;i++){
       u = ustat.urna_testa+i;
-      if((*u)!=NULL && (*u)->progressivo == progressivo){
+      if((*u)!=NULL && (*u)->progressivo == (unsigned long)progressivo){
          return i;
      }
    }
@@ -492,7 +494,7 @@ void rs_free_data(){
 
 void rs_free_urne(){
 
-	int i;
+   unsigned long i;
    struct urna *punto;
 
    for(i = 0; i < LEN_SLOTS * (ustat.urne_slots); i++) {

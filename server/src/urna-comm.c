@@ -81,7 +81,8 @@ void cmd_slst(struct sessione *t, char *arg)
    char lettera[3];
    char votabile = 0, votato = 0;
    int zap = 0;
-   int i, room_zap, tipo, room_aide;
+   int room_zap, tipo, room_aide;
+   unsigned long i;
    char posticipabile = 0;
 
    cprintf(t, "%d\n", SEGUE_LISTA);
@@ -107,32 +108,19 @@ void cmd_slst(struct sessione *t, char *arg)
 	  }
       rm = room_findn(ucf->room_num);
 
-/* 
- * se
- * l'urna e`
- * in una stanza
- * cancellata |-> Lobby
- */
-
+      /* se l'urna e` in una stanza cancellata |-> Lobby */
       if(rm == NULL) {
          citta_logf("room %ld cancellata, uso Lobby??", ucf->room_num);
          rm = room_find(lobby);
       }
 
-      /*
-       * * e` etico controllare il criterio livello e non il resto?
-       */
-
+      /* e` etico controllare il criterio livello e non il resto? */
       if((ucf->crit == CV_LIVELLO) &&
          (t->utente->livello < ucf->val_crit.numerico)) {
          continue;
       }
 
-      /* 
-       * se l'utente non conosce la stanza salta
-        */
-
-
+      /* se l'utente non conosce la stanza salta */
       if(room_known(t, rm) == 0) {
          continue;
       }
@@ -148,7 +136,7 @@ void cmd_slst(struct sessione *t, char *arg)
        * votabile, votato, posticipabile, proponente
        */
 
-	  room_aide=rm->data->master;
+      room_aide=rm->data->master;
       /* proponente = (u->dati->posticipo < MAX_POSTICIPI); */
       cod_lettera(ucf->lettera, lettera);
       posticipabile = (u->dati->posticipo < MAX_POSTICIPI);

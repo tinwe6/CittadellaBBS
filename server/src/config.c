@@ -24,8 +24,8 @@
 
 /* Configurazione del sistema */
 bool nameserver_lento = false;
-long TIC_TAC = 10000;    /* il server esegue 100 cicli/sec */
-int  FREQUENZA = 100;    /* TODO frequenza = TIC_TAC/100 ? */
+long TIC_TAC = 10000;    /* usec tra cicli del server      */
+int  FREQUENZA = 100;    /* il server esegue 100 cicli/sec */
 
 /* Opzioni relative al crashsave */
 bool auto_save = true;

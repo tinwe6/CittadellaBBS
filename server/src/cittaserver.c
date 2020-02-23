@@ -646,7 +646,7 @@ void ciclo_server(int s)
 	t_nullo.tv_sec = 0;
 	t_nullo.tv_usec = 0;
 
-        TIC_TAC = 1000000 / FREQUENZA; /* microsecondi tra i cicli del server */
+        TIC_TAC = 1000000 / FREQUENZA;/* microsecondi tra i cicli del server */
 
 	tictac.tv_sec = 0;
 	tictac.tv_usec = TIC_TAC; /* microseconds between two cycles */
@@ -875,8 +875,9 @@ void ciclo_server(int s)
 		/* Caccio dalla Chat gli utenti idle */
 		for (punto = lista_sessioni; punto; punto = prossimo) {
 			prossimo = punto->prossima;
-			if (punto->canale_chat && (punto->chat_timeout >
-						   CHAT_TIMEOUT*60*FREQUENZA))
+			if (punto->canale_chat
+			    && (punto->chat_timeout >
+				(unsigned long)CHAT_TIMEOUT*60*FREQUENZA))
 				chat_timeout(punto);
 		}
 
