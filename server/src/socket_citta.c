@@ -26,10 +26,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-/* #include <sys/resource.h> */
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <arpa/inet.h> /* for inet_aton() */
 
 #include "socket_citta.h"
 #include "cittaserver.h"
@@ -44,19 +44,36 @@
 int iniz_socket(int porta)
 {
 	int s;
-  	int opt=1;
+  	int opt = 1;
 	char nomehost[MAX_NOMEHOST+1];
+	const char *ipstr = "127.0.0.1";
 	struct sockaddr_in sa;
-	struct hostent *hp;
+	struct hostent *hp = NULL;
+	struct in_addr ip;
   
 	bzero(&sa, sizeof(struct sockaddr_in));
-	gethostname(nomehost, MAX_NOMEHOST);
-  
-	hp = gethostbyname(nomehost);
-	if (hp == NULL) {
-		Perror("gethostbyname");
-		exit(1);
+	if (gethostname(nomehost, sizeof nomehost) == -1) {
+	        Perror("gethostname");
+	} else {
+	        hp = gethostbyname(nomehost);
+		if (hp == NULL) {
+		        citta_logf("gethostbyname: %s", hstrerror(h_errno));
+		}
 	}
+
+	if (hp == NULL) {
+		if (!inet_aton(ipstr, &ip)) {
+		        citta_logf("can't parse IP address %s", ipstr);
+			exit(1);
+		}
+		hp = gethostbyaddr((const void *)&ip, sizeof ip, AF_INET);
+		if (hp == NULL) {
+		  citta_logf("gethostbyaddr: %s", hstrerror(h_errno));
+		  exit(1);
+		}
+	}
+	citta_logf("name associated with %s: %s", ipstr, hp->h_name);
+
 	sa.sin_family = hp->h_addrtype;
 	sa.sin_port   = htons(porta);
   
