@@ -21,7 +21,7 @@
 
 /* Prototipi delle funzioni in questo file */
 void reset_term(void);
-void term_mode(int mode);
+void term_mode(void);
 void term_save(void);
 
 /* Variabili globali */
@@ -31,12 +31,12 @@ struct termios term_attr;   /* Settaggi attuali                 */
 /******************************************************************************
 ******************************************************************************/
 
-void reset_term()
+void reset_term(void)
 {
         tcsetattr(STDIN_FILENO, TCSANOW, &save_attr);
 }
 
-void term_mode(int m)
+void term_mode(void)
 {
         /* Assicuriamoci che stdin sia un terminale */
         if (!isatty(STDIN_FILENO)) {
@@ -51,7 +51,7 @@ void term_mode(int m)
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_attr);
 }
 
-void term_save()
+void term_save(void)
 {
         tcgetattr(STDIN_FILENO, &save_attr);
         atexit(reset_term);

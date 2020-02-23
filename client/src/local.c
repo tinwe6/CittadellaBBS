@@ -80,7 +80,7 @@ void subshell (void)
 		}
 		shell_pid = (-1);
 		term_save();
-		term_mode(1);
+		term_mode();
 		serv_puts("LSSH 0");
 		serv_gets(buf);
 		if (buf[0] != '2') 

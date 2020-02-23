@@ -638,6 +638,8 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
 
 void ordina_ref(int n_rs, struct elenco_ref *elenco[], char *format)
 {
+        IGNORE_UNUSED_PARAMETER(format);
+
         qsort(elenco, n_rs, sizeof(struct elenco_ref *), cmp_ref);
 }
 
@@ -665,31 +667,32 @@ static int cmp_ref(const void *a, const void *b){
 
 void print_ref(int n_rs, struct elenco_ref *elenco[], const char *format)
 {
-   struct elenco_ref *ref;
-   int i,maxtit,linee;
+        struct elenco_ref *ref;
+	size_t maxtit;
+	int i, linee;
 
-   maxtit=0;
-   linee=0;
+	maxtit = 0;
+	linee = 0;
 
-
-   setcolor(C_URNA);
-   if(index(format,'T')){
-   for(i = 0; i < n_rs; i++){
-      ref = elenco[i];
-       if(strlen(ref->titolo)>maxtit)
-		   maxtit=strlen(ref->titolo);
-	   }
-   }
-
-   for(i = 0; i < n_rs; i++){
-           printf("\n");
-		   linee+=print_sondaggio(elenco[i],format,maxtit);
-	if (linee>NRIGHE-2){
-			hit_any_key();
-			linee=0;
+	setcolor(C_URNA);
+	if (index(format,'T')) {
+	        for (i = 0; i < n_rs; i++) {
+		        ref = elenco[i];
+			if (strlen(ref->titolo) > maxtit) {
+			        maxtit = strlen(ref->titolo);
+			}
+		}
 	}
-   }
-   return;
+
+	for(i = 0; i < n_rs; i++) {
+	        printf("\n");
+		linee += print_sondaggio(elenco[i], format, maxtit);
+		if (linee > NRIGHE-2) {
+		        hit_any_key();
+			linee = 0;
+		}
+	}
+	return;
 }
 
 /*

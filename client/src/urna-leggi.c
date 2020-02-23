@@ -45,23 +45,22 @@ void urna_check(void);
  * Restituisce il numero di risposte possibili, -1 se non lo trova.
  * urna dati contiene un puntatore a urna_scelte, che contiene
  */
-
 void urna_read(long n)
+/* TODO: parametro n non implementato */
 {
    struct urna_client dati;
    long num,err;
    struct elenco_ref *elenco[MAX_URNE];
-   int n_rs=0;
+   int n_rs = 0;
    int scelto;
    const char this_format[50]="t%t20l # z%t40Tipo: t%n%s  finisce il% %t20s%n";
    
+   IGNORE_UNUSED_PARAMETER(n);
 
    azzera_dati(&dati);
 
-   /* 
-    * per leggere il sondaggio chiede solo le liste non zappate
-    * (In ogni caso lo fa il server...)
-    */
+   /* per leggere il sondaggio chiede solo le liste non zappate
+    * (In ogni caso lo fa il server...)                         */
 
    setcolor(C_QUESTION);
 
@@ -139,10 +138,8 @@ void urna_read(long n)
    			stampa_voci(&dati);
    }
    printf("\n");
-
-   /* 
-	* diventa una funzione?
-	*/
+ 
+   /* diventa una funzione? */
    switch (dati.modo) {
    case MODO_SCELTA_SINGOLA:
 	  cml_printf(_("Si pu&ograve dare una sola risposta.\n"));
@@ -163,9 +160,8 @@ void urna_read(long n)
    cml_print(_("\n\te si concluder&agrave <b>"));
    stampa_datall(dati.stop);
    cml_print(_("</b>.\n\nPossono votare tutti gli utenti<b>"));
-   /* 
-	* diventa una funzione?
-	*/
+
+   /* diventa una funzione? */
    switch (dati.criterio) {
    case 0:
 	  break;
@@ -196,12 +192,12 @@ void urna_read(long n)
    return;
 }
 
-		/*
-		 * Lista dei Sondaggi attivi.
-		 * se level =1 tutti
-		 * altrimenti solo quelli delle room non zappate
-		 */
 
+/*
+ * Lista dei Sondaggi attivi.
+ * se level =1 tutti
+ * altrimenti solo quelli delle room non zappate
+ */
 void urna_list(int level)
 {
    int n_rs;
@@ -218,9 +214,9 @@ void urna_list(int level)
 }
 
 
-		/* Controlla se ci sono sondaggi/referendum da votare.
-		 * Viene eseguita al login.
-		 */
+/* Controlla se ci sono sondaggi/referendum da votare.
+ * Viene eseguita al login.
+ */
 void urna_check(void)
 {
    int i, n_rs = 0, n_s = 0, n_r = 0;
@@ -243,14 +239,10 @@ void urna_check(void)
 		   }
    }
 
-   /* 
-	* dovrebbe diventare un
-	* get_ref
-	*/
-
+   /*  dovrebbe diventare un get_ref */
    setcolor(C_URNA);
 
-/* i18n non adeguato...*/
+   /* i18n non adeguato...*/
 
    ordina_ref(n_rs,elenco,"");
    switch (n_r){
@@ -283,6 +275,8 @@ void urna_check(void)
    free_elenco_ref(elenco);
 
 }
+
+
 /*
 void urna_check(void)
 {

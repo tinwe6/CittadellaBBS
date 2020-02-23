@@ -112,10 +112,10 @@ void extractn(char *dest, const char *source, int parmnum, size_t len)
 		return;
 	}
 	end = src;
-	while(*end && (*end!='|') && (end-src < len-1))
+	while(*end && (*end != '|') && (end < src + len - 1))
 		end++;
-	memcpy(dest, src, end-src);
-	dest[end-src] = '\0';
+	memcpy(dest, src, end - src);
+	dest[end - src] = '\0';
 }
 
 /*

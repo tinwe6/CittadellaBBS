@@ -99,8 +99,8 @@ char * cml2html_max(const char *str, int *totlen, int maxlen, int *color,
 	const char *tmp;
 	char *out;
         char tags[2*LBUF], *tptr;
-	size_t pos = 0, max = LBUF, len = 0;
-        int oldcol, tag;
+	size_t pos = 0, max = LBUF;
+        int oldcol, tag, len = 0;
 
 	if (str == NULL)
 		return Strdup("");

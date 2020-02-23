@@ -283,8 +283,11 @@ int conn_server(char *host, int porta)
         return(s);
 }
 
+/* Write connection timeout message and exit the client */
+/* Note: the parameter signum is not used               */
 void timeout(int signum) 
 {
+        IGNORE_UNUSED_PARAMETER(signum);
         printf("\rConnection timed out.\n");
         exit(1);
 }
@@ -357,8 +360,8 @@ void serv_puts(const char *string)
 void serv_putf(char *format, ...)
 {
 	va_list ap;
-	size_t len = TMPBUF_LEN;
 	char *str;
+	int len = TMPBUF_LEN;
 	int ret, ok = 0;
 	
 	/* Uses vsnprintf(), conforms to BSD, ISOC9X, UNIX98 standards */
@@ -480,9 +483,8 @@ static int serv_buffer_has_input(void)
  */
 int elabora_input(void)
 {
-	int len;
-	size_t bufsize = LBUF;
         char *buf;
+	int len, bufsize = LBUF;
 	char ch;
 
         CREATE(buf, char, bufsize, 0);

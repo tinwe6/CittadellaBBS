@@ -17,12 +17,18 @@
 #ifndef _MACRO_H
 #define _MACRO_H   1
 
+#include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define ABS(x)   ((x) > 0 ? (x) : -(x))
+
+/* This macro allows to silence the -Wunused-parameter compiler
+   warning for the parameter 'param.                            */
+#define IGNORE_UNUSED_PARAMETER(param) assert(true || param) 
 
 #ifndef  _MEMSTAT_H
 
@@ -101,6 +107,7 @@ extern void Perror(const char *str);
 
 static inline void * Calloc(size_t num, unsigned long size, int tipo)
 {
+        IGNORE_UNUSED_PARAMETER(tipo);
 	return calloc(num, size);
 }
 
@@ -125,7 +132,7 @@ static inline void Perror(const char *str) {
 
 #  define CREATE(result, type, num, tnum)   do {                      \
       if (!((result) = (type *) calloc((num), sizeof(type)))) \
-       { Perror("calloc failure"); abort(); } } while(0)
+	{ Perror("calloc failure"); abort(); (void *)tnum; } } while(0)
 
 #  define RECREATE(result, type, number)   do {                      \
       if (!((result) = (type *) realloc(result,number * sizeof(type)))) \

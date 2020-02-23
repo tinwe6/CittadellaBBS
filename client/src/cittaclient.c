@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 
         /* settaggio del terminale e segnali  (vedere) */
         term_save();
-        term_mode(1);
+        term_mode();
 	atexit(reset_term);
 	atexit(ansi_reset);
         setup_segnali();

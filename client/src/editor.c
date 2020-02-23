@@ -407,6 +407,8 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
         int  c, i, addchar;
 	int status = GL_NORMAL;    /* stato dell'editor             */
 
+	IGNORE_UNUSED_PARAMETER(wrap);
+
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
         do {

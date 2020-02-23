@@ -25,6 +25,7 @@
 #include "conn.h"
 #include "cti.h"
 #include "terminale.h"
+#include "macro.h"
 
 #define SEGNALE_KEEPALIVE     1
 #define SEGNALE_WINCH         2
@@ -88,6 +89,8 @@ void segnali_acc_sigtstp(void)
  */
 void hupsig(int sig)
 {
+        IGNORE_UNUSED_PARAMETER(sig);
+
         pulisci_ed_esci();
 }
 
@@ -96,6 +99,8 @@ void hupsig(int sig)
  */
 void handler_tstp(int sig)
 {
+        IGNORE_UNUSED_PARAMETER(sig);
+
         signal(SIGTSTP, SIG_DFL);
 
         /* resetta il terminale */
@@ -110,12 +115,14 @@ void handler_tstp(int sig)
  */
 void handler_cont(int sig)
 {
+        IGNORE_UNUSED_PARAMETER(sig);
+
         signal(SIGCONT, handler_cont);
         signal(SIGTSTP, handler_tstp);
 
         /* setta il terminale */
         term_save();
-        term_mode(1);
+        term_mode();
 
 /* Questo creava problemi con il Ctrl-Z: grazie Abel!
         if (login_eseguito)
@@ -128,8 +135,11 @@ void handler_cont(int sig)
  */
 void handler_alrm(int sig)
 {
-	if (send_keepalive)
+        IGNORE_UNUSED_PARAMETER(sig);
+
+	if (send_keepalive) {
                 send_noop_now = true;
+	}
 
 	send_keepalive = true;
 	alarm(KEEP_ALIVE_INTERVAL);
@@ -140,6 +150,8 @@ void handler_alrm(int sig)
  */
 void handler_winch(int sig)
 {
+        IGNORE_UNUSED_PARAMETER(sig);
+
         signal(SIGWINCH, handler_winch);
         new_signals |= SEGNALE_WINCH;
 }

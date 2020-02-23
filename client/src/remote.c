@@ -25,6 +25,7 @@
 #include "text.h"
 #include "cittaclient.h"
 #include "cml.h"
+#include "macro.h"
 #include "remote.h"
 
 #ifdef MACOSX
@@ -133,7 +134,13 @@ void old_find_remote_host(char *rhost)
 
 void msg_dump(struct text *txt, int autolog)
 {
-	cml_print(_(" *** Questa opzione &egrave; disponibile solo con il client locale.\n"));
+        /* parameters only used by the local counterpart of this function. */
+        IGNORE_UNUSED_PARAMETER(txt);
+        IGNORE_UNUSED_PARAMETER(autolog);
+
+	cml_print(_(
+	" *** Questa opzione &egrave; disponibile solo con il client locale.\n"
+		    ));
 }
 
 #endif /* remote.c */

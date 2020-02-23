@@ -496,6 +496,10 @@ void Beep(void)
  * upgrade del client, e permette fare le riconfigurazioni necessarie. */
 void upgrade_client(int vcode)
 {
+  /* Not used at the moment! */
+  if (vcode > 10) {
+    return;
+  }
 }
 
 #if 0

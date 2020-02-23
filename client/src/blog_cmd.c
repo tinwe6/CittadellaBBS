@@ -73,24 +73,24 @@ void blog_list(void)
         char name[MAXLEN_UTNAME], last_poster[MAXLEN_UTNAME], aaa[LBUF];
         long pt, num, newmsg;
         struct tm *tmst;
-	unsigned int riga;
-	unsigned int fine=0;
+	int riga;
+	int fine = 0;
 
 	setcolor(C_BLOGLIST);
         cml_printf(_("\n<b>         Nome Utente       # msg       Ultimo Post         Ora     Data</b>\n"
                           "  ------------------------ ----- ------------------------ ----- ----------\n"));
         serv_puts("BLGL");
         serv_gets(aaa);
-	riga=4;
+	riga = 4;
 /* probabilmente c'e' un "server smetti di mandare messaggi", ma non ricordo */
         if (aaa[0] == '2') {
                 while (serv_gets(aaa), strcmp(aaa, "000")) {
-			if (fine==1)
+			if (fine == 1)
 				continue;
 
                         if (riga == NRIGHE) {
-				fine=hit_but_char('q');
-				if(fine==1)
+				fine = hit_but_char('q');
+				if(fine == 1)
 				  continue;
 				else
                                   riga = 1;
