@@ -34,43 +34,6 @@
 #include "file_flags.h"
 #include "user_flags.h"
 
-/* Prototipi delle funzioni in questo file */
-int new_str_M(char *prompt, char *str, int max);
-int new_str_m(char *prompt, char *str, int max);
-int new_str_def_M(char *prompt, char *str, int max);
-int new_str_def_m(char *prompt, char *str, int max);
-void get_number(char *str, bool neg, bool enter);
-int get_int(bool enter);
-long get_long(bool enter);
-unsigned long get_ulong(bool enter);
-int new_int(char *prompt);
-long new_long(char *prompt);
-int new_date(struct tm *date,int pos);
-unsigned long new_ulong(char *prompt);
-int new_int_def(char *prompt, int def);
-int new_sint_def(char *prompt, int def);
-long new_long_def(char *prompt, long def);
-int inkey_sc(int m);
-
-void hit_any_key(void);
-void print_ok(void);
-void print_on_off(bool a);
-char * print_si_no(bool a);
-char si_no(void);
-bool new_si_no_def(char *prompt, bool def);
-void us_sleep(unsigned int n);
-void delchar(void);
-void delnchar(int n);
-void putnspace(int n);
-void cleanline(void);
-void strdate(char *str, long ora);
-int stampa_data (time_t ora);
-void stampa_datal(long ora);
-void stampa_datall(long ora);
-void stampa_data_smb(long ora);
-void stampa_ora(long ora);
-char * astrcat(char *str1, char *str2);
-int min_lungh(char *str , int min);
 
 /* Costanti globali */
 const char *settimana[] = {"Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"};
@@ -412,6 +375,7 @@ void cleanline(void)
         printf("\r%79s\r", "");
 }
 
+
 /* TODO comune con quella del server: unificare in share */
 /* Trasforma gli spazi in underscore */
 char *space2under(char *stringa)
@@ -424,41 +388,60 @@ char *space2under(char *stringa)
     return stringa;
 }
 
-/* Estrae il nome del file dal path.
- * Se filename non e' null, ci copia il nome. Ritorna un puntatore
- * all'inizio del nome in path */
-char * find_filename(char *path, size_t len, char *filename)
-{
-        int i;
-        char *ptr;
 
-        len = strlen(path); //TODO
+/*
+ * Extracts the filename from a file path.
+ * Returns the pointer to the starting character of the filename inside
+ * 'path'. Additionally, if 'filename' is not NULL, it copies the filename
+ * into it. 'size' is the size of the buffer 'filename'.
+ */
+char * find_filename(char *path, char *filename, size_t size)
+{
+        char *ptr;
+        size_t pathlen, i;
+
+	assert(size > MAXLEN_FILENAME);
+
         ptr = path;
-        for (i = 0; i < len; i++) {
-                if (path[i] == '/')
-                        ptr = path+i+1;
+        pathlen = strlen(path);
+        for (i = 0; i < pathlen; i++) {
+	        if (path[i] == '/') {
+                        ptr = path + i + 1;
+		}
         }
-        if (filename)
-                strncpy(filename, ptr, MAXLEN_FILENAME);
+        if (filename) {
+	        snprintf(filename, size, "%s", ptr);
+	}
 
         return ptr;
 }
 
-char * find_extension(char *path, size_t len, char *extension)
+
+/*
+ * Extracts the file extension from a file path.
+ * Returns the pointer to the starting character of the extension inside
+ * 'path'. Additionally, if 'extension' is not NULL, it copies the extension
+ * into it. 'size' is the size of the buffer 'extension'.
+ */
+char * find_extension(char *path, char *extension, size_t size)
 {
-        int i;
-        size_t pathlen;
         char *ptr;
+        size_t pathlen, i;
+
+	assert(size > MAXLEN_FILENAME);
 
         ptr = path;
-        pathlen = strlen(path); // TODO
+        pathlen = strlen(path);
         for (i = 0; i < pathlen; i++) {
-                if (path[i] == '.')
-                        ptr = path+i+1;
+	        if (path[i] == '.') {
+                        ptr = path + i + 1;
+		} else if (path[i] == '/') {
+		        ptr = path;
+		}
         }
-        if (extension)
-                strncpy(extension, ptr, MAXLEN_FILENAME);
-
+        if (extension) {
+	        snprintf(extension, size, "%s", ptr);
+	}
         return ptr;
 }
 

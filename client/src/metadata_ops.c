@@ -238,7 +238,7 @@ void mdop_upload_files(Metadata_List *mdlist)
                                 /* Elimino la prenotazione */
                                 serv_putf("FBKD %lu", md->filenum);
                                 serv_gets(buf);
-                        } else if (sb.st_size != md->size) {
+                        } else if ((size_t)sb.st_size != md->size) {
                                 cml_printf(_("*** La dimensione del file &egrave; cambiata nel frattempo...\n"));
                                 /* Elimino la prenotazione */
                                 serv_putf("FBKD %lu", md->filenum);
@@ -595,7 +595,7 @@ int md_type(char *filename)
 {
         char *extension;
 
-        extension = find_extension(filename, 0, NULL);
+        extension = find_extension(filename, NULL, 0);
         if (!strcasecmp(extension, "jpg") ||
             !strcasecmp(extension, "jpeg") ||
             !strcasecmp(extension, "png") ||

@@ -13,6 +13,7 @@
 * File : editor.c                                                           *
 *        Editor interno per il cittaclient                                  *
 ****************************************************************************/
+#include <assert.h>
 #include "editor.h"
 #include "cterminfo.h"
 
@@ -126,9 +127,9 @@ typedef struct Editor_Text_ {
 #endif
 
 /* Prototipi funzioni in questo file */
-int get_text_full(struct text *txt, long max_linee, int max_col, char abortp,
+int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 		  int color, Metadata_List *mdlist);
-int get_line_wrap(Editor_Text *t, char wrap);
+static int get_line_wrap(Editor_Text *t, bool wrap);
 static void Editor_Putchar(Editor_Text *t, int c);
 static void Editor_Key_Enter(Editor_Text *t);
 static void Editor_Yank(Editor_Text *t);
@@ -269,21 +270,28 @@ static void refresh_line_curs(int *pos, int *curs);
  * Prende in input dall'utente un testo lungo al piu' 'max_linee' righe su
  * 'max_col' colonne e lo inserisce nella struttura 'txt'. Il testo termina
  * quando si lascia una riga vuota oppure si riempono tutte le righe a
- * disposizione. Se (abort!=1), immettendo su una riga vuota la stringa "ABORT"
- * l'editing viene interrotto. Il testo viene formattato automaticamente
- * mandando a capo le parole che non ci stanno in fondo alla riga.
+ * disposizione.
+ * Se abortp == true, immettendo su una riga vuota la stringa "ABORT"
+ * l'editing viene interrotto.
+ * Il testo viene formattato  automaticamente mandando a capo le parole che
+ * non ci stanno in fondo alla riga.
  * Color e` il colore iniziale del cursore. Se color e` zero usa C_DEFAULT.
  * 
  * Valori di ritorno: EDIT_ABORT : Abort;
  *                             0 : Nessun testo;
  *                             N : Numero righe scritte.
  */
-int get_text_full(struct text *txt, long max_linee, int max_col, char abortp,
+int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 		  int color, Metadata_List *mdlist)
 {
 	Editor_Text t;
         char prompt_tmp, fine = FALSE;
         int ret;
+
+	/* The abortp option is not available (and useless) when the option */
+	/* HAVE_CTI is set. The arg is keept only for compatibility with    */
+	/* the old editor. Maybe we can consider eliminating it completely  */
+	assert(abortp == false);
 
 	/* Inizializza schermo */
 	cti_term_init();
@@ -345,7 +353,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, char abortp,
 	Editor_Refresh(&t, 0);
 
 	do {
-		switch((ret = get_line_wrap(&t, 1))) {
+		switch((ret = get_line_wrap(&t, true))) {
 		case EDIT_ABORT:
 			cti_ll();
 			printf("%80s\rAbort.\n", "");
@@ -363,7 +371,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, char abortp,
 	if (ret == EDIT_NEWLINE) {
 		refresh_line_curs(t.curr->str, t.curr->str + t.curr->pos);
 		
-		if (get_line_wrap(&t, 0) == EDIT_ABORT)
+		if (get_line_wrap(&t, false) == EDIT_ABORT)
 			ret = EDIT_ABORT;
 		else {
 			cti_ll();
@@ -391,7 +399,9 @@ int get_text_full(struct text *txt, long max_linee, int max_col, char abortp,
  * Il testo viene editato su una singola riga, e se e' piu' lungo dello 
  * schermo scrolla.
  */
-int get_line_wrap(Editor_Text *t, char wrap)
+static int get_line_wrap(Editor_Text *t, bool wrap)
+/* TODO why is arg wrap not used here? the two calls to this function have
+        wrap = true and wrap = false, why? */
 {
 	Editor_Line *ltmp;
         int  c, i, addchar;
@@ -800,8 +810,9 @@ static void Editor_Putchar(Editor_Text *t, int c)
 
 	if (t->insert == MODE_ASCII_ART) {
 		putchar(c);
-		if (t->curr->pos > t->curr->len)
+		if (t->curr->pos > t->curr->len) {
 			printf("\nO-OH!!!!!!!!!!!! Avvisa il tuo sviluppatore di fiducia!!!\n");
+		}
 		if (t->curr->pos == t->curr->len)
 			t->curr->len++;
 		return;
@@ -1809,7 +1820,7 @@ static void Editor_Insert_File(Editor_Text *t)
         path[0] = 0;
         if ( (pathlen = getline_scroll("<b>File name:</b> ", COL_HEAD_MD, path,
                                        LBUF-1, 0, 0) > 0)) {
-                find_filename(path, pathlen, filename);
+	        find_filename(path, filename, sizeof(filename));
                 if (filename[0] == 0)
                         return;
                 fullpath = interpreta_tilde_dir(path);
@@ -2415,7 +2426,7 @@ static void refresh_line_curs(int *pos, int *curs)
 # include "edit.h"
 # include "text.h"
 
-int get_text_full(struct text *txt, long max_linee, int max_col, char abortp)
+int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp)
 {
 	txt_clear(txt);
 	return get_text(txt, max_linee, max_col, abortp);
