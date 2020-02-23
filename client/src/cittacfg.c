@@ -20,10 +20,9 @@
 #else
 #ifdef MACOSX        /* MacOS/X path for config file   */
 #define CFG_FILE_USER   "~/.cittaclientrc"
-#define CFG_FILE_USER2  "~/Library/Preferences/cittaclient.rc"
-/*
-#define CFG_FILE_USER3  "~/Library/Application Support/cittaclient/cittaclient.rc"
-*/
+#define CFG_FILE_USER2  "~/.cittaclient/cittaclient.rc"
+#define CFG_FILE_USER3  "~/Library/Preferences/cittaclient.rc"
+#define CFG_FILE_USER4  "~/Library/Application Support/cittaclient/cittaclient.rc"
 #define CFG_FILE_SYSTEM "/etc/cittaclient.rc"
 #else                /* UNIX path for config file      */
 #define CFG_FILE_USER   "~/.cittaclientrc"
@@ -54,7 +53,13 @@
 #ifdef LOCAL
 /* Vettore dei path ai file di configurazione standard. Il client legge
  * il primo di questi che trova.                                        */
-static const char * cfg_stdrc[] = { CFG_FILE_USER, CFG_FILE_USER2,
+
+static const char * cfg_stdrc[] = { CFG_FILE_USER,
+				    CFG_FILE_USER2,
+#ifdef MACOSX
+				    CFG_FILE_USER3,
+				    CFG_FILE_USER4,
+#endif
 				    CFG_FILE_SYSTEM, NULL };
 
 static int cfg_line_num; /* Here is stored the line number being parsed. */

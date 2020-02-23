@@ -4,8 +4,24 @@
 # cittaclient.rc :  File di configurazione di cittaclient                  #
 #                                                                          #
 # Il client cerca il file di configurazione nell'ordine in:                #
-# ~/.cittaclientrc, ~/.cittaclient/cittaclient.rc e /etc/cittaclient.rc    #
+#   ~/.cittaclientrc,                                                      #
+#   ~/.cittaclient/cittaclient.rc                                          #
+#   /etc/cittaclient.rc                      (valida per tutto il sistema) #
+#                                                                          #
+# Su sistemi MacOS, cerca inoltre il file in                               #
+#     ~/Library/Preferences/cittaclient.rc                                 #
+#     ~/Library/Application Support/cittaclient/cittaclient.rc             #
+# prima di cercare in /etc/cittadella.rc                                   #
+#                                                                          #
+# Su sistemi Windows, il file viene cercato nelle seguenti posizioni       #
+#     /cittaclient.ini                                                     #
+#     /windows/cittaclient.ini                                             #
+#     /system/cittaclient.ini                (valida per tutto il sistema) #
+#                                                                          #
 # si puo' specificare una posizione diversa con l'opzione --rcfile         #
+# all'avvio del client, e saltarne la lettura usando l'opzione --norc      #
+#                                                                          #
+# Editando questo file potete personalizzare il vostro client.             #
 #                                                                          #
 ############################################################################
 
