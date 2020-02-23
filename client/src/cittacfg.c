@@ -169,8 +169,10 @@ void cfg_read(char *rcfile, bool no_rc)
 				fprintf(stderr, LEGGO_FCONF, CFG_FILE_USER);
 			} else
 				fprintf(stderr, _("\nFile di configurazione %s non trovato.\nUso default.\n"), rcfile);
-		} else /* Cerca i file di configurazione standard. */
+		} else {
+		        /* Cerca i file di configurazione standard. */
 			fp = cfg_open();
+		}
 
 		if (fp != NULL) {
 			/* Parse configuration file */
@@ -387,7 +389,7 @@ static int cfg_parse_line(const char *buf, size_t bufsize)
 	bool path;
 
 	toklen = cfg_toklen(buf, bufsize);
-	arg = buf+toklen+1;
+	arg = buf + toklen + 1;
 	while (*config[i].token != '\0') {
 		path = false;
 		if (!strncmp(config[i].token, buf, toklen)) {
@@ -482,7 +484,7 @@ static int cfg_getline(char *buf, size_t *bufsize, FILE *fp)
 
 	register char *p, *i;
 	register int curr_state;
-	int n = 0; /* num char written in buf */
+	size_t n = 0; /* num char written in buf */
 	char line[LBUF];
 
 	i = buf;
@@ -491,8 +493,11 @@ static int cfg_getline(char *buf, size_t *bufsize, FILE *fp)
 	while( fgets(line, LBUF, fp) != NULL) {
 		cfg_line_num++;
 		curr_state = CFG_TOKEN;
-		for (p = line; (*p) && (curr_state != CFG_END) &&
-			     (curr_state != CFG_CONTINUE); p++) {
+		for (p = line;
+		     (*p) && (n < *bufsize - 1)
+		       && (curr_state != CFG_END)
+		       && (curr_state != CFG_CONTINUE);
+		     p++) {
 			switch (*p) {
 			case '#':
 			case '\r':
