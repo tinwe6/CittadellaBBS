@@ -150,12 +150,12 @@ void registrazione(bool nuovo)
 			extractn(email, buf+4, 6, MAXLEN_EMAIL);
 			extractn(url, buf+4, 7, MAXLEN_URL);
 			sesso = extract_int(buf+4, 8);
-                        
+
 		}
 	}
 
 	printf(_("Registrazione:\n\n"));
-	/* Inserire un `leggi_file' sulla privacy */
+	/* TODO Inserire un `leggi_file' sulla privacy */
 	if (nuovo)
 		do {
 			new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
@@ -226,9 +226,9 @@ void registrazione(bool nuovo)
 		} else
 			printf(_("\nOk, teniamo il vecchio Email visto che non riesci a digitare quello nuovo :-)\n\n"));
 	}
-	
+
 	new_str_def_m(_("URL della Home Page"), url, MAXLEN_URL - 1);
-	
+
 	if (!nuovo) {
 	        printf(sesso ? _("Sei sicura di voler mantenere le modifiche? ") : _("Sei sicuro di voler mantenere le modifiche? "));
 		if (si_no() == 'n') {
@@ -242,7 +242,7 @@ void registrazione(bool nuovo)
 		  stato, cap, tel, email, url, sesso);
 	serv_gets(buf);
 	if (buf[0] != '2') {
-                
+
 	        printf(_("\n*** Problema con il server: registrazione non accettata.\n\n"));
                 cml_printf(_("Probabilmente l'email che hai fornito &egrave; gi&agrave; stato usato per un altro utente.\n&Egrave; vietato avere un doppio account su questa BBS. Riprova.\n\n"));
                 hit_any_key();
@@ -288,7 +288,7 @@ char profile(char *nome_def)
 	int lvl, riga = 2, room, sex = 0;
 	int myprofile;
 	size_t lung;
-	
+
         if (nome_def == NULL)
                 get_username_def(_("Informazioni sull'utente"), last_profile,
                                  nick);
@@ -571,7 +571,7 @@ char profile(char *nome_def)
 	}
 	putchar('\n');
 	riga += 2;
-	
+
 	/* Carica il profile personalizzato */
 	serv_putf("PRFG %s", nick);
 	serv_gets(buf);
@@ -696,7 +696,7 @@ void edit_user(void)
 	new_str_def_m(_(" Numero di telefono"), tel, MAXLEN_TEL - 1);
 	new_str_def_m(_(" Indirizzo e-mail"), email, MAXLEN_EMAIL - 1);
 	new_str_def_m(_(" URL della Home Page"), url, MAXLEN_URL - 1);
-	
+
         setcolor(C_CONFIG_H);
         cml_printf(_("\nPropriet&agrave; utente:\n"));
         setcolor(C_CONFIG_B);
@@ -728,7 +728,7 @@ void edit_user(void)
 		cml_print(_(" L'utente non &egrave; validato. Vuoi validarlo? (s/n) "));
 		val = (si_no() == 's') ? 1 : 0;
 	}
-        
+
         /* Nickname */
 	printf(_(" Vuoi modificare il nickname dell'utente? "));
 	if (si_no() == 's') {
@@ -793,7 +793,7 @@ void chpwd(void)
 		newpwd1[MAXLEN_PASSWORD];
 
 	putchar('\n');
-	leggi_file(0, 6);
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_CHANGE_PWD);
 	/* Verifica la vecchia password */
 	new_str_m(_("Inserisci la vecchia password: "), oldpwd,
 		  -(MAXLEN_PASSWORD - 1));
@@ -829,7 +829,7 @@ void chupwd(void)
 	char mypwd[MAXLEN_PASSWORD], newpwd[MAXLEN_PASSWORD];
 
 	putchar('\n');
-	leggi_file(0, 6);
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_CHANGE_PWD);
 	/* Chiede la password dell'aide prima di procedere */
 	new_str_m(_("Inserisci la tua password: "),mypwd,-(MAXLEN_PASSWORD-1));
 	serv_putf("PWDC %s", mypwd);
@@ -992,14 +992,14 @@ enum {
 #define CE_CONTEXT_VERIFY_CHAR(c) ( ( ((c) >= 'a') && ((c) <= 'z') ) || \
 				    ( ((c) >= 'A') && ((c) <= 'Z') ) || \
                                     ( ((c) >= '0') && ((c) <= '9') ) || \
-				    ((c) == '-') || ((c) == '_') ) 
+				    ((c) == '-') || ((c) == '_') )
 
 static bool check_email_syntax(const char *email)
 {
 	register const char *p;
 	register int curr_state = CES_USERNAME;
 	int num_dots = 0;
-	
+
 	if (*email == '@')
 	        return false;
 
@@ -1012,7 +1012,7 @@ static bool check_email_syntax(const char *email)
 			break;
 		case '.':
 			if ( (curr_state == CES_AFTERDOT) ||
-			     (curr_state == CES_AFTERAT) ) 
+			     (curr_state == CES_AFTERAT) )
 				return false;
 			/* controllo il doppio punto solo dopo l'@ */
 			if (curr_state != CES_USERNAME) {
@@ -1021,13 +1021,13 @@ static bool check_email_syntax(const char *email)
 			}
 			break;
 		default:
-			if ( !CE_CONTEXT_VERIFY_CHAR(*p) ) 
+			if ( !CE_CONTEXT_VERIFY_CHAR(*p) )
 				return false;
-			
+
 			curr_state = (curr_state == CES_USERNAME) ?
 				CES_USERNAME : CES_INDOMAIN;
 		}
 	}
-	
+
 	return ((curr_state == CES_INDOMAIN) && num_dots);
 }

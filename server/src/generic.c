@@ -22,6 +22,7 @@
 #include "compress.h"
 #include "generic.h"
 #include "extract.h"
+#include "file_flags.h"
 #include "memstat.h"
 #include "rooms.h"
 #include "march.h"
@@ -34,6 +35,9 @@
 #ifdef USE_FLOORS
 #include "floors.h"
 #endif
+
+/* Directories where the messages from the server and help files are kept */
+static const char *stdmsg_dir[] = {MESSAGGI_DIR, HELP_DIR};
 
 /*Prototipi delle funzioni in questo file */
 void cmd_info(struct sessione *t, char *cmd);
@@ -49,7 +53,7 @@ void cmd_tabc(struct sessione *t, char *cmd);
 void cmd_edng(struct sessione *t, char *buf);
 void cmd_upgs(struct sessione *t);
 void cmd_upgr(struct sessione *t);
-static void legge_file_idx(struct sessione *t, char *dir, int num);
+static void legge_file_idx(struct sessione *t, const char *dir, int num);
 
 /******************************************************************************
 ******************************************************************************/
@@ -122,21 +126,25 @@ void cmd_hwho(struct sessione *t)
                                 break;
 			case CON_SUBSHELL:
                                 sprintf(nm, "{%s}", punto->utente->nome);
-                                break;        
+                                break;
 			default:
                                 sprintf(nm, "%s", punto->utente->nome);
                                 break;
                         }
 			strcpy(rm, punto->room->data->name);
                 } else {
+                        /* TODO: leave the text to the client */
                         strcpy(nm, "(login in corso)");
 			strcpy(rm, "");
 		}
                 if (strncmp(nm, "Ospite", 6)) {
-			if (!known)
+			if (!known) {
+                                /* TODO: leave the text to the client */
 				strcpy(rm, "[ Boh...                ]");
-			else if (punto->room->data->type == ROOM_DYNAMICAL)
-			        sprintf(rm, ":%-17s:", punto->room->data->name);
+			} else if (punto->room->data->type == ROOM_DYNAMICAL) {
+			        sprintf(rm, ":%-17s:",
+                                        punto->room->data->name);
+                        }
 			if (punto->doing)
 				sprintf(host, "[%s", punto->doing);
 			else
@@ -173,7 +181,7 @@ void cmd_info(struct sessione *t, char *cmd)
 		/* DA VEDERE!!! */
                 extract(rhost, cmd, 1);
                 /*if (!strcmp(t->host, citta_nodo) ||
-                    !strcmp(t->host, "localhost") || 
+                    !strcmp(t->host, "localhost") ||
                     !strcmp(t->host, "localhost.localdomain")) {*/
                 dati_server.remote_cl++;
                 strcpy(t->host, rhost);
@@ -199,7 +207,7 @@ void cmd_info(struct sessione *t, char *cmd)
 		MAXLINEENEWS, MAXLINEEPOST, MAXLINEEPRFL, MAXLINEEROOMINFO,
 		SERVER_FLAGS, t->compressione);
         compress_set(t);
-} 
+}
 
 /*
  * Invia ora e data al client
@@ -215,13 +223,13 @@ void cmd_time(struct sessione *t)
 /*
  *
  */
-void legge_file(struct sessione *t,char *nome)
+void legge_file(struct sessione *t, char *nome)
 {
         FILE *fp;
         char buf[LBUF];
-        
+
         /* Apre file */
-        fp = fopen(nome,"r");
+        fp = fopen(nome, "r");
         if (fp == NULL) {
                 citta_logf("SYSERR: Errore apertura file [%s] da [%s]", nome,
 		     t->utente->nome);
@@ -232,7 +240,7 @@ void legge_file(struct sessione *t,char *nome)
         /* Legge file e mette in coda */
         cprintf(t, "%d Legge file %s\n", SEGUE_LISTA, nome);
         while (fgets(buf, LBUF, fp) != NULL)
-                cprintf(t, "%d|%s", OK, buf);
+                cprintf(t, "%d %s", OK, buf);
 
         /* Chiude file */
         fclose(fp);
@@ -245,17 +253,18 @@ void legge_file(struct sessione *t,char *nome)
  * L'indice dei file sta in 'dir'/indice.
  * Se 'num' e' negativo, invia l'indice al client.
  */
-static void legge_file_idx(struct sessione *t, char *dir, int num)
+static void legge_file_idx(struct sessione *t, const char *dir, int num)
 {
         FILE *fp;
         char buf[LBUF], filename[LBUF];
 	int i;
 
 	if (num >= 0) { /* Cerca il nome del file nell'indice */
-		sprintf(filename, "%s/indice", dir);
+		sprintf(filename, "%s/%s", dir, STDFILE_INDEX);
 		fp = fopen(filename, "r");
 		if (fp == NULL) {
-			citta_logf("SYSERR: Errore apertura indice [%s] da [%s]",
+			citta_logf(
+                             "SYSERR: Errore apertura indice [%s] da [%s]",
 			     filename, t->utente->nome);
 			cprintf(t, "%d Errore in apertura file.\n", ERROR);
 			return;
@@ -266,12 +275,13 @@ static void legge_file_idx(struct sessione *t, char *dir, int num)
 		fclose(fp);
 		extract(filename, buf, 0);
 		sprintf(buf, "%s/%s", dir, filename);
-	} else /* Invia l'indice */
-		sprintf(buf, "%s/indice", dir);
+	} else { /* Invia l'indice */
+		sprintf(buf, "%s/%s", dir, STDFILE_INDEX);
+        }
 
         /* Legge file e mette in coda */
         fp = fopen(buf, "r");
-        if (fp==NULL) {
+        if (fp == NULL) {
                 citta_logf("SYSERR: Errore apertura file [%s] da [%s]", buf,
 		     t->utente->nome);
                 cprintf(t, "%d Errore in apertura file.\n", ERROR);
@@ -279,7 +289,7 @@ static void legge_file_idx(struct sessione *t, char *dir, int num)
         }
         cprintf(t, "%d\n", SEGUE_LISTA);
         while (fgets(buf, LBUF, fp) != NULL)
-                cprintf(t, "%d|%s", OK, buf);
+                cprintf(t, "%d %s", OK, buf);
         fclose(fp);
         cprintf(t, "000\n");
 }
@@ -289,28 +299,25 @@ static void legge_file_idx(struct sessione *t, char *dir, int num)
  */
 void cmd_help(struct sessione *t)
 {
-        legge_file(t,"./lib/help/lista_comandi");
+        legge_file(t, FILE_HELP);
 }
 
 /*
  * Invia al client i messaggi standard e i file di help.
  * I files vengono trovati attraverso un indice.
  */
+
 void cmd_msgi(struct sessione *t, char *buf)
 {
-        int num;
+        int msgtype, id;
 
-        num = extract_int(buf, 1);
-        switch (extract_int(buf, 0)) {
-	 case 0:
-                legge_file_idx(t, "./lib/messaggi", num);
-		break;
-	 case 1:
-                legge_file_idx(t, "./lib/help", num);
-		break;
-	 default:
+        msgtype = extract_int(buf, 0);
+        id = extract_int(buf, 1);
+
+        if (msgtype >= 0 && msgtype < STDMSG_COUNT) {
+                legge_file_idx(t, stdmsg_dir[msgtype], id);
+        } else {
 		cprintf(t, "%d\n", ERROR);
-		break;
         }
 }
 
@@ -358,7 +365,7 @@ void cmd_sdwn(struct sessione *t, char *buf)
         cprintf(t, "%d\n", OK);
 }
 
-/* 
+/*
  * TAB Completion.
  * "TABC foo|n|mode" restituisce la n-esima ricorrenza di una parola
  * che inizia con "foo", dove la parola e' nell'insieme dettato dal mode:
@@ -411,7 +418,7 @@ void cmd_tabc (struct sessione *t, char *cmd)
 				sess = sess->prossima;
 		}
 		break;
-		
+
 	 case TC_MODE_USER: /* completa con nomi in file_utenti */
 		ut = lista_utenti;
 		while (ut) {
@@ -522,13 +529,13 @@ void cmd_lssh(struct sessione *t, char *cmd)
 	if (cmd[0] == '1') { /* Entro nella subshell */
 		/* TODO fare controllo che il client non e' remoto */
 		t->occupato = 1;
-		t->stato = CON_SUBSHELL;      
+		t->stato = CON_SUBSHELL;
 		cprintf(t, "%d\n", OK);
 	} else if (cmd[0] == '0') { /* Esco dalla subshell */
 		t->occupato = 0;
 		t->stato = CON_COMANDI;
 		cprintf(t, "%d\n", OK);
-	} else 
+	} else
 		cprintf(t, "%d\n", ERROR+ARG_NON_VAL);
 }
 
@@ -589,7 +596,7 @@ void cmd_edng(struct sessione *t, char *buf)
 void cmd_upgs(struct sessione *t)
 {
 	sut_set_all(0, SUT_UPGRADE);
-	citta_logf("SUT_UPDATE set to all by [%s].", t->utente->nome);	
+	citta_logf("SUT_UPDATE set to all by [%s].", t->utente->nome);
 	cprintf(t, "%d\n", OK);
 }
 

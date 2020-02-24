@@ -27,6 +27,7 @@
 #include "conn.h"
 #include "edit.h"
 #include "extract.h"
+#include "file_flags.h"
 #include "friends.h"
 #include "pager.h"
 #include "signals.h"
@@ -43,7 +44,7 @@ void ora_data(void);
 void lock_term(void);
 void bug_report(void);
 void biff(void);
-void leggi_file(int type, int id);
+void leggi_file(Stdmsg_type type, int id);
 void help(void);
 void Help(void);
 void leggi_news(void);
@@ -121,7 +122,7 @@ void list_host (void)
                                 setcolor(C_USER);
                         /* qui erano 25 caratteri, controllare */
                         printf("%-24s", nm);
-                        
+
                         /* controlla se (login in corso) */
                         if (strcmp(nm, "(login in corso)") == 0)
 				num_lin++;
@@ -154,7 +155,7 @@ void list_host (void)
                         Free(hst);
                         putchar('\n');
                 }
-                
+
                 /* Prende il numero degli ospiti */
                 serv_gets(aaa);
                 num_ospiti = extract_int(aaa+4, 0);
@@ -162,7 +163,7 @@ void list_host (void)
                 /* Stampa il numero degli uto^Henti ...*/
                 setcolor(COL_GREEN);
 		putchar('\n');
-                if (num_utenti + num_ospiti == 1) {                  
+                if (num_utenti + num_ospiti == 1) {
 			printf(_("Dai che fra un po' arrivano! :)"));
                 } else {
 		  if (num_utenti == 1) {
@@ -253,8 +254,8 @@ void bug_report(void)
 {
 	struct text *txt;
         char buf[LBUF];
-        
-        leggi_file(0, 7);
+
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_BUG_REPORT);
         serv_puts("BUGB");
         serv_gets(buf);
         if (buf[0] != '2') {
@@ -280,7 +281,7 @@ void biff(void)
 {
 	char buf[LBUF];
 	long mail;
-	
+
 	serv_putf("BIFF %s", nome);
 	serv_gets(buf);
 	if (buf[0] == '2') {
@@ -296,10 +297,10 @@ void biff(void)
 	IFNEHAK;
 }
 
-/* 
+/*
  * Legge un file dal server utilizzando l'indice
  */
-void leggi_file(int type, int id)
+void leggi_file(Stdmsg_type type, int id)
 {
         char aaa[LBUF];
         int riga;
@@ -366,7 +367,7 @@ void Help(void)
 			if (len == 0) {
 				printf("%s", buf1);
 				len = strlen(buf1);
-			} else if ((len < 40) && (strlen(buf1) < 40)) { 
+			} else if ((len < 40) && (strlen(buf1) < 40)) {
 				while(len++<40)
 					putchar(' ');
 				printf("%s\n", buf1);
@@ -379,10 +380,10 @@ void Help(void)
                 }
         printf("\n\n");
         scelta = new_int("Scelta: ");
-	if (scelta < 1) return; 
+	if (scelta < 1) return;
         if (scelta > n)
                 printf(_("Il file di Help richiesto non esiste.\n"));
-        else 
+        else
                 leggi_file_pager(1, scelta-1);
 	IFNEHAK;
 }
@@ -392,7 +393,7 @@ void leggi_news(void)
 {
         putchar('\n');
 	setcolor(C_NEWS);
-        leggi_file(0, 8);
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_NEWS);
 }
 
 /*
@@ -516,7 +517,7 @@ void upgrade_client_02(void)
 "In questo nuovo client sono state introdotte delle nuove opzioni che\n"
 "richiedono di essere configurate. Ora ti far&ograve; qualche domanda per\n"
 "ottimizzare il client.\n\n"
-		  
+
 "1) Ora il client pu&ograve; utilizzare dei caratteri colorati.\n"
 "   Se il tuo terminale &egrave; in grado di gestire i colori (e li vuoi\n"
 "   attivare), rispondi affermativamente alla seguente domanda.\n"

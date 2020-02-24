@@ -46,7 +46,7 @@ void hash_banners(void)
 	char buf[LBUF];
 	int n, i, c;
 	long *pos;
-	
+
 	n = 0;
 	fp = fopen(BANNER_FILE, "r");
 	if (!fp)
@@ -80,7 +80,7 @@ void hash_banners(void)
 void banner_save_hash(long n, long *pos)
 {
 	FILE *fp;
-	
+
 	fp = fopen(BANNER_HASHFILE, "w");
 	if (!fp)
 		return;
@@ -96,7 +96,7 @@ void banner_save_hash(long n, long *pos)
 void banner_load_hash(void)
 {
 	FILE *fp;
-	
+
 	fp = fopen(BANNER_HASHFILE, "r");
 	if (!fp)
 		return;
@@ -113,7 +113,7 @@ void send_random_banner(struct sessione *t)
 	char buf[LBUF];
 	FILE *fp;
 	int bnum;
-	
+
 	srand(time(0));
 	bnum = (int) ((double)banner_num * rand() / (RAND_MAX+1.0));
 	fp = fopen(BANNER_FILE, "r");
@@ -129,7 +129,7 @@ int num_ut(void)
 {
 	struct sessione *p;
 	int n = 0;
-	
+
 	for (p = lista_sessioni; p; p = p->prossima)
 		if (p->utente)
 			n++;
@@ -141,14 +141,14 @@ void cmd_lban(struct sessione *t, char *cmd)
         FILE *fp;
         char buf[LBUF];
 	int nobanner, n;
-	
+
 	if (t->logged_in) {
 		cprintf(t, "%d\n", ERROR);
 		return;
 	}
 	nobanner = extract_int(cmd, 0);
 	n = num_ut();
-	
+
 	cprintf(t, "%d\n", SEGUE_LISTA);
 #ifndef ONLY_BANNER
 	if (!nobanner) {
@@ -169,7 +169,7 @@ void cmd_lban(struct sessione *t, char *cmd)
 		}
 		cprintf(t, "%s\n", buf);
 		cprintf(t, "%d   %s</b>\n", OK, citta_dove);
-		fp = fopen(LOGO_FILE, "r");
+		fp = fopen(FILE_LOGO, "r");
 		if (fp) {
 			while (fgets(buf, LBUF, fp) != NULL)
 				cprintf(t, "%d %s", OK, buf);
@@ -186,7 +186,7 @@ void cmd_lban(struct sessione *t, char *cmd)
 	if (!nobanner)
 		cprintf(t, "%d \n", OK);
 #else
-	fp = fopen(BBS_CLOSED_FILE, "r");
+	fp = fopen(FILE_BBS_CLOSED, "r");
 	if (fp) {
 		while (fgets(buf, LBUF, fp) != NULL)
 			cprintf(t, "%d %s", OK, buf);
@@ -209,7 +209,7 @@ void cmd_lbgt(struct sessione *t)
 	if ((t->utente == NULL) || (t->utente->livello < MINLVL_BANNER)) {
 		cprintf(t, "%d\n", ERROR+ACC_PROIBITO);
 		return;
-	}	
+	}
 #endif
 	if ((fp = fopen(BANNER_FILE, "r")) == NULL) {
 		cprintf(t, "%d\n", ERROR);
@@ -244,7 +244,7 @@ void save_banners(struct sessione *t)
 {
 	long righe, a;
 	FILE *fp;
-	
+
 	fp = fopen(BANNER_FILE, "w");
 	if (fp != NULL) {
 		righe = txt_len(t->text);
@@ -266,7 +266,7 @@ void random_banner(char *str)
 	char buf[LBUF];
 	FILE *fp;
 	int bnum;
-	
+
 	srand(time(0));
 	bnum = (int) ((double)banner_num * rand() / (RAND_MAX+1.0));
 	fp = fopen(BANNER_FILE, "r");

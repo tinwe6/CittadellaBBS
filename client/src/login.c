@@ -41,7 +41,7 @@ void user_config(int type);
 
 /****************************************************************************
 ****************************************************************************/
-/* 
+/*
  * Procedura di login
  */
 int login(void)
@@ -107,7 +107,7 @@ int login(void)
 
 /*
  * Procedura di login per un nuovo utente.
- * Consiste nella conferma del nome, definizione di una password 
+ * Consiste nella conferma del nome, definizione di una password
  * e procedura di validazione. Restituisce 1 se e' andato tutto bene.
  */
 static int login_new_user (void)
@@ -115,14 +115,14 @@ static int login_new_user (void)
         char buf[LBUF], passwd[MAXLEN_PASSWORD], passwd1[MAXLEN_PASSWORD];
         char loop;
 	bool primo_utente = false;
-        
+
         printf(_("\nRecord non esistente. Nuovo utente? (s/n) "));
         if (si_no()=='n') {
                 printf(_("\nAllora da capo...\n"));
                 return LOGIN_FAILED;
         }
-        leggi_file(0, 1);  /* bruttinick */
-        
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_BAD_NICKS);
+
         /* Verifica il nome */
         cml_printf(_("\nIl nome che hai digitato &egrave; \"<b>%s</b>\".\n"
 		     "&Egrave; questo il nome che vuoi utilizzare? (s/n) "),
@@ -133,7 +133,7 @@ static int login_new_user (void)
         }
         /* Chiede una password */
         putchar('\n');
-        leggi_file(0, 6);
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_CHANGE_PWD);
         loop = 0;
         while (loop == 0) {
                 do {
@@ -163,7 +163,7 @@ static int login_new_user (void)
 "registrazione, anche se non hai bisogno di validarti... :)\n\n");
 		hit_any_key();
 	}
-        leggi_file(0, 3);
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
         putchar('\n');
         hit_any_key();
         putchar('\n');
@@ -190,7 +190,7 @@ static int login_ospite(void)
         ospite = true;
         serv_putf("USR1 %s", nome);
         serv_gets(buf);
-  
+
         if (buf[0] != '2')
                 pulisci_ed_esci();
         return LOGIN_OSPITE;
@@ -216,7 +216,7 @@ static int login_non_val(void)
 		new_str_m(_("Password: "), passwd, -(MAXLEN_PASSWORD - 1));
         serv_putf("USR1 %s|%s", nome, passwd);
         serv_gets(buf);
-  
+
         if (buf[0] != '2') {
                 if (buf[1] == '3')
                         printf(_("<< password errata >>\n"));
@@ -230,7 +230,7 @@ static int login_non_val(void)
 	}
 	/* Se ha la validation key esegue l'autovalidazione */
 	printf(_("\nHai ricevuto la chiave di validazione e vuoi validarti? (s/n) "));
-	if (si_no()=='n') 
+	if (si_no()=='n')
 		printf(_("\nPotrai eseguire la validazione la prossima volta che ti colleghi.\n"
 			 "Nel frattempo puoi visitare la BBS come utente non validato. Ricorda tuttavia\n"
 			 "che la validazione va eseguita entro 48 ore dalla prima connessione.\n"));
@@ -240,7 +240,7 @@ static int login_non_val(void)
 }
 
 /*
- * Procedura di login per gli utenti validati. 
+ * Procedura di login per gli utenti validati.
  * Verifica la password e restituisce 1 se e' esatta
  */
 static int login_validato(void)
@@ -276,9 +276,9 @@ static int login_validato(void)
 void chiedi_valkey(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("\nSei sicura di voler richiedere una nuova chiave di validazione? (s/n) ") : _("\nSei sicuro di voler richiedere una nuova chiave di validazione? (s/n) "));
-	if (si_no()=='s') { 
+	if (si_no()=='s') {
 		serv_puts("GVAL");
 		serv_gets(buf);
 		if (buf[0] != '2') {
@@ -347,7 +347,7 @@ void user_config(int type)
 {
 	if (type == LOGIN_VALIDATO)
 		return;
-	
+
 	setcolor(C_DEFAULT);
 
 	if ((type == LOGIN_OSPITE) || (type == LOGIN_NUOVO)) {
@@ -409,13 +409,13 @@ void user_config(int type)
 	/* Legge i file di benvenuto e introduzione. */
 	switch(type) {
 	case LOGIN_OSPITE:
-		leggi_file(0, 10);
+                leggi_file(STDMSG_MESSAGGI, STDMSGID_INTRO_GUEST);
 		break;
 	case LOGIN_NUOVO:
-		leggi_file(0, 11);
+                leggi_file(STDMSG_MESSAGGI, STDMSGID_INTRO_NEW);
 		break;
 	case LOGIN_APPENA_VALIDATO:
-		leggi_file(0, 12);
+                leggi_file(STDMSG_MESSAGGI, STDMSGID_INTRO_JUST_VALIDATED);
 		break;
 	default:
 		return;

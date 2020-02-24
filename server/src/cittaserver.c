@@ -179,7 +179,7 @@ void esegue_messaggio(void);
 
 #define ERR_NOSERVER "Il server Cittadella/UX non gira attualmente!\n"
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
 	int porta;
 	int pos = 1;
@@ -365,9 +365,10 @@ int main(int argc, char **argv)
 			exit(0);
 
 		/* Apre il file per il log di sistema. */
-		logfile = fopen("./syslog", "a+");
+		logfile = fopen(FILE_SYSLOG, "a+");
 		if (logfile == NULL) {
-			fprintf(stderr, "Apertura file ./syslog fallita.\n");
+			fprintf(stderr, "Apertura file %s fallita.\n",
+                                FILE_SYSLOG);
 			exit(1);
 		}
 	}
@@ -408,7 +409,7 @@ void avvio_server(int porta)
         sessioni_imap4 = NULL;
 #endif
 
-	lista_sessioni = NULL;  
+	lista_sessioni = NULL;
 
 	citta_log("Cattura segnali.");
 	setup_segnali();
@@ -428,7 +429,7 @@ void avvio_server(int porta)
 
 	/* Legge la configurazione del sistema dal file sysconfig.rc */
 	citta_log("Legge configurazione di sistema.");
-	legge_configurazione(); 
+	legge_configurazione();
 
 	/* Legge i dati degli utenti e fa qualche check */
 	citta_log("Lettura dati del server, utenti, file message e room.");
@@ -632,10 +633,10 @@ void ciclo_server(int s)
 
 #if defined (OPEN_MAX)
 	max_num_desc = OPEN_MAX - 20; /* rivedere in base a quanti files usa */
-#else 
+#else
 	max_num_desc = MAX_DESC_DISP;
 #endif
-  
+
 	max_num_desc = MIN(max_num_desc, MAX_CONNESSIONI);
 
 	mask = sigmask(SIGUSR1) | sigmask(SIGUSR2) | sigmask(SIGINT) |
@@ -653,11 +654,11 @@ void ciclo_server(int s)
 	gettimeofday(&t_prec, (struct timezone *) 0);
 
 	/* Ciclo Principale */
-  
+
 	while (!chiudi) {
 		/* Controlla il tempo trascorso dalla iteraz precedente */
 		gettimeofday(&ora, (struct timezone *) NULL);
-		
+
 		/*
 		contatore++;
 		if (contatore == FREQUENZA) {
@@ -677,7 +678,7 @@ void ciclo_server(int s)
 		}
 		if (timeval_subtract(&timeout, &tictac, &trascorso)) {
 			/* citta_log("TIME: timeout negativo!"); */
-			timeout.tv_sec = 0; 
+			timeout.tv_sec = 0;
 			timeout.tv_usec = 0;
 		}
 		if (timeval_add(&t_prec, &ora, &timeout)) {
@@ -792,7 +793,7 @@ void ciclo_server(int s)
 					post_timeout(punto);
 			}
 		}
-		
+
 		/* Legge un po' di input */
 		for (punto = lista_sessioni; punto; punto = prossimo) {
 			prossimo = punto->prossima;
@@ -836,7 +837,7 @@ void ciclo_server(int s)
                                         prendi_da_coda_o(&punto->output,
                                                          &punto->iobuf);
 			/* Invia l'output */
-			if (FD_ISSET(punto->socket_descr, &output_set) && 
+			if (FD_ISSET(punto->socket_descr, &output_set) &&
 			    (iobuf_olen(&punto->iobuf) > 0 )) {
 				if (scrivi_a_client_iobuf(punto,
                                                           &punto->iobuf) < 0)
@@ -883,20 +884,20 @@ void ciclo_server(int s)
 
 		/* Cacciamo chi dorme al login */
 		sprintf(comm, "%d Login Timeout.\n", TOUT);
-		for (punto = lista_sessioni; punto; punto = prossimo) { 
+		for (punto = lista_sessioni; punto; punto = prossimo) {
 			prossimo = punto->prossima;
-			if ((punto->stato == CON_LIC) 
-			    && (punto->idle.min >= login_timeout_min)) { 
+			if ((punto->stato == CON_LIC)
+			    && (punto->idle.min >= login_timeout_min)) {
 				citta_logf("Login timeout da [%s].", punto->host);
 				punto->stato = CON_CHIUSA;
 				if (scrivi_a_client(punto, comm) < 0)
 					chiudi_sessione(punto);
 			}
-		} 
+		}
 
 		/* Cacciamo un altro po' di gente */
-		for (punto = lista_sessioni; punto; punto = prossimo) { 
-			prossimo = punto->prossima;        
+		for (punto = lista_sessioni; punto; punto = prossimo) {
+			prossimo = punto->prossima;
 			if (punto->stato == CON_CHIUSA)
 				chiudi_sessione(punto);
 		}
@@ -909,7 +910,7 @@ void ciclo_server(int s)
 		FD_ZERO(&http_output_set);
 		FD_ZERO(&http_exc_set);
 		FD_SET(http_socket, &http_input_set);
-                
+
 		for (http_p = sessioni_http; http_p ; http_p = http_p->next) {
 			FD_SET(http_p->desc, &http_input_set);
 			FD_SET(http_p->desc, &http_exc_set);
@@ -934,7 +935,7 @@ void ciclo_server(int s)
 		/* gestione richiesta http */
 		if (FD_ISSET(http_socket, &http_input_set)) {
 			citta_log("Nuova connessione http in arrivo.");
-			if (http_nuovo_descr(http_socket) < 0) 
+			if (http_nuovo_descr(http_socket) < 0)
 				Perror ("HTTP: Errore su nuova connessione");
 			dati_server.http_conn++;
 		}
@@ -989,7 +990,7 @@ void ciclo_server(int s)
                                 prendi_da_coda_o(&http_p->output,
                                                  &http_p->iobuf);
 			/* Invia l'output */
-			if (FD_ISSET(http_p->desc, &http_output_set) && 
+			if (FD_ISSET(http_p->desc, &http_output_set) &&
 			    (iobuf_olen(&http_p->iobuf) > 0 ))
 				if (scrivi_a_desc_iobuf(http_p->desc,
                                                         &http_p->iobuf) < 0)
@@ -1021,7 +1022,7 @@ void ciclo_server(int s)
 		FD_ZERO(&pop3_output_set);
 		FD_ZERO(&pop3_exc_set);
 		FD_SET(pop3_socket, &pop3_input_set);
-                
+
 		for (pop3_p = sessioni_pop3; pop3_p ; pop3_p = pop3_p->next) {
 			FD_SET(pop3_p->desc, &pop3_input_set);
 			FD_SET(pop3_p->desc, &pop3_exc_set);
@@ -1046,9 +1047,9 @@ void ciclo_server(int s)
 		/* gestione richiesta pop3 */
 		if (FD_ISSET(pop3_socket, &pop3_input_set)) {
 			citta_log("Nuova connessione POP3 in arrivo.");
-			if (pop3_nuovo_descr(pop3_socket) <0) 
+			if (pop3_nuovo_descr(pop3_socket) <0)
 				Perror ("POP3: Errore su nuova connessione");
-			else 
+			else
 				citta_logf("POP3: Connessione avvenuta.");
 			/* dati_server.pop3_conn++; */
 		}
@@ -1090,7 +1091,7 @@ void ciclo_server(int s)
 		/* Esamina un po' di comandi */
 		for (pop3_p = sessioni_pop3; pop3_p; pop3_p = pop3_next) {
 			pop3_next = pop3_p->next;
-			
+
 			if (prendi_da_coda(&pop3_p->input, comm, MAX_STRINGA))
 				pop3_interprete_comandi(pop3_p, comm);
 		}
@@ -1100,14 +1101,14 @@ void ciclo_server(int s)
 			pop3_next = pop3_p->next;
 			/* Trasferiamo un po' di output da coda a buffer */
 			while ( (pop3_p->output.partenza != NULL) &&
-				((MAX_STRINGA - strlen(pop3_p->out_buf)) > 
+				((MAX_STRINGA - strlen(pop3_p->out_buf)) >
 				 (strlen(pop3_p->output.partenza->testo)+1)) ) {
 				prendi_da_coda(&(pop3_p->output), comm,
                                                MAX_STRINGA);
 				strcat(pop3_p->out_buf, comm);
 			}
 			/* Invia l'output */
-			if (FD_ISSET(pop3_p->desc, &pop3_output_set) && 
+			if (FD_ISSET(pop3_p->desc, &pop3_output_set) &&
 			    (strlen(pop3_p->out_buf) > 0 ))
 				if (scrivi_a_desc(pop3_p->desc,pop3_p->out_buf)
 				    < 0)
@@ -1132,14 +1133,14 @@ void ciclo_server(int s)
 		}
 
 #endif /* USE_POP3 */
-		
+
 #ifdef USE_IMAP4
 		/* Controlla cosa accade nel imap4 */
 		FD_ZERO(&imap4_input_set);
 		FD_ZERO(&imap4_output_set);
 		FD_ZERO(&imap4_exc_set);
 		FD_SET(imap4_socket, &imap4_input_set);
-                
+
 		for (imap4_p=sessioni_imap4; imap4_p; imap4_p=imap4_p->next) {
 			FD_SET(imap4_p->desc, &imap4_input_set);
 			FD_SET(imap4_p->desc, &imap4_exc_set);
@@ -1164,9 +1165,9 @@ void ciclo_server(int s)
 		/* gestione richiesta imap4 */
 		if (FD_ISSET(imap4_socket, &imap4_input_set)) {
 			citta_log("Nuova connessione IMAP4 in arrivo.");
-			if (imap4_nuovo_descr(imap4_socket) <0) 
+			if (imap4_nuovo_descr(imap4_socket) <0)
 				Perror ("IMAP4: Errore su nuova connessione");
-			else 
+			else
 				citta_logf("IMAP4: Connessione avvenuta.");
 			/* dati_server.imap4_conn++; */
 		}
@@ -1208,7 +1209,7 @@ void ciclo_server(int s)
 		/* Esamina un po' di comandi */
 		for (imap4_p = sessioni_imap4; imap4_p; imap4_p = imap4_next) {
 			imap4_next = imap4_p->next;
-			
+
 			if (prendi_da_coda(&imap4_p->input, comm, MAX_STRINGA))
 				imap4_interprete_comandi(imap4_p, comm);
 		}
@@ -1218,14 +1219,14 @@ void ciclo_server(int s)
 			imap4_next = imap4_p->next;
 			/* Trasferiamo un po' di output da coda a buffer */
 			while ( (imap4_p->output.partenza != NULL) &&
-				((MAX_STRINGA - strlen(imap4_p->out_buf)) > 
+				((MAX_STRINGA - strlen(imap4_p->out_buf)) >
 				 (strlen(imap4_p->output.partenza->testo)+1))){
 				prendi_da_coda(&(imap4_p->output), comm,
                                                MAX_STRINGA);
 				strcat(imap4_p->out_buf, comm);
 			}
 			/* Invia l'output */
-			if (FD_ISSET(imap4_p->desc, &imap4_output_set) && 
+			if (FD_ISSET(imap4_p->desc, &imap4_output_set) &&
 			    (strlen(imap4_p->out_buf) > 0 ))
 				if (scrivi_a_desc(imap4_p->desc,imap4_p->out_buf)
 				    < 0)
@@ -1250,24 +1251,24 @@ void ciclo_server(int s)
 		}
 
 #endif /* USE_IMAP4 */
-		
+
 		/* E infine un po' di contabilita' */
 		cicli++;
-    
+
 		if (auto_save)
 			if (!(cicli % (60 * FREQUENZA)))   /* un minuto */
 				if(++min_da_crashsave >= tempo_auto_save) {
 					min_da_crashsave = 0;
 					crash_save_perfavore();
 				}
-                
+
 		if (!(cicli % (60 * 5 * FREQUENZA))) {  /* ogni 5 minuti */
 			socket_connessi = 0;
 			socket_attivi = 0;
 			for (punto = lista_sessioni; punto; punto = prossimo) {
 				prossimo = punto->prossima;
 				socket_connessi++;
-				if (punto->logged_in) 
+				if (punto->logged_in)
 					socket_attivi++;
 			}
 #ifdef USE_MEM_STAT
@@ -1285,7 +1286,7 @@ void ciclo_server(int s)
 #ifdef USE_RUSAGE
 			{
 				struct rusage rusagedata;
-				
+
 				if (getrusage(RUSAGE_SELF, &rusagedata) == 0)
 #ifdef MACOSX
 					citta_logf("carico: User time: %lds %dms  Sys time: %lds %dms %ld %ld %ld",
@@ -1314,13 +1315,13 @@ void ciclo_server(int s)
 
 		if (citta_shutdown) {
 			citta_sdwntimer--;
-			if (citta_sdwntimer<=0) 
+			if (citta_sdwntimer<=0)
 				chiudi = 1;
 			else
                                 /* Notifica lo shutdown ogni 5 minuti */
                                 /* ed ogni minuto gli ultimi 5 minuti */
 				if ( !(citta_sdwntimer % (60 * FREQUENZA)) &&
-				     ((citta_sdwntimer <= (5*60*FREQUENZA)) || 
+				     ((citta_sdwntimer <= (5*60*FREQUENZA)) ||
 				      !(citta_sdwntimer%(5*60*FREQUENZA)))) {
 					sprintf(buf, "%d %d|%d\n", SDWN,
 						(int)citta_sdwntimer
@@ -1335,7 +1336,7 @@ void ciclo_server(int s)
 					}
 				}
 		}
-		
+
 		if (cicli >= (10 * 60 * FREQUENZA)) { /* ogni 10 minuti */
 			cicli = 0;
 #ifdef USE_VALIDATION_KEY
@@ -1410,7 +1411,7 @@ void chiusura_server(int s)
 #ifdef USE_MEM_STAT
 	mem_log(); /* Verifica memory leaks: non dovrebbe rimanere nulla! */
 #endif
-	
+
 #ifdef USE_CLIENT_PORT
 	close_client_daemon();
 #endif
@@ -1429,7 +1430,7 @@ void cprintf(struct sessione *t, char *format, ...)
 #ifdef USE_MEM_STAT
 	char *tmp;
 #endif
-	
+
 	va_start(ap, format);
 #ifdef USE_MEM_STAT
 	/* TODO Non e' molto bello... si puo' fare di meglio... */
@@ -1448,7 +1449,7 @@ void cprintf(struct sessione *t, char *format, ...)
 }
 
 /*****************************************************************************/
-/* 
+/*
  * CRASH SAVE
  */
 void crash_save_perfavore(void)
@@ -1557,7 +1558,7 @@ void salva_dati_server(void)
 {
 	FILE *fp;
 	char bak[LBUF];
-        
+
 	sprintf(bak, "%s.bak", FILE_DATI_SERVER);
 	rename(FILE_DATI_SERVER, bak);
 
@@ -1566,7 +1567,7 @@ void salva_dati_server(void)
 		citta_log("SYSERR: Non posso aprire in scrittura il file dati_server.");
 		return;
 	}
-  
+
 	fwrite((struct dati_server *) &dati_server,
 		    sizeof(struct dati_server), 1, fp);
         /* TODO check that fwrite successful */
@@ -1586,7 +1587,7 @@ void chiusura_sessioni(int s)
 void chiudi_sessione(struct sessione *d)
 {
 	struct sessione *tmp;
-  
+
 	/* Se e` in una room virtuale, prima la elimino */
 	kill_virtual_room(d);
 
@@ -1626,7 +1627,7 @@ void chiudi_sessione(struct sessione *d)
 	}
 
         compress_free(d);
-    
+
 	Free(d);
 	/*vedere, vedere, vedere...*/
 }
@@ -1646,9 +1647,9 @@ void session_create(int desc, char *host)
 	/* Poi va creata una nuova struttura sessione per il nuovo arrivato */
 
   	CREATE(nuova_ses, struct sessione, 1, TYPE_SESSIONE);
-  
+
 	/* Inizializziamo la struttura coi dati della nuova sessione */
-  
+
 	nuova_ses->socket_descr = desc;
 	/* TODO SOSTITUIRE '49' CON APPOSITA COSTANTE */
 	strncpy(nuova_ses->host, host, 49);
@@ -1696,7 +1697,7 @@ void session_create(int desc, char *host)
 	/* Lo appiccichiamo in cima alla lista     */
 	nuova_ses->prossima = lista_sessioni;
 	lista_sessioni = nuova_ses;
-  
+
 }
 
 /*****************************************************************************/
@@ -1729,7 +1730,7 @@ pid_t serverlock_check(void)
 	lockfile = fopen(SERVER_LOCK, "r");
 	if (lockfile == NULL)
 		return 0;
-	
+
 	fscanf(lockfile, "%u\n", &pid);
 	fclose(lockfile);
 
@@ -1814,7 +1815,7 @@ void cmd_fsct(struct sessione *t)
 {
 	force_script();
 	cprintf(t, "%d\n", OK);
-	
+
 }
 
 

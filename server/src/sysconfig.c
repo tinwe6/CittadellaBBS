@@ -54,13 +54,13 @@ bool si_no(char *buf)
 
 /* Legge e interpreta la configurazione del server in sysconfig.rc          */
 
-void legge_configurazione(void) 
+void legge_configurazione(void)
 {
         FILE *fp;
         char buf[LBUF], buf1[LBUF];
-  
+
         /* Apre il file sysconfig */
-  
+
         fp = fopen(FILE_SYSCONFIG, "r");
         if (fp == NULL) {
                 citta_log("SYSTEM: file_sysconfig inesiste: creazione al prossimo shutdown.");
@@ -212,7 +212,7 @@ void sysconfig(char cmd[][256], char val[][256], int n_cmd)
                         }
                 }
                 if (!ok)
-/* &&(buf[0]!=13)&&(buf[0]!=10)) Per cancellare le righe vuote */ 
+/* &&(buf[0]!=13)&&(buf[0]!=10)) Per cancellare le righe vuote */
                         fprintf(fp, "%s", buf);
         }
 
@@ -220,7 +220,7 @@ void sysconfig(char cmd[][256], char val[][256], int n_cmd)
         for (n = 0; n < n_cmd; n++)
                 if (!fatto[n])
                         fprintf(fp, "%s%s\n", cmd[n], val[n]);
-        
+
         /* chiude i files */
         fclose(fp);
         fclose(fp1);
@@ -331,7 +331,7 @@ void cmd_esys(struct sessione *t, char *buf)
                         nameserver_lento = a;
                 }
                 break;
-                
+
 	 case '2':
                 /* 2 - Info sul server */
                 extract(aaa,buf,1);
@@ -498,7 +498,7 @@ void cmd_esys(struct sessione *t, char *buf)
 
 void cmd_rslg(struct sessione *t)
 {
-	legge_file(t,"./syslog");
+	legge_file(t, FILE_SYSLOG);
 }
 
 /*
@@ -523,7 +523,7 @@ void cmd_rsst(struct sessione *t)
 		dati_server.http_room, dati_server.http_userlist,
 		dati_server.http_help, dati_server.http_profile,
 		dati_server.http_blog);
-#endif	
+#endif
 	cprintf(t,"%d %d|%ld|%ld|%ld|%ld|%ld|%ld\n",
 		OK, SYSSTAT_MSG, dati_server.X, dati_server.broadcast,
 		dati_server.mails, dati_server.posts, dati_server.chat,
@@ -538,13 +538,13 @@ void cmd_rsst(struct sessione *t)
 #ifdef USE_FLOORS
 	cprintf(t, "%d %d|%ld|%ld\n", OK, SYSSTAT_FLOORS,
 		dati_server.floor_num, dati_server.floor_curr);
-#endif	
+#endif
 	cprintf(t,"%d %d|%ld|%ld|%ld\n", OK, SYSSTAT_FILEMSG,
 		dati_server.fm_num, dati_server.fm_curr, dati_server.fm_basic);
 #ifdef USE_CACHE_POST
 	cprintf(t, "%d %d|%ld|%ld|%ld\n", OK, SYSSTAT_CACHE, post_cache->num,
 		post_cache->requests, post_cache->hits);
-#endif	
+#endif
 #ifdef USE_MEM_STAT
 	cprintf(t, "%d %d|%ld|%ld\n", SEGUE_LISTA, SYSSTAT_MEMORY, mem_tot(),
 		mem_max());
@@ -554,7 +554,7 @@ void cmd_rsst(struct sessione *t)
 				type_table[i].type, mem_stats[i],
 				mem_stats[i]*type_table[i].size);
 	cprintf(t, "000\n");
-#endif	
+#endif
 	sprintf(buf, "%d %d|", OK, SYSSTAT_CONN_DAY);
 	for (i = 0; i < 24; i++)
 		sprintf(buf + strlen(buf), "%ld|",
