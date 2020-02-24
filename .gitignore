@@ -33,7 +33,3 @@ server/lib/help/manuale
 
 # tarballs
 cittadella-*.tgz
-
-# personal files
-private/
-snippets/
