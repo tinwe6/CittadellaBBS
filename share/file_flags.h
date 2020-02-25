@@ -40,6 +40,7 @@ typedef enum {
         STDMSGID_INTRO_GUEST,
         STDMSGID_INTRO_NEW,
         STDMSGID_INTRO_JUST_VALIDATED,
+        STDMSGID_DATA_PROTECTION,
 } Stdmsg_id;
 
 /* Tipo file */
