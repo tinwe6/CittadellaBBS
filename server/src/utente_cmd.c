@@ -77,8 +77,9 @@ void notify_logout(struct sessione *t, int tipo);
  * Procedura di Login, passo 1.
  * Il client comunica al server il nome dell'utente.
  * Sintassi : "USER nome"
- * Risponde : ERROR se nome e' "" o se la sessione ha gia' eseguito un login
- *            OK has_other_connection|is_new|is_first_user|is_validated
+ * Risponde : "OK has_other_conn|is_guest|is_new_usr|is_first_usr|is_validated"
+ *   oppure ERROR se nome e' "" o se la sessione ha gia' eseguito un login
+ *
  * For compatibility with protocol pre 0.4.5, we send as OK a full code that
  * contains user info (guest, new, not validated, validated). In future
  * releases we'll simply send the OK code '200'.
@@ -86,9 +87,9 @@ void notify_logout(struct sessione *t, int tipo);
 void cmd_user(struct sessione *t, char *nome)
 {
         struct dati_ut *utente;
-        struct sessione *s;
         bool has_other_connection = false;
         bool is_guest = false;
+        bool is_new_user = false;
         bool is_first_user = false;
         bool is_validated = false;
 	int code;
@@ -100,6 +101,7 @@ void cmd_user(struct sessione *t, char *nome)
 
         code = OK;
         if(!strcmp(nome, "Ospite") || !strcmp(nome, "Guest")) {
+                is_guest = true;
                 code = UT_OSPITE;
         } else {
                 /* Ci si mette subito in stato occupato altrimenti
@@ -125,8 +127,8 @@ void cmd_user(struct sessione *t, char *nome)
                         has_other_connection = (collegato(nome) != NULL);
                 }
         }
-        cprintf(t, "%d %d|%d|%d|%d\n", code, has_other_connection, is_new,
-                is_first_user, is_validated);
+        cprintf(t, "%d %d|%d|%d|%d|%d\n", code, has_other_connection,
+                is_guest, is_new_user, is_first_user, is_validated);
 }
 
 /*

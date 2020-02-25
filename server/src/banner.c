@@ -181,7 +181,7 @@ void cmd_lban(struct sessione *t, char *cmd)
                 else
                         cprintf(t, "%d %d utenti connessi\n", OK, num_ut());
         }
-	cprintf(t, "%d <b;fg=6>\n", OK);
+	cprintf(t, "%d </b;fg=6>\n", OK);
 	send_random_banner(t);
 	if (!nobanner)
 		cprintf(t, "%d \n", OK);

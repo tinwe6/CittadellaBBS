@@ -30,7 +30,7 @@
 
 /* Prototipi funzioni in questo file */
 int login(void);
-static int login_new_user (void);
+static int login_new_user (bool is_first_user);
 static int login_ospite(void);
 static int login_non_val(void);
 static int login_validato(void);
@@ -46,10 +46,12 @@ void user_config(int type);
  */
 int login(void)
 {
-        char buf[LBUF], def[LBUF] = "";
+        char buf[LBUF];
         int ok = LOGIN_FAILED;
+        bool has_other_connection, is_guest, is_new_user, is_first_user,
+             is_validated;
 
-	if (USER_NAME && (USER_NAME[0] != '\0')) {
+        if (USER_NAME && (USER_NAME[0] != '\0')) {
 		strncpy(nome, client_cfg.name, MAXLEN_UTNAME);
 		nome[MAXLEN_UTNAME - 1] = '\0';
 	} else {
@@ -67,8 +69,13 @@ int login(void)
 "nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"
                                  ));
                         do {
-			        new_str_M(_("\nNome    : "), nome,
-					  MAXLEN_UTNAME - 1);
+                                if (*nome == 0) {
+                                        new_str_M(_("\nNome    : "), nome,
+                                                  MAXLEN_UTNAME - 1);
+                                } else {
+                                        new_str_def_M(_("\nNome"), nome,
+                                                      MAXLEN_UTNAME - 1);
+                                }
                         } while (*nome == 0);
 
                         if ((!strcmp(nome,"Esci"))||(!strcmp(nome,"Off"))) {
@@ -80,9 +87,49 @@ int login(void)
                 serv_putf("USER %s", nome);
                 serv_gets(buf);
 
-                if (extract_int(buf+4, 0)) {
+                if (buf[0] != '2') {
+                        /* this should never happen... */
                         cml_printf(_(
-                          "\n*** L'utente %s &egrave; gi&agrave; collegato.\n"
+"\n*** Si &egrave prodotto un errore... ricomincia!\n"
+                                     ));
+                        nome[0] = '\0';
+                        continue;
+                }
+
+                /*--8<-------------------------------------------------*/
+                /* TODO this is for compatibility with the old login   */
+                /* protocol and must be eliminated before next release */
+                if (num_parms(buf+4) < 3) {
+                        switch (buf[2]) {
+                        case '0': /* nuovo utente */
+                                ok = login_new_user(is_first_user);
+                                break;
+                        case '1': /* ospite */
+                                ok = login_ospite();
+                                break;
+                        case '2': /* utente non validato */
+                                ok = login_non_val();
+                                break;
+                        case '3': /* utente validato */
+                                ok = login_validato();
+                                break;
+                        }
+                        if (ok == LOGIN_FAILED) {
+                                nome[0] = 0;
+                        }
+                        continue;
+                }
+                /*--8<-------------------------------------------------*/
+
+                has_other_connection = extract_bool(buf+4, 0);
+                is_guest = extract_bool(buf+4, 1);
+                is_new_user = extract_bool(buf+4, 2);
+                is_first_user = extract_bool(buf+4, 3);
+                is_validated = extract_bool(buf+4, 4);
+
+                if (has_other_connection) {
+                        cml_printf(_(
+"\n*** L'utente %s &egrave; gi&agrave; collegato.\n"
                                      ), nome);
                         printf(_(
 "\nVuoi continuare il login ed eliminare l'altra sessione? (s/n) "
@@ -92,24 +139,20 @@ int login(void)
                         }
                 }
 
-                switch (buf[2]) {
-                case '0': /* nuovo utente */
-                        ok = login_new_user();
-                        break;
-                case '1': /* ospite */
+                if (is_new_user) {
+                        ok = login_new_user(is_first_user);
+                } else if (is_guest) {
                         ok = login_ospite();
-                        break;
-                case '2': /* utente non validato */
-                        ok = login_non_val();
-                        break;
-                case '3': /* utente validato */
+                } else if (is_validated) {
                         ok = login_validato();
-                        break;
+                } else {
+                        ok = login_non_val();
                 }
+
                 if (ok == LOGIN_FAILED) {
-			strcpy(def, nome);
                         nome[0] = 0;
 		}
+
 	}
 	return ok;
 }
@@ -120,11 +163,10 @@ int login(void)
  * accettazione dei termini (GDPR) e procedura di validazione.
  * Restituisce 1 se e' andato tutto bene.
  */
-static int login_new_user (void)
+static int login_new_user (bool is_first_user)
 {
         char buf[LBUF], passwd[MAXLEN_PASSWORD], passwd1[MAXLEN_PASSWORD];
-        char loop;
-	bool primo_utente = false;
+	bool terms_accepted = false;
 
         printf(_("\nRecord non esistente. Nuovo utente? (s/n) "));
         if (si_no()=='n') {
@@ -144,27 +186,29 @@ static int login_new_user (void)
         /* Chiede una password */
         putchar('\n');
         leggi_file(STDMSG_MESSAGGI, STDMSGID_CHANGE_PWD);
-        loop = 0;
-        while (loop == 0) {
-                do {
+
+        while (true) {
+                while (true) {
                         new_str_m(_("Inserisci la password che vuoi usare: "),
                                   passwd, - (MAXLEN_PASSWORD - 1));
-                        if (!strlen(passwd))
-                                cml_print(_("La password non pu&oacute; essere vuota!\n"));
-                } while (strlen(passwd) == 0);
+                        if (strlen(passwd) == 0) {
+                                cml_print(_(
+"\nLa password non pu&oacute; essere vuota!\n"
+                                            ));
+                        } else {
+                                break;
+                        }
+                }
                 new_str_m(_("Reimmetti la password che vuoi usare: "),
                           passwd1, -(MAXLEN_PASSWORD - 1));
-                if (!strcmp(passwd, passwd1))
-                        loop = 1;
-                else
+                if (!strcmp(passwd, passwd1)) {
+                        break;
+                } else {
                         printf(_("\nLe password non coincidono. Riprova.\n"));
+                }
         }
-        serv_putf("USR1 %s|%s", nome, passwd);
-        serv_gets(buf);
-        if (buf[0] != '2')
-                pulisci_ed_esci();
-	if (buf[1] == '1') {
-		primo_utente = true;
+
+        if (is_first_user) {
 		cml_printf(_(
 "\n\nCongratulazioni!!\n"
 "Sei il primo utente di questa BBS, e sar&agrave; tuo compito gestirla.\n"
@@ -174,7 +218,7 @@ static int login_new_user (void)
 "registrazione, anche se non hai bisogno di validarti... :)\n\n"
                              ));
 		hit_any_key();
-	}
+        }
 
         /* Ask to accept terms */
         putchar('\n');
@@ -189,22 +233,35 @@ static int login_new_user (void)
 "Puoi comunque collegarti come Ospite per dare un'occhiata.\n"
                          ));
                 return LOGIN_FAILED;
+        } else {
+                terms_accepted = true;
         }
 
+        /* completa il login */
+        serv_putf("USR1 %s|%s", nome, passwd);
+        serv_gets(buf);
+        if (buf[0] != '2') {
+                pulisci_ed_esci();
+        }
+        assert((buf[1] == '1') == is_first_user);
 
+        /* Registration */
         leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
         putchar('\n');
         hit_any_key();
         putchar('\n');
         registrazione(true);
-        /* configurazione(); */
-	if (primo_utente)
-		return LOGIN_NUOVO;
-	serv_puts("GVAL");
-        serv_gets(buf);
-        if (buf[0] != '2')
-                /* L'utente deve registrarsi prima di richiedere la valkey! */
-                pulisci_ed_esci();
+
+        /* Ask for a validation key (unless it's the first user) */
+	if (!is_first_user) {
+                serv_puts("GVAL");
+                serv_gets(buf);
+                if (buf[0] != '2') {
+                        /* L'utente deve registrarsi prima di richiedere */
+                        /* la valkey! () */
+                        pulisci_ed_esci();
+                }
+        }
         return LOGIN_NUOVO;
 }
 
