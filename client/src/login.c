@@ -62,25 +62,34 @@ int login(void)
 
         while(ok == LOGIN_FAILED) {
                 if (*nome == 0) {
-                        printf(_("\nInserire il nome che si vuole utilizzare presso la bbs oppure 'Ospite' \n"
-				 "nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"));
+                        printf(_(
+"\nInserire il nome che si vuole utilizzare presso la bbs oppure 'Ospite' \n"
+"nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"
+                                 ));
                         do {
 			        new_str_M(_("\nNome    : "), nome,
 					  MAXLEN_UTNAME - 1);
                         } while (*nome == 0);
 
-                        if ((!strcmp(nome,"Esci"))||(!strcmp(nome,"Off")))
+                        if ((!strcmp(nome,"Esci"))||(!strcmp(nome,"Off"))) {
                                 pulisci_ed_esci();
-                } else
+                        }
+                } else {
 			printf(_("\nNome    : %s\n"), nome);
+                }
                 serv_putf("USER %s", nome);
                 serv_gets(buf);
 
                 if (extract_int(buf+4, 0)) {
-                                cml_printf(_("\n*** L'utente %s &egrave; gi&agrave; collegato.\n"), nome);
-                                printf(_("\nVuoi continuare il login ed eliminare l'altra sessione? (s/n) "));
-                                if (si_no() == 'n')
-                                        pulisci_ed_esci();
+                        cml_printf(_(
+                          "\n*** L'utente %s &egrave; gi&agrave; collegato.\n"
+                                     ), nome);
+                        printf(_(
+"\nVuoi continuare il login ed eliminare l'altra sessione? (s/n) "
+                                 ));
+                        if (si_no() == 'n') {
+                                pulisci_ed_esci();
+                        }
                 }
 
                 switch (buf[2]) {
@@ -107,8 +116,9 @@ int login(void)
 
 /*
  * Procedura di login per un nuovo utente.
- * Consiste nella conferma del nome, definizione di una password
- * e procedura di validazione. Restituisce 1 se e' andato tutto bene.
+ * Consiste nella conferma del nome, creazione di una password,
+ * accettazione dei termini (GDPR) e procedura di validazione.
+ * Restituisce 1 se e' andato tutto bene.
  */
 static int login_new_user (void)
 {
@@ -155,14 +165,33 @@ static int login_new_user (void)
                 pulisci_ed_esci();
 	if (buf[1] == '1') {
 		primo_utente = true;
-		cml_printf("\n\nCongratulazioni!!\n"
+		cml_printf(_(
+"\n\nCongratulazioni!!\n"
 "Sei il primo utente di questa BBS, e sar&agrave; tuo compito gestirla.\n"
 "Hai automaticamente il livello 'Sysop', che ti rende onnipotente.\n\n"
 "Questo non ti risparmia per&ograve; dal compito di dare il buon esempio\n"
 "agli altri utenti, perci&ograve; passiamo comunque alla fase di\n"
-"registrazione, anche se non hai bisogno di validarti... :)\n\n");
+"registrazione, anche se non hai bisogno di validarti... :)\n\n"
+                             ));
 		hit_any_key();
 	}
+
+        /* Ask to accept terms */
+        putchar('\n');
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_DATA_PROTECTION);
+        putchar('\n');
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_PRIVACY);
+
+        cml_printf(_("\nAccetti queste condizioni? (s/n) "));
+        if (si_no() == 'n') {
+                printf(_(
+"\nSiamo spiacenti ma allora non puoi registrarti a Cittadella BBS...\n"
+"Puoi comunque collegarti come Ospite per dare un'occhiata.\n"
+                         ));
+                return LOGIN_FAILED;
+        }
+
+
         leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
         putchar('\n');
         hit_any_key();
