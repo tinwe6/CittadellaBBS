@@ -44,6 +44,7 @@ void cripta(char *pwd);
 bool is_friend(struct dati_ut *amico, struct dati_ut *utente);
 bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente);
 void sut_set_all(int num, char flag);
+void sut_clear_all(int num, char flag);
 
 #ifdef USE_VALIDATION_KEY
 void invia_val_key(char *valkey, char *addr);
@@ -406,7 +407,7 @@ bool has_accepted_terms(struct dati_ut *user)
 }
 
 /*
- * Setta il flag 'flag' di sflag[num] per tutti gli utenti.
+ * Setta il bit 'flag' di sflag[num] per tutti gli utenti.
  */
 void sut_set_all(int num, char flag)
 {
@@ -414,6 +415,17 @@ void sut_set_all(int num, char flag)
 
         for (punto = lista_utenti; punto; punto = punto->prossimo)
 		punto->dati->sflags[num] |= flag;
+}
+
+/*
+ * Resetta il bit 'flag' di sflag[num] per tutti gli utenti.
+ */
+void sut_clear_all(int num, char flag)
+{
+        struct lista_ut *punto;
+
+        for (punto = lista_utenti; punto; punto = punto->prossimo)
+		punto->dati->sflags[num] &= ~flag;
 }
 
 /***************************************************************************/
