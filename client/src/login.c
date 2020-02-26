@@ -245,6 +245,10 @@ static int login_new_user (bool is_first_user)
         }
         assert((buf[1] == '1') == is_first_user);
 
+        /* Send the user consent for data processing to the server */
+        serv_putf("CNST %d", terms_accepted);
+        serv_gets(buf); /* we don't check the response, as it will be OK */
+
         /* Registration */
         leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
         putchar('\n');

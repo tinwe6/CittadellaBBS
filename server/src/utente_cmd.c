@@ -52,6 +52,7 @@ void cmd_rusr(struct sessione *t);
 void cmd_rgst(struct sessione *t, char *buf);
 void cmd_breg(struct sessione *t);
 void cmd_greg(struct sessione *t);
+void cmd_cnst(struct sessione *t, char *buf);
 char cmd_cusr(struct sessione *t, char *nome, char notifica);
 void cmd_kusr(struct sessione *t, char *nome);
 void cmd_eusr(struct sessione *t, char *buf);
@@ -537,6 +538,26 @@ void cmd_greg(struct sessione *t)
 	cprintf(t, "%d %s|%s|%s|%s|%s|%s|%s|%s|%d\n", OK, ut->nome_reale,
 		ut->via, ut->citta, ut->cap, ut->stato, ut->tel, ut->email,
 		ut->url, (ut->sflags[0]) & SUT_SEX);
+}
+
+/*
+ * Receives user consent for personal data processing.
+ * The user must be in CON_REG state.
+ */
+void cmd_cnst(struct sessione *t, char *buf)
+{
+        bool user_has_given_consent = extract_bool(buf, 0);
+
+        if (user_has_given_consent) {
+                t->utente->sflags[0] |= SUT_CONSENT;
+                citta_logf("Data protection: User [%s] accepted the terms.",
+                           t->utente->nome);
+        } else {
+                t->utente->sflags[0] &= ~SUT_CONSENT;
+                citta_logf("Data protection: user [%s] revoked the terms.",
+                           t->utente->nome);
+        }
+	cprintf(t, "%d\n", OK);
 }
 
 /*

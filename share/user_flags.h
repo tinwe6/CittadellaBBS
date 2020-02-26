@@ -192,7 +192,7 @@
 #define SUT_REGISTRATO  2  /* 1: se l'utente e' registrato           */
 #define SUT_NEWS        4  /* 1: non ha ancora letto nuove news      */
 #define SUT_UPGRADE     8  /* 1: primo collegamento con nuovo client */
-#define SUT_GDPR       16  /* 1: l'utente ha accettato le condizioni */
+#define SUT_CONSENT    16  /* 1: l'utente ha accettato le condizioni */
 #define SUTDEF_0        0
 
 /* sflags[1] : divieti */
