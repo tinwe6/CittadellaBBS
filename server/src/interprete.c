@@ -102,7 +102,7 @@ static const struct comando cmd_list[] = {
 { "CHEK", { cmd_chek }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
 { "CLAS", { cmd_clas }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "CMSG", { cmd_cmsg }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
-{ "CNST", { .pass_arg = cmd_cnst }, PASS_ARG, CON_REG, MINLVL_REGISTRATION },
+{ "CNST", { .pass_arg = cmd_cnst}, PASS_ARG,CON_MASK_CNST,MINLVL_REGISTRATION},
 { "CUSR", { .special = cmd_cusr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*veder*/
 { "CWHO", { cmd_cwho }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "DEST", { .pass_arg = cmd_dest }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },

@@ -114,13 +114,13 @@
 #define PTOU             860 /* Post TimeOUt                   */
 
 /* 900-999 Comandi che il client esegue quando puo`   */
-#define BHDR             900 /* Broadcast HeaDeR      */ 
+#define BHDR             900 /* Broadcast HeaDeR      */
 #define BTXT             902 /* Broadcast TeXT        */
 #define BEND             903 /* Broadcast END         */
 #define XHDR             901 /* Xmsg HeaDeR           */
 #define XTXT             902 /* Xmsg TeXT             */
 #define XEND             903 /* Xmsg END              */
-#define CHDR             904 /* Chat HeaDeR           */ 
+#define CHDR             904 /* Chat HeaDeR           */
 #define CTXT             905 /* Chat TeXT             */
 #define CEND             906 /* Chat END              */
 #define DEST             907 /* Aggiunge destinatario */
@@ -176,6 +176,7 @@
                         | CON_EUSR )
 #define CON_MASK_REF   ( CON_REFERENDUM | CON_REF_PARM )
 #define CON_MASK_TABC  ( CON_COMANDI | CON_XMSG | CON_POST)
+#define CON_MASK_CNST  ( CON_REG | CON_COMANDI)
 
 /* Stato comandi che richiedono invio testo con TEXT */
 #define CON_MASK_TEXT  ( CON_MASK_COM | CON_PROFILE | CON_ROOM_INFO \

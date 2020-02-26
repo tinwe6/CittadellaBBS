@@ -78,7 +78,7 @@ void notify_logout(struct sessione *t, int tipo);
  * Procedura di Login, passo 1.
  * Il client comunica al server il nome dell'utente.
  * Sintassi : "USER nome"
- * Risponde : "OK has_other_conn|is_guest|is_new_usr|is_first_usr|is_validated"
+ * Risponde : "OK already_conn|is_guest|is_new_usr|is_first_usr|is_validated"
  *   oppure ERROR se nome e' "" o se la sessione ha gia' eseguito un login
  *
  * For compatibility with protocol pre 0.4.5, we send as OK a full code that
@@ -137,12 +137,16 @@ void cmd_user(struct sessione *t, char *nome)
  * Verifica la password e associa alla sessione la struct utente.
  * (o la crea se necessario). Viene anche caricata la struttura UTR.
  * Sintassi : "USR1 nome|password"
+ * Risponde : "OK messaggio|is_first_user|terms_accepted"
+ *          o "ERROR+PASSWORD messaggio" se password e' errata
  */
 void cmd_usr1(struct sessione *t, char *arg)
 {
         char passwd[MAXLEN_PASSWORD], nome[MAXLEN_UTNAME];
-        int i, err_pwd = 0;
-	bool primo_utente = false;
+        int i;
+        bool wrong_pwd = false;
+	bool is_first_user = false;
+        bool terms_accepted = false;
 	time_t ora;
 	struct tm *tmst;
         struct sessione  *s;
@@ -187,7 +191,7 @@ void cmd_usr1(struct sessione *t, char *arg)
                         lista_utenti = punto;
 			utente->val_key[0] = 0;     /* Niente Validazione */
                         utente->livello = LVL_SYSOP; /* Entra come sysop  */
-			primo_utente = true;
+			is_first_user = true;
                 } else {
                         ultimo_utente->prossimo = punto;
                         utente->livello = livello_iniziale;
@@ -227,11 +231,13 @@ void cmd_usr1(struct sessione *t, char *arg)
                 utente->flags[5] = UTDEF_5;
                 utente->flags[6] = UTDEF_6;
                 utente->flags[7] = UTDEF_7;
-                for (i = 0; i < 8; i++)
+                for (i = 0; i < 8; i++) {
                         utente->sflags[i] = 0;
+                }
                 /* Inizializza friend-list ed enemy-list */
-                for (i = 0; i < 2*NFRIENDS; i++)
+                for (i = 0; i < 2*NFRIENDS; i++) {
                         utente->friends[i] = -1L;
+                }
                 /* Si mette subito in stato di registrazione, altrimenti
 		 * potrebbe essere possibile bypassarla.                 */
                 t->stato = CON_REG;
@@ -242,8 +248,9 @@ void cmd_usr1(struct sessione *t, char *arg)
                 extractn(passwd, arg, 1, MAXLEN_PASSWORD);
                 if (check_password(passwd, utente->password)) {
                         /* Killa l'alter ego se presente */
-                        if (( (s = collegato(nome)) != NULL) && (s != t))
+                        if (( (s = collegato(nome)) != NULL) && (s != t)) {
                                 s->cancella = true;
+                        }
 #ifdef USE_POP3
                         /* Elimina la sessione POP3 se presente */
                         pop3_kill_user(nome);
@@ -251,26 +258,33 @@ void cmd_usr1(struct sessione *t, char *arg)
                         /* Passo in modo comandi */
                         t->stato = CON_COMANDI;
                         t->occupato = 0;
-                } else
-                        err_pwd = 1; /* password errata! */
+                } else {
+                        wrong_pwd = true; /* password errata! */
+                }
         }
 
-        if (err_pwd) {
+        if (wrong_pwd) {
                 cprintf(t, "%d Password errata.\n", ERROR+PASSWORD);
-                citta_logf("SECURE: Pwd errata per [%s] da [%s]", nome, t->host);
+                citta_logf("SECURE: Pwd errata per [%s] da [%s]", nome,
+                           t->host);
                 t->stato = CON_LIC;
         } else { /* Password corretta */
+                int code = OK;
                 /* Linkiamo la struttura dati dell'utente alla sua sessione */
                 t->utente = utente;
                 utr_load(t);
                 mail_load(t);
                 (utente->chiamate)++;
                 citta_logf("Login di [%s] da [%s].", utente->nome, t->host);
-		if (primo_utente)
-			cprintf(t, "%d Login eseguito.\n", OK + PRIMO_UT);
-		else
-			cprintf(t, "%d Login eseguito.\n", OK);
-		/* Aggiorna conteggio # utenti connessi */
+                terms_accepted = has_accepted_terms(utente);
+                /* TODO: this is for compatibility only, send simply OK     */
+		if (is_first_user) {
+                        code = OK + PRIMO_UT;
+                }
+                cprintf(t, "%d Login eseguito.|%d|%d\n", code, is_first_user,
+                        terms_accepted);
+
+                /* Aggiorna conteggio # utenti connessi */
 		logged_users++;
 		/* Aggiorna le statistiche              */
 		dati_server.login++;
@@ -546,6 +560,8 @@ void cmd_greg(struct sessione *t)
  */
 void cmd_cnst(struct sessione *t, char *buf)
 {
+        struct room *room;
+        struct text *txt;
         bool user_has_given_consent = extract_bool(buf, 0);
 
         if (user_has_given_consent) {
@@ -556,6 +572,22 @@ void cmd_cnst(struct sessione *t, char *buf)
                 t->utente->sflags[0] &= ~SUT_CONSENT;
                 citta_logf("Data protection: user [%s] revoked the terms.",
                            t->utente->nome);
+
+                if ( (room = room_find(sysop_room))) {
+                        txt = txt_create();
+                        txt_putf(txt,
+"L'utente [%s] non ha accettato le condizione sul"
+                                 , t->utente->nome);
+                        txt_putf(txt,
+"trattamento dei dati e percio' il suo account e tutti i suoi dati"
+                                 );
+                        txt_putf(txt,
+"personali vanno cancellati entro 48 ore."
+                                 );
+                        citta_post(room, "GDPR: Richiesta di cancellazione",
+                                   txt);
+                        txt_free(&txt);
+                }
         }
 	cprintf(t, "%d\n", OK);
 }

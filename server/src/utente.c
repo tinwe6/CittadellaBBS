@@ -262,7 +262,7 @@ void invia_val_key(char *valkey, char *addr)
         unlink(tmpf2);
         Free(tmpf);
         Free(tmpf2);
-}   
+}
 
 /*
  * Elimina gli utenti di livello 0 e gli utenti che non si sono
@@ -398,6 +398,11 @@ bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente)
                 if (utente->friends[i] == matr)
                         return true;
         return false;
+}
+
+bool has_accepted_terms(struct dati_ut *user)
+{
+        return user->sflags[0] & SUT_CONSENT;
 }
 
 /*

@@ -28,12 +28,16 @@
 #include "utility.h"
 #include "macro.h"
 
+enum {
+        USER_NOT_YET_VALIDATED,
+        USER_IS_VALIDATED,
+};
+
 /* Prototipi funzioni in questo file */
 int login(void);
 static int login_new_user (bool is_first_user);
 static int login_ospite(void);
-static int login_non_val(void);
-static int login_validato(void);
+static int login_user(int user_is_validated);
 void chiedi_valkey(void);
 static bool auto_validazione(void);
 void login_banner(void);
@@ -79,7 +83,7 @@ int login(void)
                         } while (*nome == 0);
 
                         if ((!strcmp(nome,"Esci"))||(!strcmp(nome,"Off"))) {
-                                pulisci_ed_esci();
+                                pulisci_ed_esci(SHOW_EXIT_BANNER);
                         }
                 } else {
 			printf(_("\nNome    : %s\n"), nome);
@@ -90,7 +94,7 @@ int login(void)
                 if (buf[0] != '2') {
                         /* this should never happen... */
                         cml_printf(_(
-"\n*** Si &egrave prodotto un errore... ricomincia!\n"
+"\n*** Si &egrave; prodotto un errore... ricomincia!\n"
                                      ));
                         nome[0] = '\0';
                         continue;
@@ -108,10 +112,10 @@ int login(void)
                                 ok = login_ospite();
                                 break;
                         case '2': /* utente non validato */
-                                ok = login_non_val();
+                                ok = login_user(USER_NOT_YET_VALIDATED);
                                 break;
                         case '3': /* utente validato */
-                                ok = login_validato();
+                                ok = login_user(USER_IS_VALIDATED);
                                 break;
                         }
                         if (ok == LOGIN_FAILED) {
@@ -135,7 +139,7 @@ int login(void)
 "\nVuoi continuare il login ed eliminare l'altra sessione? (s/n) "
                                  ));
                         if (si_no() == 'n') {
-                                pulisci_ed_esci();
+                                pulisci_ed_esci(SHOW_EXIT_BANNER);
                         }
                 }
 
@@ -144,9 +148,9 @@ int login(void)
                 } else if (is_guest) {
                         ok = login_ospite();
                 } else if (is_validated) {
-                        ok = login_validato();
+                        ok = login_user(USER_IS_VALIDATED);
                 } else {
-                        ok = login_non_val();
+                        ok = login_user(USER_NOT_YET_VALIDATED);
                 }
 
                 if (ok == LOGIN_FAILED) {
@@ -156,6 +160,22 @@ int login(void)
 	}
 	return ok;
 }
+
+/*
+ * Displays the messages on data protection and privacy, and asks the user
+ * to accept the terms. Returns true if (s)he does, false otherwise.
+ */
+static bool ask_accept_terms()
+{
+        putchar('\n');
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_DATA_PROTECTION);
+        putchar('\n');
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_PRIVACY);
+
+        cml_printf(_("\nAccetti queste condizioni? (s/n) "));
+        return (si_no() == 's');
+}
+
 
 /*
  * Procedura di login per un nuovo utente.
@@ -221,33 +241,24 @@ static int login_new_user (bool is_first_user)
         }
 
         /* Ask to accept terms */
-        putchar('\n');
-        leggi_file(STDMSG_MESSAGGI, STDMSGID_DATA_PROTECTION);
-        putchar('\n');
-        leggi_file(STDMSG_MESSAGGI, STDMSGID_PRIVACY);
-
-        cml_printf(_("\nAccetti queste condizioni? (s/n) "));
-        if (si_no() == 'n') {
+        terms_accepted = ask_accept_terms();
+        if (!terms_accepted) {
                 printf(_(
 "\nSiamo spiacenti ma allora non puoi registrarti a Cittadella BBS...\n"
 "Puoi comunque collegarti come Ospite per dare un'occhiata.\n"
                          ));
                 return LOGIN_FAILED;
-        } else {
-                terms_accepted = true;
         }
 
         /* completa il login */
         serv_putf("USR1 %s|%s", nome, passwd);
         serv_gets(buf);
+        /* The server should always reply OK here! */
         if (buf[0] != '2') {
-                pulisci_ed_esci();
+                pulisci_ed_esci(SHOW_EXIT_BANNER);
         }
+        assert(is_first_user == extract_bool(buf + 4, 1));
         assert((buf[1] == '1') == is_first_user);
-
-        /* Send the user consent for data processing to the server */
-        serv_putf("CNST %d", terms_accepted);
-        serv_gets(buf); /* we don't check the response, as it will be OK */
 
         /* Registration */
         leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
@@ -256,6 +267,10 @@ static int login_new_user (bool is_first_user)
         putchar('\n');
         registrazione(true);
 
+        /* Send the user consent for data processing to the server */
+        serv_putf("CNST %d", terms_accepted);
+        serv_gets(buf); /* we don't check the response, as it will be OK */
+
         /* Ask for a validation key (unless it's the first user) */
 	if (!is_first_user) {
                 serv_puts("GVAL");
@@ -263,7 +278,7 @@ static int login_new_user (bool is_first_user)
                 if (buf[0] != '2') {
                         /* L'utente deve registrarsi prima di richiedere */
                         /* la valkey! () */
-                        pulisci_ed_esci();
+                        pulisci_ed_esci(SHOW_EXIT_BANNER);
                 }
         }
         return LOGIN_NUOVO;
@@ -281,62 +296,21 @@ static int login_ospite(void)
         serv_putf("USR1 %s", nome);
         serv_gets(buf);
 
-        if (buf[0] != '2')
-                pulisci_ed_esci();
+        if (buf[0] != '2') {
+                pulisci_ed_esci(SHOW_EXIT_BANNER);
+        }
         return LOGIN_OSPITE;
 }
 
 /*
  * Procedura di login per gli utenti non validati.
- * Restituisce 1 se e' andato tutto bene.
+ * Restituisce il risultato del login.
  */
-static int login_non_val(void)
-{
-        char buf[LBUF];
-        char passwd[MAXLEN_PASSWORD];
-	bool auto_login = false;
-
-	if (USER_PWD && (USER_PWD[0] != '\0')) {
-		strncpy(passwd, USER_PWD, MAXLEN_PASSWORD-1);
-		passwd[MAXLEN_PASSWORD-1] = '\0';
-		Free(USER_PWD);
-		USER_PWD = strdup("");
-		auto_login = true;
-	} else
-		new_str_m(_("Password: "), passwd, -(MAXLEN_PASSWORD - 1));
-        serv_putf("USR1 %s|%s", nome, passwd);
-        serv_gets(buf);
-
-        if (buf[0] != '2') {
-                if (buf[1] == '3')
-                        printf(_("<< password errata >>\n"));
-                else
-                        pulisci_ed_esci();
-                return LOGIN_FAILED;
-        }
-	if (auto_login) {
-		printf(_("Password corretta.\n\n"));
-		hit_any_key();
-	}
-	/* Se ha la validation key esegue l'autovalidazione */
-	printf(_("\nHai ricevuto la chiave di validazione e vuoi validarti? (s/n) "));
-	if (si_no()=='n')
-		printf(_("\nPotrai eseguire la validazione la prossima volta che ti colleghi.\n"
-			 "Nel frattempo puoi visitare la BBS come utente non validato. Ricorda tuttavia\n"
-			 "che la validazione va eseguita entro 48 ore dalla prima connessione.\n"));
-	else if (auto_validazione())
-		return LOGIN_APPENA_VALIDATO;
-	return LOGIN_NONVAL;
-}
-
-/*
- * Procedura di login per gli utenti validati.
- * Verifica la password e restituisce 1 se e' esatta
- */
-static int login_validato(void)
+static int login_user(int user_is_validated)
 {
         char buf[LBUF], passwd[MAXLEN_PASSWORD];
 	bool auto_login = false;
+        bool terms_accepted = false;
 
 	if (USER_PWD && (USER_PWD[0] != '\0')) {
 		strncpy(passwd, USER_PWD, MAXLEN_PASSWORD-1);
@@ -344,40 +318,113 @@ static int login_validato(void)
 		Free(USER_PWD);
 		USER_PWD = strdup("");
 		auto_login = true;
-	} else
+	} else {
 		new_str_m(_("Password: "), passwd, -(MAXLEN_PASSWORD - 1));
-
+        }
         serv_putf("USR1 %s|%s", nome, passwd);
         serv_gets(buf);
+
         if (buf[0] != '2') {
-                if (buf[1] == '3')
-                        printf(_("\n<< password errata >>\n"));
-                else
-                        pulisci_ed_esci();
+                if (buf[1] == '3') {
+                        printf(_("<< password errata >>\n"));
+                } else {
+                        pulisci_ed_esci(SHOW_EXIT_BANNER);
+                }
                 return LOGIN_FAILED;
         }
 	if (auto_login) {
 		printf(_("Password corretta.\n\n"));
 		hit_any_key();
 	}
-        return LOGIN_VALIDATO;
+
+        /* controlla se i termini sono stati accettati */
+        terms_accepted = extract_bool(buf, 2);
+        if (!terms_accepted) {
+                do {
+                        putchar('\n');
+                        terms_accepted = ask_accept_terms();
+                        if (terms_accepted) {
+                                break;
+                        }
+                        cml_printf(sesso
+                                   ? _(
+"\nSei sicura di voler eliminare il tuo account su Cittadella BBS? (s/n) "
+                                       )
+                                   : _(
+"\nSei sicuro di voler eliminare il tuo account su Cittadella BBS? (s/n) "
+                                       ));
+                } while(si_no() == 'n');
+
+                /* Send the user consent for data processing to the server */
+                serv_putf("CNST %d", terms_accepted);
+                serv_gets(buf); /* no need to check the response */
+
+                if (!terms_accepted) {
+                        printf(_(
+"\nI Sysop sono stati notificati della tua decisione e provvederanno ad\n"
+"eliminare il tuo account nelle prossime 48 ore. Se nel frattempo dovessi\n"
+"cambiare idea, puoi ricollegarti e accettare le condizioni.\n\n"
+                                 ));
+                        sleep(5);
+                        pulisci_ed_esci(NO_EXIT_BANNER);
+                }
+        }
+
+        if (user_is_validated == USER_IS_VALIDATED) {
+                return LOGIN_VALIDATO;
+        }
+
+        /* Se ha la validation key esegue l'autovalidazione */
+	printf(_(
+            "\nHai ricevuto la chiave di validazione e vuoi validarti? (s/n) "
+                 ));
+	if (si_no()=='n') {
+		printf(_(
+"\nPotrai eseguire la validazione la prossima volta che ti colleghi.\n"
+"Nel frattempo puoi visitare la BBS come utente non validato. Ricorda tuttavia"
+"\n"
+"che la validazione va eseguita entro 48 ore dalla prima connessione.\n"
+                         ));
+        } else if (auto_validazione()) {
+		return LOGIN_APPENA_VALIDATO;
+        }
+	return LOGIN_NONVAL;
 }
+
 
 void chiedi_valkey(void)
 {
 	char buf[LBUF];
 
-	printf(sesso ? _("\nSei sicura di voler richiedere una nuova chiave di validazione? (s/n) ") : _("\nSei sicuro di voler richiedere una nuova chiave di validazione? (s/n) "));
+	printf(sesso
+               ? _(
+"\nSei sicura di voler richiedere una nuova chiave di validazione? (s/n) "
+                   )
+               : _(
+"\nSei sicuro di voler richiedere una nuova chiave di validazione? (s/n) "
+                   ));
 	if (si_no()=='s') {
 		serv_puts("GVAL");
 		serv_gets(buf);
 		if (buf[0] != '2') {
-			if (buf[1] == '2')
-				printf(_("Prima devi compilare la registrazione...\n"));
-			else
-				cml_print(sesso ? _("Mi dispiace, ma sei gi&agrave; validata!!!\n") : _("Mi dispiace, ma sei gi&agrave; validato!!!\n"));
-		} else
-			cml_printf(_("Ok, una nuova chiave di validazione &egrave; stata generata e inviata!\n"));
+			if (buf[1] == '2') {
+				printf(_(
+"Prima devi compilare la registrazione...\n"
+                                         ));
+			} else {
+				cml_print(sesso
+                                          ? _(
+"Mi dispiace, ma sei gi&agrave; validata!!!\n"
+                                              )
+                                          : _(
+"Mi dispiace, ma sei gi&agrave; validato!!!\n"
+                                              ));
+                        }
+		} else {
+			cml_printf(_(
+"Ok, una nuova chiave di validazione &egrave; stata generata e inviata!\n"
+                                     ));
+                }
 	}
 }
 
@@ -392,19 +439,26 @@ static bool auto_validazione(void)
 
         printf("\n");
         while (loop < 2) {
-                new_str_m(_("Inserisci la chiave di validazione: "),valkey,-6);
+                new_str_m(_("Inserisci la chiave di validazione: "),
+                          valkey, -6);
                 serv_putf("AVAL %s", valkey);
                 serv_gets(buf);
                 if (buf[0] != '2') {
                         /* validation key errata */
-                        cml_print(_("La chiave di validazione &egrave; errata. "));
+                        cml_print(_(
+                                "La chiave di validazione &egrave; errata. "
+                                    ));
                         if (loop == 0) {
-                                printf(_("Vuoi fare un altro tentativo? (s/n) "));
+                                printf(_(
+                                    "Vuoi fare un altro tentativo? (s/n) "
+                                       ));
                                 if (si_no() == 'n')
                                         loop = 2;
                         }
                 } else {
-                        printf(_("Chiave di validazione corretta: ora sei un utente registrato!\n\n"));
+                        printf(_(
+"Chiave di validazione corretta: ora sei un utente registrato!\n\n")
+                               );
 			return true;
                 }
                 loop++;
@@ -442,7 +496,9 @@ void user_config(int type)
 
 	if ((type == LOGIN_OSPITE) || (type == LOGIN_NUOVO)) {
 		uflags[1] |= UT_ANSI;
-		if (!new_si_no_def(_("\nIl tuo terminale &egrave; in grado di visualizzare i colori ansi?"), IS_SET(uflags[1], UT_ANSI))) {
+		if (!new_si_no_def(_(
+"\nIl tuo terminale &egrave; in grado di visualizzare i colori ansi?"
+                                     ), IS_SET(uflags[1], UT_ANSI))) {
 			if (!(uflags[1] & UT_ANSI) &&
 			    new_si_no_def(_("   Usa il grassetto             :"),
 					  IS_SET(uflags[1], UT_HYPERTERM)))
@@ -452,10 +508,12 @@ void user_config(int type)
 			update_cmode();
 		} else {
 			update_cmode();
-			cml_print(_("\nTest dei colori:\n"
-				    "  Colore del carattere : <b;fg=1>rosso <fg=2>verde <fg=3>giallo/marrone <fg=4>blu <fg=5>magenta <fg=6>azzurro <fg=7>bianco</b>\n"
-				    "  Colore dello sfondo  : <b;bg=1>rosso<bg=0> <bg=2>verde<bg=0> <bg=3>giallo/marrone<bg=0> <bg=4>blu<bg=0> <bg=5>magenta<bg=0> <bg=6>azzurro<bg=0> <bg=7>bianco</b;bg=0>\n\n"));
-			if (!new_si_no_def(_("Vedi correttamente i colori qui sopra?"), true)) {
+			cml_print(_(
+"\nTest dei colori:\n"
+"  Colore del carattere : <b;fg=1>rosso <fg=2>verde <fg=3>giallo/marrone <fg=4>blu <fg=5>magenta <fg=6>azzurro <fg=7>bianco</b>\n"
+"  Colore dello sfondo  : <b;bg=1>rosso<bg=0> <bg=2>verde<bg=0> <bg=3>giallo/marrone<bg=0> <bg=4>blu<bg=0> <bg=5>magenta<bg=0> <bg=6>azzurro<bg=0> <bg=7>bianco</b;bg=0>\n\n"
+                                    ));
+                        if (!new_si_no_def(_("Vedi correttamente i colori qui sopra?"), true)) {
 				uflags[1] &= ~UT_ANSI;
 				update_cmode();
 			}
@@ -463,12 +521,19 @@ void user_config(int type)
 
 		setcolor(C_DEFAULT);
 		uflags[1] &= ~UT_ISO_8859;
-		if (!new_si_no_def(_("\nIl tuo terminale pu&ograve; visualizzare i caratteri ISO-8859-1\n  (accenti, etc...)?"), true)) {
+		if (!new_si_no_def(_(
+"\nIl tuo terminale pu&ograve; visualizzare i caratteri ISO-8859-1\n"
+"  (accenti, etc...)?"
+                                     ), true)) {
 			uflags[1] &= ~UT_ISO_8859;
 		} else {
 			uflags[1] |= UT_ISO_8859;
-			cml_print(_("\nTest degli accenti: <b>&agrave; &eacute; &egrave; &ecirc; &iacute; &icirc; &uacute;</b>\n"));
-			if (!new_si_no_def(_("\nVedi correttamente le lettere accentate qui sopra"), true)) {
+			cml_print(_(
+"\nTest degli accenti: <b>&agrave; &eacute; &egrave; &ecirc; &iacute; &icirc; &uacute;</b>\n"
+                                    ));
+                        if (!new_si_no_def(_(
+"\nVedi correttamente le lettere accentate qui sopra"
+                                             ), true)) {
 				uflags[1] &= ~UT_ISO_8859;
 				update_cmode();
 			}
@@ -477,22 +542,29 @@ void user_config(int type)
 		setcolor(C_DEFAULT);
 		uflags[0] &= ~UT_OLD_EDT;
 		cml_printf(_(
-"\nPer immettere i messaggi, &egrave; disponibile un editor con funzioni avanzate,\n"
+"\n"
+"Per immettere i messaggi, &egrave; disponibile un editor con funzioni avanzate,\n"
 "che purtroppo non funziona con il programma <b>telnet di Windows</b> e con i\n"
 "sistemi operativi <b>Mac OS 9 o precedenti</b>. In questo caso dovrai usare\n"
 "il vecchio editor.\n"
-"NB: Si consiglia di utilizzare il programma puTTY per collegarsi da Windows.\n"));
+"NB: Si consiglia di utilizzare il programma puTTY per collegarsi da Windows.\n"
+                             ));
 		if (new_si_no_def(_("\nStai usando il telnet Windows o un Mac OS 9 o precedente?"), false)) {
 		        uflags[0] |= UT_OLD_EDT;
 		} else {
 			uflags[0] &= ~UT_OLD_EDT;
 		}
-		cml_print(_("\nIn ogni caso potrai modificare in ogni momento la tua configurazione utente\nutilizzando digitando i tasti <b>.eu</b>\n"));
+		cml_print(_(
+"\nIn ogni caso potrai modificare in ogni momento la tua configurazione utente"
+"\nutilizzando digitando i tasti <b>.eu</b>\n")
+                          );
 		save_userconfig(true);
 }
 	setcolor(C_DEFAULT);
 
-	cml_printf("\nCongratulazioni! hai terminato la configurazione del tuo account!\n\n");
+	cml_printf(
+"\nCongratulazioni! hai terminato la configurazione del tuo account!\n\n"
+                   );
 	hit_any_key();
 	putchar('\n');
 

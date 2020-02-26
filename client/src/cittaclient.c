@@ -127,8 +127,6 @@ jmp_buf ciclo_principale;
 */
 
 /* prototipi delle funzioni in questo file */
-char * interpreta_tilde_dir(const char *buf);
-void pulisci_ed_esci(void);
 static void info_sul_server(void);
 static void ident_client(void);
 static char ciclo_client(void);
@@ -344,7 +342,7 @@ int main(int argc, char **argv)
         ciclo_client();     /* Ciclo principale... */
 
         /* Chiusura della connessione */
-        pulisci_ed_esci();
+        pulisci_ed_esci(SHOW_EXIT_BANNER);
         return 0;
 }
 
@@ -869,17 +867,18 @@ static char ciclo_client(void)
         return 0;
 }
 
+
 /*
  * Manda al server il segnale di chiusura, chiude la connessione,
  * ripristina lo schermo ed esce.
  */
-void pulisci_ed_esci(void)
+void pulisci_ed_esci(exit_banner show_banner)
 {
         char buf[LBUF];
 	unsigned long in, out, cmd, online;
 
 	setcolor(C_NORMAL);
-        if (!client_cfg.no_banner) {
+        if (show_banner == SHOW_EXIT_BANNER && !client_cfg.no_banner) {
                 /* Display logout banner */
                 leggi_file(STDMSG_MESSAGGI, STDMSGID_GOODBYE);
         }
@@ -890,12 +889,17 @@ void pulisci_ed_esci(void)
         printf(_("[Disconnessione...]\n"));
         serv_puts("QUIT");
         serv_gets(buf);
-	cmd = extract_long(buf+4, 0);
-	out = extract_long(buf+4, 1);
-	in  = extract_long(buf+4, 2);
-	online  = extract_long(buf+4, 3);
-        printf("Hai inviato %ld bytes, ricevuto %ld bytes [compressione %d%%].\n(%ld comandi, %ld sec)\n",
-	       out, in, decompress_stat(), cmd, online);
+        if (show_banner == SHOW_EXIT_BANNER) {
+                cmd = extract_long(buf+4, 0);
+                out = extract_long(buf+4, 1);
+                in  = extract_long(buf+4, 2);
+                online  = extract_long(buf+4, 3);
+                printf(
+"Hai inviato %ld bytes, ricevuto %ld bytes [compressione %d%%].\n"
+"(%ld comandi, %ld sec)\n",
+                       out, in, decompress_stat(), cmd, online
+                       );
+        }
         printf("Bye bye.\n");
         close(serv_sock);
 
@@ -956,7 +960,7 @@ static void info_sul_server(void)
 			version_print(serverinfo.newclient_vcode);
 			printf(_("da http://www.cittadellabbs.it/ oppure collegati con un telnet\n"
 			       "telnet %s 4001\n\n"), serverinfo.nodo);
-			pulisci_ed_esci();
+			pulisci_ed_esci(NO_EXIT_BANNER);
 		}
 
                 if (strncmp(comp, COMPRESSIONE, LBUF)) {
@@ -971,8 +975,9 @@ static void info_sul_server(void)
                 } else
                         printf("Connessione non compressa.\n");
 
-        } else
-                pulisci_ed_esci();
+        } else {
+                pulisci_ed_esci(SHOW_EXIT_BANNER);
+        }
 }
 
 /* TODO segnala al server l'identita' del client */
