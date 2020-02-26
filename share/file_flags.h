@@ -18,6 +18,31 @@
 
 #define MAXLEN_FILENAME 64
 
+
+/* Tipo di file testo richiesto al server: messaggio o help    */
+typedef enum {
+        STDMSG_MESSAGGI = 0,
+        STDMSG_HELP,
+        STDMSG_COUNT,   /* This must always be the last entry! */
+} Stdmsg_type;
+
+typedef enum {
+        STDMSGID_HELLO = 0,
+        STDMSGID_BAD_NICKS,
+        STDMSGID_NEW_USER,
+        STDMSGID_REGISTRATION,
+        STDMSGID_DISCLAIMER,
+        STDMSGID_GOODBYE,
+        STDMSGID_CHANGE_PWD,
+        STDMSGID_BUG_REPORT,
+        STDMSGID_NEWS,
+        STDMSGID_PRIVACY,
+        STDMSGID_INTRO_GUEST,
+        STDMSGID_INTRO_NEW,
+        STDMSGID_INTRO_JUST_VALIDATED,
+        STDMSGID_DATA_PROTECTION,
+} Stdmsg_id;
+
 /* Tipo file */
 #define FILE_UNKNOWN   0
 #define FILE_IMAGE     1

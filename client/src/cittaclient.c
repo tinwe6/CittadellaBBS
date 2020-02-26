@@ -75,9 +75,9 @@
 #include "versione.h"
 #include "macro.h"
 #ifdef LOCAL
-#include "local.h" 
+#include "local.h"
 #else
-#include "remote.h" 
+#include "remote.h"
 #endif
 
 /* variabili globali in cittaclient.c */
@@ -140,9 +140,9 @@ static void wrapper_urna(void);
 /****************************************************************************
 ****************************************************************************/
 /*
- * main() : 
+ * main() :
  */
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
         char buf[LBUF], buf1[LBUF], *rcfile;
         long ultimo_login, mail;
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
         /* Connessione al server */
         crea_connessione(HOST, PORT);
 
-        /* Vediamo se il server accetta la connessione 
+        /* Vediamo se il server accetta la connessione
            (limite di connessioni raggiunto o bansite o chessoio... */
         serv_gets(buf);
         printf("%s\n", buf+4);
@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 	user_config(login_status);
 
 	/* disclaimer */
-        leggi_file(0, 4);
+        leggi_file(STDMSG_MESSAGGI, STDMSGID_DISCLAIMER);
         putchar('\n');
         hit_any_key();
 
@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 					   mail);
                 } else
                         cml_printf(_("\nPrima chiamata per l'utente n.%ld di livello <b>%d</b>\n"),
-				   extract_long(buf+4, 1), livello);  
+				   extract_long(buf+4, 1), livello);
 		IFNEHAK;
         }
 
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
 	room_goto(4, true, NULL);
 
         ciclo_client();     /* Ciclo principale... */
-  
+
         /* Chiusura della connessione */
         pulisci_ed_esci();
         return 0;
@@ -393,7 +393,7 @@ char * interpreta_tilde_dir(const char *buf)
 }
 
 /*
- * Ciclo principale del client 
+ * Ciclo principale del client
  */
 static char ciclo_client(void)
 {
@@ -405,16 +405,16 @@ static char ciclo_client(void)
 	esegue_cmd_old();
         while ( (cmd = getcmd(cmdstr)) != 0) {
                 switch(cmd) {
-		 case 1:  
+		 case 1:
                         list_host();
-                        break;      
+                        break;
 		 case 2:
                         broadcast();
                         break;
 		 case 3:
                         express(NULL);
                         break;
-		 case 4:                  
+		 case 4:
                         profile(NULL);
                         break;
 		 case 5:
@@ -446,7 +446,6 @@ static char ciclo_client(void)
                         break;
 		 case 14: /* lista dei comandi */
 			help();
-                        /* leggi_file(1, 2); */
                         break;
 		 case 15:
                         Help();
@@ -672,7 +671,7 @@ static char ciclo_client(void)
 			break;
 		 case 87:
 			fm_expand();
-			break;                
+			break;
 		 case 88:
 			urna_list(0);
 			break;
@@ -860,7 +859,7 @@ static char ciclo_client(void)
                 /* Se qui la coda comandi non e` vuota e` perche' qualcosa */
                 /* e` arrivato mentre ero impegnato                        */
 		esegue_cmd_old();
-               
+
                 /* Se e` arrivato qualche segnale, trattalo correttamente  */
 #ifdef LOCAL
                 if (new_signals)
@@ -880,8 +879,10 @@ void pulisci_ed_esci(void)
 	unsigned long in, out, cmd, online;
 
 	setcolor(C_NORMAL);
-        if (!client_cfg.no_banner)
-                leggi_file(0, 5);  /* Logout banner */
+        if (!client_cfg.no_banner) {
+                /* Display logout banner */
+                leggi_file(STDMSG_MESSAGGI, STDMSGID_GOODBYE);
+        }
 
         /* Cancellazione file temporanei e robe varie */
 
@@ -976,7 +977,7 @@ static void info_sul_server(void)
 
 /* TODO segnala al server l'identita' del client */
 static void ident_client(void)
-{ 
+{
 }
 
 static void pianta_bbs(void)

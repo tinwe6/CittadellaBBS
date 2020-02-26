@@ -28,6 +28,7 @@ void cmd_rusr(struct sessione *t);
 void cmd_rgst(struct sessione *t, char *buf);
 void cmd_breg(struct sessione *t);
 void cmd_greg(struct sessione *t);
+void cmd_cnst(struct sessione *t, char *buf);
 char cmd_cusr(struct sessione *t, char *nome, char notifica);
 void cmd_kusr(struct sessione *t, char *nome);
 void cmd_eusr(struct sessione *t, char *buf);

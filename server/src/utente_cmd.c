@@ -52,6 +52,7 @@ void cmd_rusr(struct sessione *t);
 void cmd_rgst(struct sessione *t, char *buf);
 void cmd_breg(struct sessione *t);
 void cmd_greg(struct sessione *t);
+void cmd_cnst(struct sessione *t, char *buf);
 char cmd_cusr(struct sessione *t, char *nome, char notifica);
 void cmd_kusr(struct sessione *t, char *nome);
 void cmd_eusr(struct sessione *t, char *buf);
@@ -77,48 +78,58 @@ void notify_logout(struct sessione *t, int tipo);
  * Procedura di Login, passo 1.
  * Il client comunica al server il nome dell'utente.
  * Sintassi : "USER nome"
+ * Risponde : "OK has_other_conn|is_guest|is_new_usr|is_first_usr|is_validated"
+ *   oppure ERROR se nome e' "" o se la sessione ha gia' eseguito un login
+ *
+ * For compatibility with protocol pre 0.4.5, we send as OK a full code that
+ * contains user info (guest, new, not validated, validated). In future
+ * releases we'll simply send the OK code '200'.
  */
 void cmd_user(struct sessione *t, char *nome)
 {
         struct dati_ut *utente;
-        struct sessione *s;
-	int val;
-	
+        bool has_other_connection = false;
+        bool is_guest = false;
+        bool is_new_user = false;
+        bool is_first_user = false;
+        bool is_validated = false;
+	int code;
+
         if (t->logged_in || (strlen(nome) == 0)) {
                 cprintf(t, "%d\n", ERROR);
                 return;
         }
-  
-        if(!strcmp(nome, "Ospite") || !strcmp(nome, "Guest"))
-                cprintf(t, "%d 0\n", UT_OSPITE);
-        else {
+
+        code = OK;
+        if(!strcmp(nome, "Ospite") || !strcmp(nome, "Guest")) {
+                is_guest = true;
+                code = UT_OSPITE;
+        } else {
+                /* Ci si mette subito in stato occupato altrimenti
+                 * potrebbe e' possibile saltare la registrazione */
+                t->occupato = 1;
                 /* E' un utente della BBS? */
                 utente = trova_utente(nome);
-    
                 if (utente == NULL) {
-			/* Abbiamo un nuovo utente!
-			 * Ci si mette subito in stato occupato altrimenti
-			 * potrebbe e' possibile saltare la registrazione */
-                        t->occupato = 1;
-                        /* Avverto il client che l'utente e' nuovo */
-                        cprintf(t, "%d 0\n", NUOVO_UTENTE);
+			/* Abbiamo un nuovo utente! */
+                        is_new_user = true;
+                        code = NUOVO_UTENTE;
+                        is_first_user = (ultimo_utente == NULL);
                 } else {
-#ifdef USE_VALIDATION_KEY			
-                        val = (utente->val_key[0] != 0) ? NON_VALIDATO
-				                        : UT_VALIDATO;
+#ifdef USE_VALIDATION_KEY
+                        is_validated = (utente->val_key[0] == 0);
+                        code = is_validated ? UT_VALIDATO : NON_VALIDATO;
 #else
 			utente->val_key[0] = 0;
-			val = UT_VALIDATO;
+                        is_validated = true;
+                        code = UT_VALIDATO;
 #endif
                         /* L'utente e' gia' collegato? */
-                        s = collegato(nome);
-                        if (s == NULL)
-                                cprintf(t, "%d 0\n", val);
-                        else
-                                cprintf(t, "%d 1\n", val);
-                        t->occupato = 1;
+                        has_other_connection = (collegato(nome) != NULL);
                 }
         }
+        cprintf(t, "%d %d|%d|%d|%d|%d\n", code, has_other_connection,
+                is_guest, is_new_user, is_first_user, is_validated);
 }
 
 /*
@@ -159,7 +170,7 @@ void cmd_usr1(struct sessione *t, char *arg)
                 dati_server.ospiti++;
         } else  /* E' un utente della BBS? */
                 utente = trova_utente(nome);
-        
+
         if (utente == NULL) {
                 citta_logf("Nuovo utente [%s].", nome);
 		/* Controllo Badnick.                    *DA FARE*        */
@@ -192,7 +203,7 @@ void cmd_usr1(struct sessione *t, char *arg)
                 cripta(passwd);
 
                 /* Lo battezziamo */
-                strcpy(utente->nome, nome);   
+                strcpy(utente->nome, nome);
                 strcpy(utente->password, passwd);
                 /* Inizializzazioni varie */
                 utente->matricola = dati_server.matricola++;
@@ -346,7 +357,7 @@ void cmd_prfl(struct sessione *t, char *nome)
         struct room *r;
 	char buf[LBUF], buf1[LBUF];
         char connesso = 0;
-  
+
         utente = trova_utente(nome);
         if (utente == NULL) {
                 cprintf(t, "%d %s\n", ERROR+NO_SUCH_USER, nome);
@@ -420,7 +431,7 @@ void cmd_prfl(struct sessione *t, char *nome)
 		if (utr_getf(utente->matricola, r->pos) & UTR_ROOMAIDE)
 			cprintf(t, "%d %s\n", OK, r->data->name);
 	cprintf(t, "000\n");
-		
+
 	/* 4 - Room Helper in... */
         cprintf(t, "%d 4\n", SEGUE_LISTA);
 	for (r = lista_room.first; r; r = r->next)
@@ -530,6 +541,26 @@ void cmd_greg(struct sessione *t)
 }
 
 /*
+ * Receives user consent for personal data processing.
+ * The user must be in CON_REG state.
+ */
+void cmd_cnst(struct sessione *t, char *buf)
+{
+        bool user_has_given_consent = extract_bool(buf, 0);
+
+        if (user_has_given_consent) {
+                t->utente->sflags[0] |= SUT_CONSENT;
+                citta_logf("Data protection: User [%s] accepted the terms.",
+                           t->utente->nome);
+        } else {
+                t->utente->sflags[0] &= ~SUT_CONSENT;
+                citta_logf("Data protection: user [%s] revoked the terms.",
+                           t->utente->nome);
+        }
+	cprintf(t, "%d\n", OK);
+}
+
+/*
  * Caccia User: Comando per cacciare un utente connesso.
  * Se l'utente non e' connesso restituisce 0, se lo sconnette 1.
  * Se notifica==1 risponde al client, altrimenti no.
@@ -539,7 +570,7 @@ char cmd_cusr(struct sessione *t, char *nome, char notifica)
         struct sessione *punto, *prossima;
         char buf[128];
         char ok;
-        
+
         ok = 0;
         if ((t->utente == NULL) || t->utente->livello < MINLVL_KICKUSR) {
                 if (notifica) {
@@ -582,7 +613,7 @@ void cmd_kusr(struct sessione *t, char *nome)
 {
         struct lista_ut *precedente, *punto, *prossimo;
         char ok = 0;
-        
+
         /* Anzitutto se l'utente e' connesso lo caccia */
         cmd_cusr(t, nome, 0);
 
@@ -619,11 +650,11 @@ void cmd_kusr(struct sessione *t, char *nome)
                 precedente = precedente->prossimo;
         }
         if (ok)
-                citta_logf("KILL: [%s] e' stato eliminato da [%s].", nome, 
+                citta_logf("KILL: [%s] e' stato eliminato da [%s].", nome,
 		     t->utente->nome);
 
         /* Notifica il risultato al client */
-        cprintf(t, "%d %d\n", OK, ok); 
+        cprintf(t, "%d %d\n", OK, ok);
 }
 
 /*
@@ -749,7 +780,7 @@ void cmd_aval(struct sessione *t, char *vk)
                 citta_logf("VALIDATE: Auto-validazione di [%s].", t->utente->nome);
                 cprintf(t, "%d\n", OK);
                 dati_server.validazioni++;
-        } else 
+        } else
                 cprintf(t, "%d\n", ERROR);
 }
 #endif
@@ -830,7 +861,7 @@ void cmd_pwdu(struct sessione *t, char *buf)
 #ifdef MKSTEMP
 	int fd1, fd2;
 #endif
-        FILE *tf;      
+        FILE *tf;
 
 	extractn(pwd, buf, 0, MAXLEN_PASSWORD);
 	extractn(nome, buf, 1, MAXLEN_UTNAME);
@@ -847,7 +878,7 @@ void cmd_pwdu(struct sessione *t, char *buf)
 #ifdef MKSTEMP
 		tmpf = Strdup(TEMP_PWDU_TEMPLATE);
 		tmpf2 = Strdup(TEMP_PWDU_TEMPLATE);
-		
+
 		fd1 = mkstemp(tmpf);
 		fd2 = mkstemp(tmpf2);
 		close(fd1);
@@ -905,10 +936,10 @@ void cmd_prfg (struct sessione *t, char *nome)
                                 ERROR+NO_SUCH_FILE);
                         return;
                 }
-    
+
                 cprintf(t, "%d\n", SEGUE_LISTA);
 
-                /* Legge file e mette in coda */    
+                /* Legge file e mette in coda */
                 while (fgets(buf, LBUF, fp) != NULL)
                         cprintf(t, "%d %s", OK, buf);
                 fclose(fp);
@@ -966,7 +997,7 @@ void cmd_frdg(struct sessione *t)
 			if (amico != NULL)
 				cprintf(t, "%d %d|%ld|%s\n", OK, i, matr,
 					amico->nome);
-			else  
+			else
 				/* Utente con quella matricola eliminato */
 				t->utente->friends[i] = -1;
 		}
@@ -979,7 +1010,7 @@ void cmd_frdg(struct sessione *t)
 			if (amico != NULL)
 				cprintf(t, "%d %d|%ld|%s\n", OK, i, matr,
 					amico->nome);
-			else  
+			else
 				/* Utente con quella matricola eliminato */
 				t->utente->friends[i] = -1;
 		}
@@ -990,7 +1021,7 @@ void cmd_frdg(struct sessione *t)
 void cmd_frdp(struct sessione *t, char *arg)
 {
         int i;
-        
+
 	for (i = 0; i < 2*NFRIENDS; i++)
 		t->utente->friends[i] = extract_long(arg, i);
 	cprintf(t, "%d\n", OK);

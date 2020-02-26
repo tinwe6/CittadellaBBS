@@ -102,6 +102,7 @@ static const struct comando cmd_list[] = {
 { "CHEK", { cmd_chek }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
 { "CLAS", { cmd_clas }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "CMSG", { cmd_cmsg }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
+{ "CNST", { .pass_arg = cmd_cnst }, PASS_ARG, CON_REG, MINLVL_REGISTRATION },
 { "CUSR", { .special = cmd_cusr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*veder*/
 { "CWHO", { cmd_cwho }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "DEST", { .pass_arg = cmd_dest }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },
@@ -177,7 +178,7 @@ static const struct comando cmd_list[] = {
 { "RDEL", { .pass_arg = cmd_rdel }, PASS_ARG, CON_COMANDI, MINLVL_DELROOM },
 { "READ", { .pass_arg = cmd_read }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
 { "REDT", { .pass_arg = cmd_redt }, PASS_ARG, CON_COMANDI|CON_ROOM_EDIT, ILC_NOCHECK }, /* IS_RH() */
-{ "RGST", { .pass_arg = cmd_rgst }, PASS_ARG, CON_REG,     MINLVL_REGISTRATION },
+{ "RGST", { .pass_arg = cmd_rgst }, PASS_ARG, CON_REG, MINLVL_REGISTRATION },
 { "RIEB", { cmd_rieb }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },/*veder*/
 { "RIEE", { cmd_riee }, NO_ARG,   CON_ROOM_INFO, ILC_NOCHECK },/*ved*/
 { "RINF", { cmd_rinf }, NO_ARG,   CON_COMANDI, ILC_LOGGED_IN },
@@ -203,7 +204,7 @@ static const struct comando cmd_list[] = {
 { "RZPA", { cmd_rzpa }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
 { "SDWN", { .pass_arg = cmd_sdwn }, PASS_ARG, CON_COMANDI, MINLVL_SHUTDOWN },
 #ifdef USE_REFERENDUM
-{ "SCPU", { cmd_scpu }, NO_ARG,   CON_COMANDI, MINLVL_URNA }, 
+{ "SCPU", { cmd_scpu }, NO_ARG,   CON_COMANDI, MINLVL_URNA },
 #if 0
 { "SCVL", { .pass_arg = cmd_scvl }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
 #endif
@@ -332,7 +333,7 @@ static inline void clear_idle(struct sessione *t)
 	t->idle.cicli = 0;
 	t->idle.min = 0;
 	t->idle.ore = 0;
-	t->idle.warning = 0;	
+	t->idle.warning = 0;
 }
 
 /*****************************************************************************/

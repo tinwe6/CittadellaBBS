@@ -16,13 +16,15 @@
 #ifndef _GENERIC_CMD_H
 #define _GENERIC_CMD_H   1
 
+#include "file_flags.h"
+
 /* prototipi delle funzioni in generic_cmd.c */
 void list_host(void);
 void ora_data(void);
 void lock_term(void);
 void bug_report(void);
 void biff(void);
-void leggi_file(int type, int id);
+void leggi_file(Stdmsg_type type, int id);
 void help(void);
 void Help(void);
 void leggi_news(void);

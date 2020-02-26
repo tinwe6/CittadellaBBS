@@ -23,7 +23,6 @@
 */
 
 /* BBS Host                                                                 */
-//#define BBS_HOST        "pcnason.mi.infn.it"
 #define BBS_HOST        "localhost"
 //#define BBS_HOST        "bbs.cittadellabbs.it"
 /* Porta alla quale il server ascolta in attesa di nuove connessioni.       */
@@ -302,6 +301,10 @@
  * Non modificare il resto di questo file!                                  *
  ***************************************************************************/
 
+/* Nome delle file che contiene l'indice dei file disponibili alla lettura */
+/* nella stessa directory (essenzialmente per messaggi/ e help/            */
+#define STDFILE_INDEX   "indice"
+
 /* Prefissi file temporanei                                                 */
 #define PFX_BR    "br"
 #define PFX_EMAIL "email"
@@ -319,6 +322,8 @@
 #endif
 
 /* Path directory e file della bbs.                                         */
+#define ROOTDIR           "."
+#define FILE_SYSLOG       ROOTDIR      "/syslog"
 #define BANNER_DIR        LIBDIR       "/banners"
 #define FILES_DIR         LIBDIR       "/files"
 #define FILE_MSG_DIR      LIBDIR       "/msgfiles"
@@ -346,7 +351,6 @@
 #define BANNER_HASHFILE   BANNER_DIR   "/hash"
 #define TOD_FILE          BANNER_DIR   "/tip_of_the_day"
 #define TOD_HASHFILE      BANNER_DIR   "/tip_hash"
-#define BBS_CLOSED_FILE   MESSAGGI_DIR "/bbs_closed"
 #define FILE_MSG_DATA     FILE_MSG_DIR "/fmdata"
 #define FILE_MSGDATA      ROOMS_DIR    "/msgdata/msg"
 #define FILE_DUMP_DATA    ROOMS_DIR    "/msgdata/dump"
@@ -356,13 +360,17 @@
 #define FILE_BLOGINFO     BLOG_DIR     "/bloginfo"
 #define FILE_BLOGROOM     BLOG_DIR     "/blogroom"
 #define FILE_BLOGDFR      BLOG_DIR     "/dfr"
-#define FILE_NEWS         MESSAGGI_DIR "/news"
 #define FILE_UTENTI       UTENTI_DIR   "/file_utenti"
 #define FILE_SYSCONFIG    SERVER_DIR   "/sysconfig.rc"
-#define LOGO_FILE         MESSAGGI_DIR "/logo"
 #define PROFILE_PATH      UTENTI_DIR   "/profile"
 #define ROOMS_DATA        ROOMS_DIR    "/roomdata"
 #define ROOMS_INFO        ROOMS_DIR    "/room_info"
+
+#define FILE_BBS_CLOSED   MESSAGGI_DIR "/bbs_closed"
+#define FILE_LOGO         MESSAGGI_DIR "/logo"
+#define FILE_NEWS         MESSAGGI_DIR "/news"
+#define FILE_HELP         HELP_DIR     "/lista_comandi"
+
 
 /* Informazioni per il reboot */
 #define SERVER_LOCK       SERVER_DIR   "/lock"
