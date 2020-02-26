@@ -53,6 +53,7 @@ void cmd_tabc(struct sessione *t, char *cmd);
 void cmd_edng(struct sessione *t, char *buf);
 void cmd_upgs(struct sessione *t);
 void cmd_upgr(struct sessione *t);
+void cmd_rcst(struct sessione *t);
 static void legge_file_idx(struct sessione *t, const char *dir, int num);
 
 /******************************************************************************
@@ -606,5 +607,18 @@ void cmd_upgs(struct sessione *t)
 void cmd_upgr(struct sessione *t)
 {
 	t->utente->sflags[0] &= ~SUT_UPGRADE;
+	cprintf(t, "%d\n", OK);
+}
+
+/*
+ * Request ConSenT: clears the SUT_NEED_CONSTENT flag for all users, so
+ * that the next time they connect they will have to accept the terms.
+ * Sysops should use this command each time the terms are changed.
+ */
+void cmd_rcst(struct sessione *t)
+{
+	sut_clear_all(0, SUT_CONSENT);
+	citta_logf("SUT_CONSENT cleared for all users by [%s].",
+                   t->utente->nome);
 	cprintf(t, "%d\n", OK);
 }
