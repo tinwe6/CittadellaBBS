@@ -52,7 +52,7 @@ void cmd_rusr(struct sessione *t);
 void cmd_rgst(struct sessione *t, char *buf);
 void cmd_breg(struct sessione *t);
 void cmd_greg(struct sessione *t);
-void cmd_cnst(struct sessione *t, char *buf);
+void cmd_gcst(struct sessione *t, char *buf);
 char cmd_cusr(struct sessione *t, char *nome, char notifica);
 void cmd_kusr(struct sessione *t, char *nome);
 void cmd_eusr(struct sessione *t, char *buf);
@@ -555,10 +555,13 @@ void cmd_greg(struct sessione *t)
 }
 
 /*
- * Receives user consent for personal data processing.
- * The user must be in CON_REG state.
+ * Give ConSenT: Gives (or revokes) the user consent for personal data
+ *               processing.
+ * The user must be in CON_REG or CON_COMANDI state.
+ * Syntax: "GCST 0" revokes consent, "GCST 1" gives consent.
+ * Return: "OK"
  */
-void cmd_cnst(struct sessione *t, char *buf)
+void cmd_gcst(struct sessione *t, char *buf)
 {
         struct room *room;
         struct text *txt;

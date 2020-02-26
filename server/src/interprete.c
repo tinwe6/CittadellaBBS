@@ -102,7 +102,6 @@ static const struct comando cmd_list[] = {
 { "CHEK", { cmd_chek }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
 { "CLAS", { cmd_clas }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "CMSG", { cmd_cmsg }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
-{ "CNST", { .pass_arg = cmd_cnst}, PASS_ARG,CON_MASK_CNST,MINLVL_REGISTRATION},
 { "CUSR", { .special = cmd_cusr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*veder*/
 { "CWHO", { cmd_cwho }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "DEST", { .pass_arg = cmd_dest }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },
@@ -140,6 +139,7 @@ static const struct comando cmd_list[] = {
 { "FUPB", { .pass_arg = cmd_fupb }, PASS_ARG, CON_POST,    MINLVL_DOWNLOAD },
 { "FUPE", { .pass_arg = cmd_fupe }, PASS_ARG, CON_UPLOAD,  MINLVL_DOWNLOAD },
 { "FUPL", { .pass_arg = cmd_fupl }, PASS_ARG, CON_COMANDI, MINLVL_DOWNLOAD },
+{ "GCST", { .pass_arg = cmd_gcst}, PASS_ARG,CON_MASK_CNST,MINLVL_REGISTRATION},
 { "GMTR", { .pass_arg = cmd_gmtr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
 { "GOTO", { .pass_arg = cmd_goto }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
 { "GREG", { cmd_greg }, NO_ARG,   CON_REG,     MINLVL_REGISTRATION },
@@ -175,6 +175,7 @@ static const struct comando cmd_list[] = {
 { "QUIT", { cmd_quit }, NO_ARG,   CON_NOCHECK, ILC_NOCHECK },
 { "RAID", { .pass_arg = cmd_raid }, PASS_ARG, CON_COMANDI, LVL_AIDE    },
 { "RALL", { cmd_rall }, NO_ARG,   CON_COMANDI, LVL_NORMALE },
+{ "RCST", { cmd_rcst }, NO_ARG,   CON_COMANDI, LVL_SYSOP   },
 { "RDEL", { .pass_arg = cmd_rdel }, PASS_ARG, CON_COMANDI, MINLVL_DELROOM },
 { "READ", { .pass_arg = cmd_read }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
 { "REDT", { .pass_arg = cmd_redt }, PASS_ARG, CON_COMANDI|CON_ROOM_EDIT, ILC_NOCHECK }, /* IS_RH() */
