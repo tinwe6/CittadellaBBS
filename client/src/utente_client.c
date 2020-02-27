@@ -740,7 +740,9 @@ void edit_user(void)
 	/* il server salva secpmsg (1= STEP_POST secondi per messaggio) */
   	newmsgph=1000;
  	while (newmsgph < 0 || newmsgph>((3600*STEP_POST/256)-1)) {
- 		newmsgph = new_int_def(_(" Numero di messaggi per ora (0 per infiniti)"), msgph);
+ 		newmsgph = new_int_def(_(
+" Numero di messaggi per ora (0 per illimitati)"),
+                                       msgph);
                 msgph = newmsgph;
  	}
 	if(msgph==0)

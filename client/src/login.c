@@ -293,7 +293,7 @@ static int login_ospite(void)
         char buf[LBUF];
 
         ospite = true;
-        serv_putf("USR1 %s", nome);
+        serv_putf("USR1 %s|", nome);
         serv_gets(buf);
 
         if (buf[0] != '2') {

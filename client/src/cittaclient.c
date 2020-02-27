@@ -142,9 +142,9 @@ static void wrapper_urna(void);
  */
 int main(int argc, char **argv)
 {
-        char buf[LBUF], buf1[LBUF], *rcfile;
-        long ultimo_login, mail;
-        int ut_conn, login_status;
+        char buf[LBUF], last_host[LBUF], *rcfile;
+        long num_utente, ultimo_login, mail;
+        int ut_conn, livello, num_chiamata, login_status;
 	bool no_rc;
 
         /* Client locale o client remoto? */
@@ -276,10 +276,17 @@ int main(int argc, char **argv)
 	setcolor(CYAN);
         if (!ospite) {
                 putchar('\n');
+
                 serv_puts("CHEK");
                 serv_gets(buf);
                 ut_conn = extract_int(buf+4, 0);
+                num_utente = extract_long(buf+4, 1);
                 livello = extract_int(buf+4, 2);
+                num_chiamata = extract_int(buf+4, 3);
+                ultimo_login = extract_long(buf+4, 4);
+                extract(last_host, buf+4, 5);
+                mail = extract_long(buf+4, 6);
+
 		switch(ut_conn) {
 		 case 1:
                         printf( _("Nessun altro utente connesso.\n"));
@@ -292,32 +299,34 @@ int main(int argc, char **argv)
 				ut_conn-1);
 			break;
 		}
-                if (extract_int(buf+4, 3) > 1) {
-                        cml_printf( _("\nChiamata n.<b>%d</b> per l'utente n.<b>%ld</b> di livello <b>%d</b>\n"),
-				    extract_int(buf+4, 3),
-				    extract_long(buf+4, 1), livello);
-                        extract(buf1, buf+4, 5);
-                        ultimo_login = extract_long(buf+4, 4);
-			/* RIUNIRE le seguenti 3 righe */
+                if (num_chiamata > 1) {
+                        cml_printf( _(
+"\nChiamata n.<b>%d</b> per l'utente n.<b>%ld</b> di livello <b>%d</b>\n"
+                                      ), num_chiamata, num_utente, livello);
+
                         cml_printf( _("Ultimo collegamento <b>"));
                         stampa_data_smb(ultimo_login);
-                        cml_printf( _("</b> da <b>%s</b>\n"), buf1);
-			mail = extract_long(buf+4, 6);
-			if (mail == 0)
+                        cml_printf( _("</b> da <b>%s</b>\n"), last_host);
+
+			if (mail == 0) {
 				printf(_("Nessun nuovo mail.\n"));
-			else if (mail == 1)
+			} else if (mail == 1) {
 				printf(_("Hai un nuovo mail.\n"));
-			else
+			} else {
 				cml_printf(_("Hai <b>%ld</b> nuovi mail.\n"),
 					   mail);
-                } else
-                        cml_printf(_("\nPrima chiamata per l'utente n.%ld di livello <b>%d</b>\n"),
-				   extract_long(buf+4, 1), livello);
+                        }
+                } else {
+                        cml_printf(_(
+"\nPrima chiamata per l'utente n.%ld di livello <b>%d</b>\n"
+                                     ), livello);
+                }
 		IFNEHAK;
-        }
 
-	if (livello >= MINLVL_URNA)
-		urna_check();
+        	if (livello >= MINLVL_URNA) {
+                        urna_check();
+                }
+        }
 
 	setcolor(C_NORMAL);
 	if (comandi.partenza != NULL) {
@@ -826,32 +835,35 @@ static char ciclo_client(void)
 			force_scripts();
 			break;
 		case 137:
-			 edit_amici(enemy_list);
-			 break;
+                        edit_amici(enemy_list);
+                        break;
 		case 138:
-			 wrapper_urna();
-			 break;
+                        wrapper_urna();
+                        break;
 		case 139:
-			 cerca();
-			 break;
+                        cerca();
+                        break;
 		case 140:
-			 blog_goto();
-			 break;
+                        blog_goto();
+                        break;
 		case 141:
-			 blog_configure();
-			 break;
+                        blog_configure();
+                        break;
 		case 142:
-			 blog_enter_message();
-			 break;
+                        blog_enter_message();
+                        break;
 		case 143:
-			 blog_list();
-			 break;
+                        blog_list();
+                        break;
 		case 144:
-			 toggle_debug_mode();
-			 break;
-		 case 145:
-                         room_goto(7, true, NULL);
+                        toggle_debug_mode();
+                        break;
+                case 145:
+                        room_goto(7, true, NULL);
 			break;
+                case 146:
+                        sysop_reset_consent();
+                        break;
 		} /* fine switch */
 
                 /* Se qui la coda comandi non e` vuota e` perche' qualcosa */
