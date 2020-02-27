@@ -71,6 +71,10 @@ void cmd_frdg(struct sessione *t);
 void cmd_frdp(struct sessione *t, char *arg);
 void cmd_gmtr(struct sessione *t, char *nome);
 void notify_logout(struct sessione *t, int tipo);
+void stats_new_login(int logged_users);
+void stats_new_guest(void);
+void stats_new_user(void);
+void stats_new_validation(void);
 
 /******************************************************************************
 ******************************************************************************/
@@ -143,14 +147,11 @@ void cmd_user(struct sessione *t, char *nome)
 void cmd_usr1(struct sessione *t, char *arg)
 {
         char passwd[MAXLEN_PASSWORD], nome[MAXLEN_UTNAME];
-        int i;
         bool wrong_pwd = false;
 	bool is_first_user = false;
         bool terms_accepted = false;
-	time_t ora;
-	struct tm *tmst;
         struct sessione  *s;
-        struct lista_ut *punto;
+        struct lista_ut *punto = NULL;
         struct dati_ut *utente;
 
         if (t->logged_in) {
@@ -161,106 +162,58 @@ void cmd_usr1(struct sessione *t, char *arg)
         extractn(nome, arg, 0, MAXLEN_UTNAME);
 
         if (!strcmp(nome, "Ospite") || !strcmp(nome, "Guest")) {
-		punto = NULL;
-                CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
-                strcpy(utente->nome, "Ospite");
-                utente->livello = LVL_OSPITE;
-                utente->registrato = true;
-                utente->val_key[0] = 0;
-                utente->matricola = 0;
+                utente = du_guest();
                 t->logged_in = true;
                 t->stato = CON_COMANDI;
                 t->occupato = 0;
-                dati_server.ospiti++;
-        } else  { /* E' un utente della BBS? */
+                stats_new_guest();
+        } else {
+                extractn(passwd, arg, 1, MAXLEN_PASSWORD);
                 utente = trova_utente(nome);
-        }
-
-        if (utente == NULL) {
-                citta_logf("Nuovo utente [%s].", nome);
-		/* Controllo Badnick.                    *DA FARE*        */
-                /* Abbiamo un nuovo utente!
-                   Ora gli generiamo una struttura di dati */
-                CREATE(punto, struct lista_ut, 1, TYPE_LISTA_UT);
-                CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
-		punto->dati = utente;
-		punto->prossimo = NULL;
-                if (ultimo_utente == NULL) {
-                        /* E' il primo utente della BBS!!! */
-                        /* Forse non e' il caso lasciare la prossima riga */
-                        dati_server.matricola = 0;
-                        lista_utenti = punto;
-			utente->val_key[0] = 0;     /* Niente Validazione */
-                        utente->livello = LVL_SYSOP; /* Entra come sysop  */
-			is_first_user = true;
-                } else {
-                        ultimo_utente->prossimo = punto;
-                        utente->livello = livello_iniziale;
-#ifdef USE_VALIDATION_KEY
-			utente->val_key[0] = 1; /* Deve venire validato */
-#else
-			utente->val_key[0] = 0; /* Non si usa la valkey */
-#endif
-                }
-                ultimo_utente = punto;
-
-                extractn(passwd, arg, 1, MAXLEN_PASSWORD);
-                cripta(passwd);
-
-                /* Lo battezziamo */
-                strcpy(utente->nome, nome);
-                strcpy(utente->password, passwd);
-                /* Inizializzazioni varie */
-                utente->matricola = dati_server.matricola++;
-                utente->chiamate = 0;
-                utente->post = 0;
-                utente->mail = 0;
-                utente->x_msg = 0;
-                utente->chat = 0;
-                utente->firstcall = time(0);
-                utente->lastcall = time(0);
-                utente->time_online = 0;
-                /* deve passare per la registrazione   */
-                utente->registrato = false;
-
-                /* Setta i valori iniziali dei flags */
-                utente->flags[0] = UTDEF_0;
-                utente->flags[1] = UTDEF_1;
-                utente->flags[2] = UTDEF_2;
-                utente->flags[3] = UTDEF_3;
-                utente->flags[4] = UTDEF_4;
-                utente->flags[5] = UTDEF_5;
-                utente->flags[6] = UTDEF_6;
-                utente->flags[7] = UTDEF_7;
-                for (i = 0; i < 8; i++) {
-                        utente->sflags[i] = 0;
-                }
-                /* Inizializza friend-list ed enemy-list */
-                for (i = 0; i < 2*NFRIENDS; i++) {
-                        utente->friends[i] = -1L;
-                }
-                /* Si mette subito in stato di registrazione, altrimenti
-		 * potrebbe essere possibile bypassarla.                 */
-                t->stato = CON_REG;
-                t->occupato = 1;
-                dati_server.nuovi_ut++;
-        } else if (utente->livello != LVL_OSPITE) {
-                /* Verifica la Password */
-                extractn(passwd, arg, 1, MAXLEN_PASSWORD);
-                if (check_password(passwd, utente->password)) {
-                        /* Killa l'alter ego se presente */
-                        if (( (s = collegato(nome)) != NULL) && (s != t)) {
-                                s->cancella = true;
+                if (utente == NULL) { /* E' un utente della BBS? */
+                        citta_logf("Nuovo utente [%s].", nome);
+                        /* TODO Controllo Badnick.                 */
+                        /* Abbiamo un nuovo utente!
+                           Ora gli generiamo una struttura di dati */
+                        CREATE(punto, struct lista_ut, 1, TYPE_LISTA_UT);
+                        punto->prossimo = NULL;
+                        if (ultimo_utente == NULL) {
+                                /* E' il primo utente della BBS!!! */
+                                is_first_user = true;
+                                dati_server.matricola = 0;
+                                lista_utenti = punto;
+                        } else {
+                                ultimo_utente->prossimo = punto;
                         }
+                        ultimo_utente = punto;
+
+                        cripta(passwd);
+
+                        utente = du_new_user(nome, passwd, is_first_user);
+                        punto->dati = utente;
+
+                        /* Si mette subito in stato di registrazione,
+                         * altrimenti potrebbe essere possibile bypassarla. */
+                        t->stato = CON_REG;
+                        t->occupato = 1;
+                        stats_new_user();
+                } else if (utente->livello != LVL_OSPITE) {
+                        /* Verifica la Password */
+                        if (check_password(passwd, utente->password)) {
+                                /* Killa l'alter ego se presente */
+                                if (( (s = collegato(nome)) != NULL) && (s != t)) {
+                                        s->cancella = true;
+                                }
 #ifdef USE_POP3
-                        /* Elimina la sessione POP3 se presente */
-                        pop3_kill_user(nome);
+                                /* Elimina la sessione POP3 se presente */
+                                pop3_kill_user(nome);
 #endif
-                        /* Passo in modo comandi */
-                        t->stato = CON_COMANDI;
-                        t->occupato = 0;
-                } else {
-                        wrong_pwd = true; /* password errata! */
+                                /* Passo in modo comandi */
+                                t->stato = CON_COMANDI;
+                                t->occupato = 0;
+                        } else {
+                                wrong_pwd = true; /* password errata! */
+                        }
                 }
         }
 
@@ -285,22 +238,12 @@ void cmd_usr1(struct sessione *t, char *arg)
                 cprintf(t, "%d Login eseguito.|%d|%d\n", code, is_first_user,
                         terms_accepted);
 
-                /* Aggiorna conteggio # utenti connessi */
+                /* Update num connected users and server statistics */
 		logged_users++;
-		/* Aggiorna le statistiche              */
-		dati_server.login++;
-		time(&ora);
-		tmst = localtime(&ora);
-		dati_server.stat_ore[tmst->tm_hour]++;
-		dati_server.stat_giorni[tmst->tm_wday]++;
-		dati_server.stat_mesi[tmst->tm_mon]++;
-		/* Record di connessioni contemporanee? */
-		if (dati_server.max_users < logged_users) {
-			dati_server.max_users = logged_users;
-			time(&(dati_server.max_users_time));
-		}
+                stats_new_login(logged_users);
         }
 }
+
 
 /*
  * Completa la procedura di login: notifica l'entrata e invia dati
@@ -739,7 +682,7 @@ void cmd_eusr(struct sessione *t, char *buf)
 				citta_logf("VALIDATE: validazione di [%s].",
 				     utente->nome);
 				/* Notifica all'utente interessato... */
-				dati_server.validazioni++;
+                                stats_new_validation();
 			}
 			extractn(newnick, buf, 13, MAXLEN_UTNAME);
                         if (*newnick && strncmp(nome, newnick, MAXLEN_UTNAME)
@@ -816,7 +759,7 @@ void cmd_aval(struct sessione *t, char *vk)
                         t->utente->livello = LIVELLO_VALIDATO;
                 citta_logf("VALIDATE: Auto-validazione di [%s].", t->utente->nome);
                 cprintf(t, "%d\n", OK);
-                dati_server.validazioni++;
+                stats_new_validation();
         } else
                 cprintf(t, "%d\n", ERROR);
 }
@@ -1100,4 +1043,43 @@ void notify_logout(struct sessione *t, int tipo)
 				punto->bytes_out += buflen;
 			}
 	}
+}
+
+/* TODO move the stats function in another file */
+
+/* updates server statistics after new successful login */
+void stats_new_login(int logged_users)
+{
+	struct tm *tmst;
+	time_t ora;
+
+        dati_server.login++;
+        time(&ora);
+        tmst = localtime(&ora);
+        dati_server.stat_ore[tmst->tm_hour]++;
+        dati_server.stat_giorni[tmst->tm_wday]++;
+        dati_server.stat_mesi[tmst->tm_mon]++;
+        /* Record di connessioni contemporanee? */
+        if (dati_server.max_users < logged_users) {
+                dati_server.max_users = logged_users;
+                time(&(dati_server.max_users_time));
+        }
+}
+
+/* updates server statistics after a new guest login */
+void stats_new_guest(void)
+{
+        dati_server.ospiti++;
+}
+
+/* updates server statistics after a new user login */
+void stats_new_user(void)
+{
+        dati_server.nuovi_ut++;
+}
+
+/* updates server statistics after a successful validation */
+void stats_new_validation(void)
+{
+        dati_server.validazioni++;
 }

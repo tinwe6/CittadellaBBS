@@ -188,12 +188,13 @@
 
 /* Flags non modificabili dall'utente direttamente */
 /* sflags[0] : variabili di configurazione */
-#define SUT_SEX         1  /* 0: maschio, 1: femmina                 */
-#define SUT_REGISTRATO  2  /* 1: se l'utente e' registrato           */
-#define SUT_NEWS        4  /* 1: non ha ancora letto nuove news      */
-#define SUT_UPGRADE     8  /* 1: primo collegamento con nuovo client */
-#define SUT_CONSENT    16  /* 1: l'utente ha accettato le condizioni */
-#define SUTDEF_0        0
+#define SUT_SEX           1  /* 0: maschio, 1: femmina                 */
+#define SUT_REGISTRATO    2  /* 1: se l'utente e' registrato           */
+#define SUT_NEWS          4  /* 1: non ha ancora letto nuove news      */
+#define SUT_UPGRADE       8  /* 1: primo collegamento con nuovo client */
+#define SUT_CONSENT      16  /* 1: l'utente ha accettato le condizioni */
+#define SUT_NEED_CONSENT 32  /* 1: l'utente deve accettare le condiz.  */
+#define SUTDEF_0          0
 
 /* sflags[1] : divieti */
 #define SUT_NOX         1  /* 1: X disabilitati per l'utente */
@@ -203,6 +204,7 @@
 #define SUT_NOANONYM   16  /* 1: Divieto di postare anonimo  */
 #define SUTDEF_1        0
 
+#if 0 /* These flags are not used! */
 /* sflags[2] : Tipo utente */
 #define SUT_HELPING_HANDS  1 /* L'utente e' un Helping Hands */
 #define SUT_DEVELOPER      2 /* L'utente e' uno sviluppatore */
@@ -217,6 +219,7 @@
 /* sflags[4] : Varie       */
 #define SUT_RAFFREDDORE    1 /* Se l'utente e` raffreddato   */
 #define SUT_IMMUNIZZATO    2 /*   immunizzato al raffreddore */
+#endif
 
 /* Flag utenti per le room */
 #define UTR_KNOWN       1   /* Room conosciuta             */

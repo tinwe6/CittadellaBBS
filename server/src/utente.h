@@ -91,6 +91,9 @@ extern struct lista_ut *lista_utenti, *ultimo_utente;
 void carica_utenti(void);
 void salva_utenti(void);
 void free_lista_utenti(void);
+struct dati_ut * du_guest(void);
+struct dati_ut * du_new_user(const char *nome, const char *passwd,
+                             bool is_first_user);
 struct dati_ut * trova_utente(const char *nome);
 struct dati_ut * trova_utente_n(long matr);
 const char * nome_utente_n(long matr);

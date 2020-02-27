@@ -153,6 +153,77 @@ void free_lista_utenti(void)
         }
 }
 
+/* Creates a new dati_ut structure initialized for a guest. */
+struct dati_ut * du_guest(void)
+{
+        struct dati_ut *utente;
+
+        CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
+        strcpy(utente->nome, "Ospite");
+        utente->livello = LVL_OSPITE;
+        utente->registrato = true;
+        utente->val_key[0] = 0;
+        utente->matricola = 0;
+        return utente;
+}
+
+
+/* Creates a new dati_ut structure initialized for a new user. */
+struct dati_ut * du_new_user(const char *nome, const char *passwd,
+                             bool is_first_user)
+{
+        struct dati_ut *utente;
+        int i;
+
+        CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
+
+        if (is_first_user) {
+                utente->val_key[0] = 0;     /* Niente Validazione */
+                utente->livello = LVL_SYSOP; /* Entra come sysop  */
+        } else {
+                utente->livello = livello_iniziale;
+                #ifdef USE_VALIDATION_KEY
+                utente->val_key[0] = 1; /* Deve venire validato */
+                #else
+                utente->val_key[0] = 0; /* Non si usa la valkey */
+                #endif
+        }
+        /* Lo battezziamo */
+        strcpy(utente->nome, nome);
+        strcpy(utente->password, passwd);
+        /* Inizializzazioni varie */
+        utente->matricola = dati_server.matricola++;
+        utente->chiamate = 0;
+        utente->post = 0;
+        utente->mail = 0;
+        utente->x_msg = 0;
+        utente->chat = 0;
+        utente->firstcall = time(0);
+        utente->lastcall = time(0);
+        utente->time_online = 0;
+        /* deve passare per la registrazione   */
+        utente->registrato = false;
+
+        /* Setta i valori iniziali dei flags */
+        utente->flags[0] = UTDEF_0;
+        utente->flags[1] = UTDEF_1;
+        utente->flags[2] = UTDEF_2;
+        utente->flags[3] = UTDEF_3;
+        utente->flags[4] = UTDEF_4;
+        utente->flags[5] = UTDEF_5;
+        utente->flags[6] = UTDEF_6;
+        utente->flags[7] = UTDEF_7;
+        for (i = 0; i < 8; i++) {
+                utente->sflags[i] = 0;
+        }
+
+        /* Inizializza friend-list ed enemy-list */
+        for (i = 0; i < 2*NFRIENDS; i++) {
+                utente->friends[i] = -1L;
+        }
+
+        return utente;
+}
 /*
  * Cerca l'utente di nome *nome e se esiste restituisce il puntatore alla
  * sua struttura di dati, altrimenti NULL.
