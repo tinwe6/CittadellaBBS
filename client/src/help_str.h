@@ -117,6 +117,7 @@
 
 #define HELP_DOT_SYSOP     "(Opzioni)\nScegli:\n"            \
                            " <b>anner commands\n"            \
+                           " reset <d>ata protection consent\n" \
 			   " <e>nter message\n"              \
 			   " <f>ile message commands\n"      \
 			   " <r>ead commands\n"              \

@@ -93,7 +93,7 @@ void fm_read(void)
 {
 	long fmnum, msgnum, msgpos;
 	char buf[LBUF];
-	
+
 	fmnum = new_long(_("Numero file messaggi   : "));
 	msgnum = new_long(_("Numero del messaggio   : "));
 	msgpos = new_long(_("Posizione del messaggio: "));
@@ -114,7 +114,7 @@ void fm_msgdel(void)
 {
 	long fmnum, msgnum, msgpos;
 	char buf[LBUF];
-	
+
 	fmnum = new_long(_("Numero file messaggi   : "));
 	msgnum = new_long(_("Numero del messaggio   : "));
 	msgpos = new_long(_("Posizione del messaggio: "));
@@ -133,7 +133,7 @@ void fm_headers(void)
 {
 	char buf[LBUF];
 	long fmnum;
-	
+
 	fmnum = new_long(_("Numero file messaggi: "));
 	serv_putf("FMHD %ld", fmnum);
         serv_gets(buf);
@@ -145,7 +145,7 @@ void fm_headers(void)
 }
 
 /*
- * 
+ *
  */
 void fm_info(void)
 {
@@ -156,7 +156,7 @@ void fm_info(void)
 	/* int fmck; */
 	char desc[LBUF];
 	struct tm *tmst;
-	
+
 	fmnum = new_long(_("Numero file messaggi (o 0 per vederli tutti): "));
 	serv_putf("FMRI %ld", fmnum);
         serv_gets(buf);
@@ -196,7 +196,7 @@ void fm_expand(void)
 	/* int fmck; */
 	char desc[LBUF];
 	struct tm *tmst;
-	
+
 	fmnum = new_long(_("Numero file messaggi da espandere: "));
 	serv_putf("FMRI %ld", fmnum);
         serv_gets(buf);
@@ -244,7 +244,7 @@ void fm_expand(void)
 		cml_printf(_("Ok, il file messaggi #%ld &egrave; stato portato a %ld bytes.\n"), fmnum, newsize);
 	else
 		printf(_("Non posso modificare la taglia del file messaggi.\n"));
-	
+
 }
 
 void banners_modify(void)
@@ -272,7 +272,7 @@ void banners_modify(void)
 		fclose(fp);
 		return;
 	}
-	
+
 	while (serv_gets(buf), strcmp(buf, "000"))
 		fprintf(fp, "%s\n", &buf[4]);
 	fclose(fp);
@@ -310,10 +310,41 @@ void banners_modify(void)
 
 void banners_rehash(void)
 {
-	
+
 }
 
 void banners_add(void)
 {
-	
+
+}
+
+/* Setta flag SUT_UPDATE di tutti gli utenti, per passare dalla configurazione
+ * del nuovo client al primo collegamento.
+ */
+void sysop_reset_consent(void)
+{
+        char buf[LBUF];
+
+        printf(sesso
+               ?
+_("\nSei sicura di voler richiedere il consenso al trattamento dei dati? ")
+               :
+_("\nSei sicuro di voler richiedere il consenso al trattamento dei dati? ")
+               );
+        if (si_no() == 'n') {
+                return;
+        }
+        serv_putf("UPGS");
+        serv_gets(buf);
+        if (buf[0] != '2') {
+                printf(sesso
+                       ? _("\n*** Non sei autorizzata.\n")
+                       : _("\n*** Non sei autorizzato.\n")
+                       );
+        } else {
+                cml_print(_(
+"\nOk, gli utenti dovranno dare il consenso per il trattamento dei dati\n"
+"alla loro prossima connessione.\n"
+                            ));
+        }
 }
