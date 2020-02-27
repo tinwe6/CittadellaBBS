@@ -172,8 +172,9 @@ void cmd_usr1(struct sessione *t, char *arg)
                 t->stato = CON_COMANDI;
                 t->occupato = 0;
                 dati_server.ospiti++;
-        } else  /* E' un utente della BBS? */
+        } else  { /* E' un utente della BBS? */
                 utente = trova_utente(nome);
+        }
 
         if (utente == NULL) {
                 citta_logf("Nuovo utente [%s].", nome);
@@ -567,6 +568,7 @@ void cmd_gcst(struct sessione *t, char *buf)
         struct text *txt;
         bool user_has_given_consent = extract_bool(buf, 0);
 
+        t->utente->sflags[0] &= ~SUT_NEED_CONSENT;
         if (user_has_given_consent) {
                 t->utente->sflags[0] |= SUT_CONSENT;
                 citta_logf("Data protection: User [%s] accepted the terms.",

@@ -617,8 +617,8 @@ void cmd_upgr(struct sessione *t)
  */
 void cmd_rcst(struct sessione *t)
 {
-	sut_clear_all(0, SUT_CONSENT);
-	citta_logf("SUT_CONSENT cleared for all users by [%s].",
+	sut_set_all(0, SUT_NEED_CONSENT);
+	citta_logf("SUT_NEED_CONSENT set for all users by [%s].",
                    t->utente->nome);
 	cprintf(t, "%d\n", OK);
 }
