@@ -16,13 +16,6 @@
 #ifndef _LOGIN_H
 #define _LOGIN_H   1
 
-#define LOGIN_FAILED          0
-#define LOGIN_OSPITE          1
-#define LOGIN_NUOVO           2
-#define LOGIN_NONVAL          3
-#define LOGIN_APPENA_VALIDATO 4
-#define LOGIN_VALIDATO        5
-
 /* prototipi delle funzioni in login.c */
 int login(void);
 void chiedi_valkey(void);

@@ -33,6 +33,16 @@ enum {
         USER_IS_VALIDATED,
 };
 
+enum {
+        LOGIN_FAILED,
+        LOGIN_WRONG_NAME,
+        LOGIN_OSPITE,
+        LOGIN_NUOVO,
+        LOGIN_NONVAL,
+        LOGIN_APPENA_VALIDATO,
+        LOGIN_VALIDATO,
+};
+
 /* Prototipi funzioni in questo file */
 int login(void);
 static int login_new_user (bool is_first_user);
@@ -53,7 +63,8 @@ int login(void)
         char buf[LBUF];
         int ok = LOGIN_FAILED;
         bool has_other_connection, is_guest, is_new_user, is_first_user,
-             is_validated;
+                is_validated;
+        bool first_go = true, has_default_name = false;
 
         if (USER_NAME && (USER_NAME[0] != '\0')) {
 		strncpy(nome, client_cfg.name, MAXLEN_UTNAME);
@@ -66,27 +77,28 @@ int login(void)
 		}
 	}
 
-        while(ok == LOGIN_FAILED) {
-                if (*nome == 0) {
+        do {
+                if (first_go) {
+			printf(_("\nNome    : %s\n"), nome);
+                        first_go = false;
+                } else {
                         printf(_(
 "\nInserire il nome che si vuole utilizzare presso la bbs oppure 'Ospite' \n"
 "nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"
                                  ));
                         do {
-                                if (*nome == 0) {
-                                        new_str_M(_("\nNome    : "), nome,
-                                                  MAXLEN_UTNAME - 1);
-                                } else {
+                                if (has_default_name) {
                                         new_str_def_M(_("\nNome"), nome,
                                                       MAXLEN_UTNAME - 1);
+                                } else {
+                                        new_str_M(_("\nNome    : "), nome,
+                                                  MAXLEN_UTNAME - 1);
                                 }
                         } while (*nome == 0);
 
                         if ((!strcmp(nome,"Esci"))||(!strcmp(nome,"Off"))) {
                                 pulisci_ed_esci(SHOW_EXIT_BANNER);
                         }
-                } else {
-			printf(_("\nNome    : %s\n"), nome);
                 }
                 serv_putf("USER %s", nome);
                 serv_gets(buf);
@@ -153,11 +165,10 @@ int login(void)
                         ok = login_user(USER_NOT_YET_VALIDATED);
                 }
 
-                if (ok == LOGIN_FAILED) {
-                        nome[0] = 0;
-		}
+                has_default_name = (ok != LOGIN_WRONG_NAME);
 
-	}
+        } while (ok == LOGIN_FAILED || ok == LOGIN_WRONG_NAME);
+
 	return ok;
 }
 
@@ -191,7 +202,7 @@ static int login_new_user (bool is_first_user)
         printf(_("\nRecord non esistente. Nuovo utente? (s/n) "));
         if (si_no()=='n') {
                 printf(_("\nAllora da capo...\n"));
-                return LOGIN_FAILED;
+                return LOGIN_WRONG_NAME;
         }
         leggi_file(STDMSG_MESSAGGI, STDMSGID_BAD_NICKS);
 
@@ -201,7 +212,7 @@ static int login_new_user (bool is_first_user)
 		   nome);
         if (si_no() == 'n') {
                 printf(_("\nAllora da capo...\n"));
-                return LOGIN_FAILED;
+                return LOGIN_WRONG_NAME;
         }
         /* Chiede una password */
         putchar('\n');
