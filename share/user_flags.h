@@ -188,12 +188,13 @@
 
 /* Flags non modificabili dall'utente direttamente */
 /* sflags[0] : variabili di configurazione */
-#define SUT_SEX           1  /* 0: maschio, 1: femmina                 */
-#define SUT_REGISTRATO    2  /* 1: se l'utente e' registrato           */
-#define SUT_NEWS          4  /* 1: non ha ancora letto nuove news      */
-#define SUT_UPGRADE       8  /* 1: primo collegamento con nuovo client */
-#define SUT_CONSENT      16  /* 1: l'utente ha accettato le condizioni */
-#define SUT_NEED_CONSENT 32  /* 1: l'utente deve accettare le condiz.  */
+#define SUT_SEX           1  /* 0: maschio, 1: femmina                    */
+#define SUT_REGISTRATO    2  /* 1: se l'utente e' registrato              */
+#define SUT_NEWS          4  /* 1: non ha ancora letto nuove news         */
+#define SUT_UPGRADE       8  /* 1: primo collegamento con nuovo client    */
+#define SUT_CONSENT      16  /* 1: l'utente ha accettato le condizioni    */
+#define SUT_NEED_CONSENT 32  /* 1: l'utente deve accettare le condiz.     */
+#define SUT_DELETEME     64  /* 1: l'utente ha richiesto la cancellazione */
 #define SUTDEF_0          0
 
 /* sflags[1] : divieti */
