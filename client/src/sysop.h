@@ -27,5 +27,6 @@ void fm_expand(void);
 void banners_modify(void);
 void banners_rehash(void);
 void sysop_reset_consent(void);
+void sysop_unregistered_users(void);
 
 #endif /* sysop.h */

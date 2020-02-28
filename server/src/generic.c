@@ -641,16 +641,18 @@ void cmd_uusr(struct sessione *t, char *buf)
 {
         struct lista_ut *it;
         struct dati_ut *user;
-        bool registration, consent;
+        bool registration, consent, to_be_deleted;
 
         registration = extract_bool(buf, 0);
         consent = extract_bool(buf, 1);
+        to_be_deleted = extract_bool(buf, 2);
 
         cprintf(t, "%d Lista utenti (RUSR)\n", SEGUE_LISTA);
         for (it = lista_utenti; it; it = it->prossimo) {
                 user = it->dati;
                 if ((registration && !user->registrato)
-                    || (consent && !has_accepted_terms(user))) {
+                    || (consent && !has_accepted_terms(user))
+                    || (to_be_deleted && has_requested_deletion(user))) {
                         cprintf(t, "%d %s|%d|%d|%ld|%d|%d|%d|%d\n", OK,
                                 user->nome, user->chiamate, user->post,
                                 user->lastcall, user->livello,

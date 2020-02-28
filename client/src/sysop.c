@@ -31,17 +31,6 @@
 #include "sysop.h"
 #include "utility.h"
 
-/* Prototipi delle funzioni in questo file */
-void fm_create(void);
-void fm_headers(void);
-void fm_read(void);
-void fm_remove(void);
-void fm_info(void);
-void fm_msgdel(void);
-void fm_expand(void);
-void banners_modify(void);
-void banners_rehash(void);
-
 /***************************************************************************/
 /*
  * Crea un nuovo file messaggi
@@ -347,4 +336,111 @@ _("\nSei sicuro di voler richiedere il consenso al trattamento dei dati? ")
 "alla loro prossima connessione.\n"
                             ));
         }
+}
+
+/*
+ * Displays a list of users that have not completed their registration,
+ * that need to give/renew their consent to the terms, and/or that
+ * requested their data to be deleted.
+ */
+void sysop_unregistered_users(void)
+{
+        char resp[LBUF],  name[40];
+        char *args;
+        int level, calls, posts;
+        long last_call;
+        struct tm *tmst;
+        int choice, row;
+        bool unregistered = false;
+        bool need_consent = false;
+        bool to_be_deleted = false;
+        bool is_reg, has_cst, need_cst;
+
+        const char *bool_str[] = {
+                "<b;fg=1>No </b>",
+                "</b;fg=2>Yes"
+        };
+
+        const char *bool_inv_str[] = {
+                "</b;fg=2>No ",
+                "<b;fg=1>Yes</b>"
+        };
+
+        cml_printf("\n"
+                   " 1. Utenti che non hanno completato la registrazione.\n"
+                   " 2. Utenti che devono accettare le condizioni.\n"
+                   " 3. Utenti che vogliono essere cancellati.\n"
+                   " 4. Tutte le categorie qui sopra\n\n.");
+        choice = new_int("Scelta: ");
+
+        switch (choice) {
+        case 1:
+                unregistered = true;
+                break;
+        case 2:
+                need_consent = true;
+                break;
+        case 3:
+                to_be_deleted = false;
+                break;
+        case 4:
+                unregistered = true;
+                need_consent = true;
+                to_be_deleted = true;
+                break;
+        default:
+                return;
+        }
+
+        serv_putf("UUSR %d|%d|%d", unregistered, need_consent, to_be_deleted);
+        serv_gets(resp);
+        if (resp[0] != '2') {
+                printf(sesso
+                       ? _("\nNon sei autorizzata.\n")
+                       : _("\nNon sei autorizzato.\n"));
+                return;
+        }
+
+        cml_printf(_(
+"\n<fg=7>"
+"Reg : <b;fg=1>No</b;fg=7>  se deve ancora completare la registrazione.\n"
+"Cons: <b;fg=1>No</b;fg=7>  se non ha mai consentito al trattamento dati.\n"
+"Rnew: <b;fg=1>Yes</b;fg=7> "
+"se deve rinnovare il consenso al trattamento dati.\n"
+"Del : <b;fg=1>Yes</b;fg=7> "
+"se ha richiesto la cancellazione dei dati personali.\n"
+"\n<b>"
+"Nome                      Lvl Last Call   Calls   Post  Reg  Cons Rnew Del"
+"</b>\n"
+"------------------------- --- ---------- ------- ------ ---- ---- ---- ----"
+"\n"
+                     ));
+
+        row = 8;
+        while (serv_gets(resp), strcmp(resp, "000")) {
+                row++;
+                if (row == NRIGHE) {
+                        hit_any_key();
+                        row = 1;
+                }
+                args = resp + 4;
+                extractn(name, args, 0, sizeof name);
+                calls = extract_int(args, 1);
+                posts = extract_int(args, 2);
+                last_call = extract_long(args, 3);
+                tmst = localtime(&last_call);
+                level = extract_int(args, 4);
+                is_reg = extract_int(args, 5);
+                has_cst = extract_int(args, 6);
+                need_cst = extract_int(args, 7);
+
+                cml_printf(
+"</b;fg=7>%-25s %3d %02d/%02d/%4d %6d %6d  %-3s  %-3s  %-3s  %-3s\n",
+                           name, level, tmst->tm_mday, tmst->tm_mon + 1,
+                           1900+tmst->tm_year, calls, posts, bool_str[is_reg],
+                           bool_str[has_cst], bool_inv_str[need_cst],
+                           bool_inv_str[true]
+                           );
+        }
+        IFNEHAK
 }

@@ -140,7 +140,8 @@
 
 #define HELP_DOT_SYSOP_READ "(Opzioni)\nScegli:\n"           \
                             " system <l>ogs\n"               \
-                            " <s>erver statistics\n"
+                            " <s>erver statistics\n"         \
+                            " <u>nregistered users\n"
 
 #define HELP_DOT_SYSOP_SHUTDOWN "(Opzioni)\nScegli:\n"       \
 			        " <b>egin\n"                 \

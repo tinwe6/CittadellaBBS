@@ -402,8 +402,9 @@ static int dot_command(void)
                 cmd = 0;
                 /* prende il carattere e lavora per il server */
                 a = inkey_sc(1);
-		if ((a == 'S') && (livello < 10))
+                if ((a == 'S') && (livello < 10)) {
 			a = 0;
+                }
                 switch(a) {
 		case Key_BS:
                         delchar();
@@ -1147,6 +1148,9 @@ static int sysop_read_command(void)
 		case 's':
                         printf(_("Server Statistics.\n"));
 			return 32;
+		case 'u':
+                        printf(_("Unregistered users.\n"));
+			return 147;
 		case '?': /* HELP */
 		case Key_F(1):
                         printf(HELP_DOT_SYSOP_READ);

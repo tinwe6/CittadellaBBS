@@ -30,27 +30,6 @@
 #include "utente.h"
 #include "utility.h"
 
-/* Prototipi delle funzioni in questo file */
-void carica_utenti(void);
-void salva_utenti(void);
-void free_lista_utenti(void);
-struct dati_ut * trova_utente(const char *nome);
-struct dati_ut * trova_utente_n(long matr);
-const char * nome_utente_n(long matr);
-struct sessione *collegato(char *ut);
-struct sessione * collegato_n(long num);
-char check_password(char *pwd, char *real_pwd); /* verifica la password */
-void cripta(char *pwd);
-bool is_friend(struct dati_ut *amico, struct dati_ut *utente);
-bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente);
-void sut_set_all(int num, char flag);
-void sut_clear_all(int num, char flag);
-
-#ifdef USE_VALIDATION_KEY
-void invia_val_key(char *valkey, char *addr);
-void purge_invalid(void);
-#endif
-
 struct lista_ut *lista_utenti, *ultimo_utente;
 
 /******************************************************************************
@@ -481,6 +460,11 @@ bool has_accepted_terms(struct dati_ut *user)
 bool must_renew_consent(struct dati_ut *user)
 {
         return (user->sflags[0] & SUT_NEED_CONSENT);
+}
+
+bool has_requested_deletion(struct dati_ut *user)
+{
+        return (user->sflags[0] & SUT_DELETEME);
 }
 
 /*
