@@ -156,7 +156,7 @@ void registrazione(bool nuovo)
 
 	printf(_("Registrazione:\n\n"));
 
-	if (nuovo)
+	if (nuovo) {
 		do {
 			new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
 				      MAXLEN_RNAME-1);
@@ -167,7 +167,7 @@ void registrazione(bool nuovo)
                                          ));
 			}
 		} while (nome_reale[0] == 0);
-	else {
+        } else {
 		new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
 			      MAXLEN_RNAME-1);
         }
@@ -175,12 +175,7 @@ void registrazione(bool nuovo)
 	if (nuovo) {
 		printf(": ");
 	} else {
-		if (sesso) {
-			c = 'F';
-                } else {
-			c = 'M';
-                }
-		printf("[%c]: ", c);
+		printf("[%c]: ", sesso ? 'F' : 'M');
 	}
 	c = 0;
 	while (((c != 'm') && (c != 'M') && (c != 'f') && (c != 'F')
@@ -326,7 +321,7 @@ char profile(char *nome_def)
 
 	if (!strcmp(nick, "Ospite")) {
 		cml_print(_(
-"\n`Ospite&acute; &egrave; il nome di un account pubblico "
+"\n'Ospite' &egrave; il nome di un account pubblico "
 "per chi vuole visitare la BBS.\n"
                             ));
 		return 0;

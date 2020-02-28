@@ -268,8 +268,10 @@ static int login_new_user (bool is_first_user)
         if (buf[0] != '2') {
                 pulisci_ed_esci(SHOW_EXIT_BANNER);
         }
-        assert(is_first_user == extract_bool(buf + 4, 1));
         assert((buf[1] == '1') == is_first_user);
+        assert(is_first_user == extract_bool(buf + 4, 1));
+        assert(!extract_bool(buf + 4, 2));
+        assert(!extract_bool(buf + 4, 3));
 
         /* Send the user consent for data processing to the server */
         serv_putf("GCST %d", terms_accepted);
@@ -353,6 +355,7 @@ static int login_user(int user_is_validated)
 		hit_any_key();
 	}
 
+        /* TODO before next release */
         if (serverinfo.legacy) {
                 if (user_is_validated == USER_IS_VALIDATED) {
                         return LOGIN_VALIDATO;

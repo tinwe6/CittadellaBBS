@@ -1591,7 +1591,6 @@ void chiudi_sessione(struct sessione *d)
 	/* Se e` in una room virtuale, prima la elimino */
 	kill_virtual_room(d);
 
-        citta_logf("chiudi_sessione");//
 	if (d->utente) {
                 citta_logf("Chiudo sessione di %s.", d->utente->nome);
 		/* Aggiorna ultima chiamata, ultimo host e tempo online */

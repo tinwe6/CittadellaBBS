@@ -148,6 +148,8 @@ void cmd_usr1(struct sessione *t, char *arg)
 {
         char passwd[MAXLEN_PASSWORD], nome[MAXLEN_UTNAME];
         bool wrong_pwd = false;
+        bool is_guest = false;
+        bool is_new_user = false;
 	bool is_first_user = false;
         bool terms_accepted = false;
         struct sessione  *s;
@@ -162,6 +164,7 @@ void cmd_usr1(struct sessione *t, char *arg)
         extractn(nome, arg, 0, MAXLEN_UTNAME);
 
         if (!strcmp(nome, "Ospite") || !strcmp(nome, "Guest")) {
+                is_guest = true;
                 utente = du_guest();
                 t->logged_in = true;
                 t->stato = CON_COMANDI;
@@ -172,6 +175,7 @@ void cmd_usr1(struct sessione *t, char *arg)
                 utente = trova_utente(nome);
                 if (utente == NULL) { /* E' un utente della BBS? */
                         /* Abbiamo un nuovo utente!                */
+                        is_new_user = true;
                         citta_logf("Nuovo utente [%s].", nome);
                         /* TODO Controllo Badnick.                 */
                         CREATE(punto, struct lista_ut, 1, TYPE_LISTA_UT);
@@ -227,17 +231,23 @@ void cmd_usr1(struct sessione *t, char *arg)
                 (utente->chiamate)++;
                 citta_logf("Login di [%s] da [%s].", utente->nome, t->host);
 
-                terms_accepted = has_accepted_terms(utente);
-                if (terms_accepted) {
-                        /* Login completed */
-                        citta_logf("CON_COMANDI");
-                        t->stato = CON_COMANDI;
-                        t->occupato = 0;
-                } else {
-                        /* The user must accept the terms first */
-                        citta_logf("CON_CONSENT");
-                        t->stato = CON_CONSENT;
-                        t->occupato = 1;
+                if (!is_guest) {
+                        terms_accepted = has_accepted_terms(utente);
+                        if  (terms_accepted && utente->registrato) {
+                                /* Login completed */
+                                t->stato = CON_COMANDI;
+                                t->occupato = 0;
+                                assert(!is_new_user);
+                        } else if  (terms_accepted) {
+                                /* Registration has not been completed yet */
+                                t->stato = CON_REG;
+                                t->occupato = 1;
+                                assert(!is_new_user);
+                        } else {
+                                /* The user must accept the terms first */
+                                t->stato = CON_CONSENT;
+                                t->occupato = 1;
+                        }
                 }
 
                 /* TODO: this is for compatibility only, send simply OK     */
@@ -448,14 +458,10 @@ void cmd_rgst(struct sessione *t, char *buf)
         t->occupato = 0;
         t->stato = CON_COMANDI;
 
-        citta_logf("RGST [%s] 0", t->utente->nome);
-
 	if (stato != CON_REG) {
 		cprintf(t, "%d\n", ERROR+WRONG_STATE);
 		return;
 	}
-
-        citta_logf("RGST [%s] 1", t->utente->nome);
 
 	if (extract_int(buf,0) == 0) {
                 if (t->utente->registrato) {
@@ -465,8 +471,6 @@ void cmd_rgst(struct sessione *t, char *buf)
                 }
 		return;
 	}
-
-        citta_logf("RGST [%s] 2", t->utente->nome);
 
         /* TODO Aggiungere controllo su utente->registrato                   */
 	/* Se viene modificato l'email, e' necessaria una nuova validazione. */
