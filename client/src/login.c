@@ -387,17 +387,20 @@ static int login_user(int user_is_validated)
                 serv_putf("GCST %d", terms_accepted);
                 serv_gets(buf);
                 assert(buf[0] == '2');
-                assert(extract_bool(buf + 4, 0) != is_registered);
 
                 if (!terms_accepted) {
-                        printf(_(
-"\nI Sysop sono stati notificati della tua decisione e provvederanno ad\n"
+                        cml_printf(_(
+"\n<b>"
+"I Sysop sono stati notificati della tua decisione e provvederanno ad\n"
 "eliminare il tuo account nelle prossime 48 ore. Se nel frattempo dovessi\n"
-"cambiare idea, puoi ricollegarti e accettare le condizioni.\n\n"
-                                 ));
+"cambiare idea, puoi ricollegarti e accettare le condizioni.\n"
+"</b>\n"
+                                     ));
                         sleep(5);
                         pulisci_ed_esci(NO_EXIT_BANNER);
                 }
+
+                assert(extract_bool(buf + 4, 0) != is_registered);
         }
 
         /* If the user is not correctly registered, go through registration. */

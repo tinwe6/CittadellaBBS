@@ -540,12 +540,31 @@ void cmd_gcst(struct sessione *t, char *buf)
         bool user_has_given_consent = extract_bool(buf, 0);
         bool user_needs_registration = false;
 
-        citta_logf("GCST");
         t->utente->sflags[0] &= ~SUT_NEED_CONSENT;
         if (user_has_given_consent) {
                 t->utente->sflags[0] |= SUT_CONSENT;
                 citta_logf("Data protection: User [%s] accepted the terms.",
                            t->utente->nome);
+
+                if (has_requested_deletion(t->utente)) {
+                        t->utente->sflags[0] &= ~SUT_DELETEME;
+                        if ( (room = room_find(sysop_room))) {
+                                txt = txt_create();
+                                txt_putf(txt,
+"L'utente [%s] ha deciso di accettare le condizioni sul"
+                                         , t->utente->nome);
+                                txt_putf(txt,
+"trattamento dei dati e di mantenere il proprio account."
+                                         );
+                                txt_putf(txt,
+"*** <b>NON</b> cancellare l'account di [%s] ***"
+                                         , t->utente->nome);
+                                citta_post(room,
+                                           "Revoca richiesta di cancellazione",
+                                           txt);
+                                txt_free(&txt);
+                        }
+                }
 
                 /* we can proceed to the next step */
                 if (t->utente->registrato) {
@@ -555,8 +574,9 @@ void cmd_gcst(struct sessione *t, char *buf)
                         user_needs_registration = true;
                         t->stato = CON_REG;
                 }
-        } else {
+        } else if (!has_requested_deletion(t->utente)) {
                 t->utente->sflags[0] &= ~SUT_CONSENT;
+                t->utente->sflags[0] |= SUT_DELETEME;
                 citta_logf("Data protection: user [%s] revoked the terms.",
                            t->utente->nome);
 
@@ -575,6 +595,9 @@ void cmd_gcst(struct sessione *t, char *buf)
                                    txt);
                         txt_free(&txt);
                 }
+        } else {
+                /* the user was already marked for deletion, *
+                 * no need to notify it again...             */
         }
 
 	cprintf(t, "%d %d\n", OK, user_needs_registration);

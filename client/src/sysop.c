@@ -354,7 +354,7 @@ void sysop_unregistered_users(void)
         bool unregistered = false;
         bool need_consent = false;
         bool to_be_deleted = false;
-        bool is_reg, has_cst, need_cst;
+        bool is_reg, has_cst, need_cst, del_mark;
 
         const char *bool_str[] = {
                 "<b;fg=1>No </b>",
@@ -381,7 +381,7 @@ void sysop_unregistered_users(void)
                 need_consent = true;
                 break;
         case 3:
-                to_be_deleted = false;
+                to_be_deleted = true;
                 break;
         case 4:
                 unregistered = true;
@@ -430,16 +430,17 @@ void sysop_unregistered_users(void)
                 last_call = extract_long(args, 3);
                 tmst = localtime(&last_call);
                 level = extract_int(args, 4);
-                is_reg = extract_int(args, 5);
-                has_cst = extract_int(args, 6);
-                need_cst = extract_int(args, 7);
+                is_reg = extract_bool(args, 5);
+                has_cst = extract_bool(args, 6);
+                need_cst = extract_bool(args, 7);
+                del_mark = extract_bool(args, 8);
 
                 cml_printf(
 "</b;fg=7>%-25s %3d %02d/%02d/%4d %6d %6d  %-3s  %-3s  %-3s  %-3s\n",
                            name, level, tmst->tm_mday, tmst->tm_mon + 1,
                            1900+tmst->tm_year, calls, posts, bool_str[is_reg],
                            bool_str[has_cst], bool_inv_str[need_cst],
-                           bool_inv_str[true]
+                           bool_inv_str[del_mark]
                            );
         }
         IFNEHAK

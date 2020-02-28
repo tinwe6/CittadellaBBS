@@ -653,12 +653,13 @@ void cmd_uusr(struct sessione *t, char *buf)
                 if ((registration && !user->registrato)
                     || (consent && !has_accepted_terms(user))
                     || (to_be_deleted && has_requested_deletion(user))) {
-                        cprintf(t, "%d %s|%d|%d|%ld|%d|%d|%d|%d\n", OK,
+                        cprintf(t, "%d %s|%d|%d|%ld|%d|%d|%d|%d|%d\n", OK,
                                 user->nome, user->chiamate, user->post,
                                 user->lastcall, user->livello,
                                 user->registrato,
                                 user->sflags[0] & SUT_CONSENT,
-                                must_renew_consent(user));
+                                must_renew_consent(user),
+                                has_requested_deletion(user));
                 }
         }
         cprintf(t, "000\n");
