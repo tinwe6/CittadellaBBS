@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 {
         char buf[LBUF], last_host[LBUF], *rcfile;
         long num_utente, ultimo_login, mail;
-        int ut_conn, livello, num_chiamata, login_status;
+        int ut_conn, num_chiamata, login_status;
 	bool no_rc;
 
         /* Client locale o client remoto? */
@@ -224,6 +224,10 @@ int main(int argc, char **argv)
         /* Identificazione client/server */
         info_sul_server();
         ident_client();
+        if (CLIENT_VERSION_CODE > serverinfo.newclient_vcode) {
+                printf("Legacy server: entering compatibility mode.\n");
+                serverinfo.legacy = true;
+        }
 
         /* Saluta e procedi con il login */
 	login_banner();
@@ -279,6 +283,10 @@ int main(int argc, char **argv)
 
                 serv_puts("CHEK");
                 serv_gets(buf);
+                if (buf[0] != '2') {
+                        printf("Fatal error: CHEK %s\n", buf);
+                        pulisci_ed_esci(NO_EXIT_BANNER);
+                }
                 ut_conn = extract_int(buf+4, 0);
                 num_utente = extract_long(buf+4, 1);
                 livello = extract_int(buf+4, 2);
@@ -319,7 +327,7 @@ int main(int argc, char **argv)
                 } else {
                         cml_printf(_(
 "\nPrima chiamata per l'utente n.%ld di livello <b>%d</b>\n"
-                                     ), livello);
+                                     ), num_utente, livello);
                 }
 		IFNEHAK;
 
@@ -864,6 +872,15 @@ static char ciclo_client(void)
                 case 146:
                         sysop_reset_consent();
                         break;
+                case 147:
+                        sysop_unregistered_users();
+                        break;
+                default:
+                        cml_printf("\n<b;fg=1>"
+"  *** ERROR cittaclient case %d - please notify the bug!"
+                                   "</b;fg=0>\n",
+                                   cmd);
+                        sleep(1);
 		} /* fine switch */
 
                 /* Se qui la coda comandi non e` vuota e` perche' qualcosa */

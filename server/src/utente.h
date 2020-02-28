@@ -104,6 +104,7 @@ void cripta(char *pwd);
 bool is_friend(struct dati_ut *amico, struct dati_ut *utente);
 bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente);
 bool has_accepted_terms(struct dati_ut *user);
+bool must_renew_consent(struct dati_ut *user);
 void sut_set_all(int num, char flag);
 void sut_clear_all(int num, char flag);
 

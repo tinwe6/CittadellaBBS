@@ -474,7 +474,13 @@ bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente)
 
 bool has_accepted_terms(struct dati_ut *user)
 {
-        return user->sflags[0] & SUT_CONSENT;
+        return ((user->sflags[0] & SUT_CONSENT)
+                && !(user->sflags[0] & SUT_NEED_CONSENT));
+}
+
+bool must_renew_consent(struct dati_ut *user)
+{
+        return (user->sflags[0] & SUT_NEED_CONSENT);
 }
 
 /*

@@ -167,6 +167,7 @@
 #define CON_CHIUSA      (1<<22)       /* Connessione chiusa               */
 #define CON_REF_VOTO    (1<<23)       /* Vota un referendum               */
 #define CON_UPLOAD      (1<<24)       /* Upload file in corso             */
+#define CON_CONSENT     (1<<25)       /* Waiting for user consent         */
 #define CON_NOCHECK        (~0)       /* Non fare check sullo stato       */
 
 #define CON_MASK_COM   ( CON_BROAD | CON_XMSG | CON_CHAT)
@@ -176,7 +177,6 @@
                         | CON_EUSR )
 #define CON_MASK_REF   ( CON_REFERENDUM | CON_REF_PARM )
 #define CON_MASK_TABC  ( CON_COMANDI | CON_XMSG | CON_POST)
-#define CON_MASK_CNST  ( CON_REG | CON_COMANDI)
 
 /* Stato comandi che richiedono invio testo con TEXT */
 #define CON_MASK_TEXT  ( CON_MASK_COM | CON_PROFILE | CON_ROOM_INFO \

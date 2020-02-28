@@ -115,7 +115,7 @@ int login(void)
                 /*--8<-------------------------------------------------*/
                 /* TODO this is for compatibility with the old login   */
                 /* protocol and must be eliminated before next release */
-                if (num_parms(buf+4) < 3) {
+                if (serverinfo.legacy) {
                         switch (buf[2]) {
                         case '0': /* nuovo utente */
                                 ok = login_new_user(is_first_user);
@@ -271,16 +271,18 @@ static int login_new_user (bool is_first_user)
         assert(is_first_user == extract_bool(buf + 4, 1));
         assert((buf[1] == '1') == is_first_user);
 
+        /* Send the user consent for data processing to the server */
+        serv_putf("GCST %d", terms_accepted);
+        serv_gets(buf);
+        assert(buf[0] == '2');
+        assert(extract_bool(buf + 4, 0));
+
         /* Registration */
         leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
         putchar('\n');
         hit_any_key();
         putchar('\n');
         registrazione(true);
-
-        /* Send the user consent for data processing to the server */
-        serv_putf("CNST %d", terms_accepted);
-        serv_gets(buf); /* we don't check the response, as it will be OK */
 
         /* Ask for a validation key (unless it's the first user) */
 	if (!is_first_user) {
@@ -321,7 +323,7 @@ static int login_user(int user_is_validated)
 {
         char buf[LBUF], passwd[MAXLEN_PASSWORD];
 	bool auto_login = false;
-        bool terms_accepted = false;
+        bool is_registered, terms_accepted = false;
 
 	if (USER_PWD && (USER_PWD[0] != '\0')) {
 		strncpy(passwd, USER_PWD, MAXLEN_PASSWORD-1);
@@ -332,8 +334,11 @@ static int login_user(int user_is_validated)
 	} else {
 		new_str_m(_("Password: "), passwd, -(MAXLEN_PASSWORD - 1));
         }
+
         serv_putf("USR1 %s|%s", nome, passwd);
         serv_gets(buf);
+        terms_accepted = extract_bool(buf, 2);
+        is_registered = extract_bool(buf + 4, 3);
 
         if (buf[0] != '2') {
                 if (buf[1] == '3') {
@@ -348,8 +353,17 @@ static int login_user(int user_is_validated)
 		hit_any_key();
 	}
 
+        if (serverinfo.legacy) {
+                if (user_is_validated == USER_IS_VALIDATED) {
+                        return LOGIN_VALIDATO;
+                } else {
+                        cml_printf(
+"Hai un client troppo recente. Potrebbero succedere cose strane.. Good luck!\n"
+                                   );
+                }
+        }
+
         /* controlla se i termini sono stati accettati */
-        terms_accepted = extract_bool(buf, 2);
         if (!terms_accepted) {
                 do {
                         putchar('\n');
@@ -367,8 +381,10 @@ static int login_user(int user_is_validated)
                 } while(si_no() == 'n');
 
                 /* Send the user consent for data processing to the server */
-                serv_putf("CNST %d", terms_accepted);
-                serv_gets(buf); /* no need to check the response */
+                serv_putf("GCST %d", terms_accepted);
+                serv_gets(buf);
+                assert(buf[0] == '2');
+                assert(extract_bool(buf + 4, 0) != is_registered);
 
                 if (!terms_accepted) {
                         printf(_(
@@ -379,6 +395,16 @@ static int login_user(int user_is_validated)
                         sleep(5);
                         pulisci_ed_esci(NO_EXIT_BANNER);
                 }
+        }
+
+        /* If the user is not correctly registered, go through registration. */
+        /* This shouldn't happen, some older users might need it though      */
+        if (!is_registered) {
+                leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
+                putchar('\n');
+                hit_any_key();
+                putchar('\n');
+                registrazione(true);
         }
 
         if (user_is_validated == USER_IS_VALIDATED) {

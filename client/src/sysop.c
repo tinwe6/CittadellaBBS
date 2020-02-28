@@ -334,7 +334,7 @@ _("\nSei sicuro di voler richiedere il consenso al trattamento dei dati? ")
         if (si_no() == 'n') {
                 return;
         }
-        serv_putf("UPGS");
+        serv_putf("RCST");
         serv_gets(buf);
         if (buf[0] != '2') {
                 printf(sesso

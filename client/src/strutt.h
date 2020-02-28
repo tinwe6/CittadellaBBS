@@ -36,13 +36,14 @@ struct serverinfo {
 	int  newclient_vcode;
 	char newclient[20];
 	char num_canali_chat;
-	int maxlineebug;   /* Numero massimo di righe nei bug rep. */
-	int maxlineebx;    /* Numero massimo di righe nei messaggi */
-	int maxlineenews;  /* Numero massimo di righe nelle news   */
-	int maxlineepost;  /* Numero massimo di righe nei post     */
-	int maxlineeprfl;  /* Numero massimo di righe nei profile  */
-	int maxlineeroominfo;  /* Numero massimo di righe RoomInfo */
+	int maxlineebug;      /* Numero massimo di righe nei bug rep. */
+	int maxlineebx;       /* Numero massimo di righe nei messaggi */
+	int maxlineenews;     /* Numero massimo di righe nelle news   */
+	int maxlineepost;     /* Numero massimo di righe nei post     */
+	int maxlineeprfl;     /* Numero massimo di righe nei profile  */
+	int maxlineeroominfo; /* Numero massimo di righe RoomInfo     */
 	int flags;
+        bool legacy;          /* True if connected to an older server */
 };
 
 #endif /* strutt.h */

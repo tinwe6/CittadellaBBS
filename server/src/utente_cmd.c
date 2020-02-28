@@ -141,7 +141,7 @@ void cmd_user(struct sessione *t, char *nome)
  * Verifica la password e associa alla sessione la struct utente.
  * (o la crea se necessario). Viene anche caricata la struttura UTR.
  * Sintassi : "USR1 nome|password"
- * Risponde : "OK messaggio|is_first_user|terms_accepted"
+ * Risponde : "OK messaggio|is_first_user|terms_accepted|is_registered"
  *          o "ERROR+PASSWORD messaggio" se password e' errata
  */
 void cmd_usr1(struct sessione *t, char *arg)
@@ -171,10 +171,9 @@ void cmd_usr1(struct sessione *t, char *arg)
                 extractn(passwd, arg, 1, MAXLEN_PASSWORD);
                 utente = trova_utente(nome);
                 if (utente == NULL) { /* E' un utente della BBS? */
+                        /* Abbiamo un nuovo utente!                */
                         citta_logf("Nuovo utente [%s].", nome);
                         /* TODO Controllo Badnick.                 */
-                        /* Abbiamo un nuovo utente!
-                           Ora gli generiamo una struttura di dati */
                         CREATE(punto, struct lista_ut, 1, TYPE_LISTA_UT);
                         punto->prossimo = NULL;
                         if (ultimo_utente == NULL) {
@@ -194,7 +193,7 @@ void cmd_usr1(struct sessione *t, char *arg)
 
                         /* Si mette subito in stato di registrazione,
                          * altrimenti potrebbe essere possibile bypassarla. */
-                        t->stato = CON_REG;
+                        t->stato = CON_CONSENT;
                         t->occupato = 1;
                         stats_new_user();
                 } else if (utente->livello != LVL_OSPITE) {
@@ -208,9 +207,6 @@ void cmd_usr1(struct sessione *t, char *arg)
                                 /* Elimina la sessione POP3 se presente */
                                 pop3_kill_user(nome);
 #endif
-                                /* Passo in modo comandi */
-                                t->stato = CON_COMANDI;
-                                t->occupato = 0;
                         } else {
                                 wrong_pwd = true; /* password errata! */
                         }
@@ -230,13 +226,26 @@ void cmd_usr1(struct sessione *t, char *arg)
                 mail_load(t);
                 (utente->chiamate)++;
                 citta_logf("Login di [%s] da [%s].", utente->nome, t->host);
+
                 terms_accepted = has_accepted_terms(utente);
+                if (terms_accepted) {
+                        /* Login completed */
+                        citta_logf("CON_COMANDI");
+                        t->stato = CON_COMANDI;
+                        t->occupato = 0;
+                } else {
+                        /* The user must accept the terms first */
+                        citta_logf("CON_CONSENT");
+                        t->stato = CON_CONSENT;
+                        t->occupato = 1;
+                }
+
                 /* TODO: this is for compatibility only, send simply OK     */
 		if (is_first_user) {
                         code = OK + PRIMO_UT;
                 }
-                cprintf(t, "%d Login eseguito.|%d|%d\n", code, is_first_user,
-                        terms_accepted);
+                cprintf(t, "%d Login eseguito.|%d|%d|%d\n", code,
+                        is_first_user, terms_accepted, t->utente->registrato);
 
                 /* Update num connected users and server statistics */
 		logged_users++;
@@ -439,15 +448,26 @@ void cmd_rgst(struct sessione *t, char *buf)
         t->occupato = 0;
         t->stato = CON_COMANDI;
 
+        citta_logf("RGST [%s] 0", t->utente->nome);
+
 	if (stato != CON_REG) {
 		cprintf(t, "%d\n", ERROR+WRONG_STATE);
 		return;
 	}
 
+        citta_logf("RGST [%s] 1", t->utente->nome);
+
 	if (extract_int(buf,0) == 0) {
-		cprintf(t, "%d\n", OK);
+                if (t->utente->registrato) {
+                        cprintf(t, "%d\n", OK);
+                } else {
+                        cprintf(t, "%d registration data expected\n", ERROR);
+                }
 		return;
 	}
+
+        citta_logf("RGST [%s] 2", t->utente->nome);
+
         /* TODO Aggiungere controllo su utente->registrato                   */
 	/* Se viene modificato l'email, e' necessaria una nuova validazione. */
         /* Inoltre se nome_reale non viene fornito, errore.                  */
@@ -462,16 +482,19 @@ void cmd_rgst(struct sessione *t, char *buf)
         sesso = extract_int(buf, 9);
 #ifdef NO_DOUBLE_EMAIL
         if (!t->utente->registrato && !check_double_email(t->utente->email)) {
+                citta_logf("SECURE user [%s] is reusing email [%s]",
+                           t->utente->nome, t->utente->email);
                 cprintf(t, "%d\n", ERROR);
                 return;
         }
 #endif /*NO_DOUBLE_EMAIL*/
 
         t->utente->registrato = true;
-        if (sesso)
+        if (sesso) {
                 t->utente->sflags[0] |= SUT_SEX;
-        else
+        } else {
                 t->utente->sflags[0] &= ~SUT_SEX;
+        }
         cprintf(t, "%d\n", OK);
 }
 
@@ -503,19 +526,31 @@ void cmd_greg(struct sessione *t)
  *               processing.
  * The user must be in CON_REG or CON_COMANDI state.
  * Syntax: "GCST 0" revokes consent, "GCST 1" gives consent.
- * Return: "OK"
+ * Return: "OK need_reg" where need_reg is 1 if the user must do the
+ *         registration (and thus the connection placed in CON_REG state)
  */
 void cmd_gcst(struct sessione *t, char *buf)
 {
         struct room *room;
         struct text *txt;
         bool user_has_given_consent = extract_bool(buf, 0);
+        bool user_needs_registration = false;
 
+        citta_logf("GCST");
         t->utente->sflags[0] &= ~SUT_NEED_CONSENT;
         if (user_has_given_consent) {
                 t->utente->sflags[0] |= SUT_CONSENT;
                 citta_logf("Data protection: User [%s] accepted the terms.",
                            t->utente->nome);
+
+                /* we can proceed to the next step */
+                if (t->utente->registrato) {
+                        t->stato = CON_COMANDI;
+                } else {
+                        /* it's a new user, still need to register */
+                        user_needs_registration = true;
+                        t->stato = CON_REG;
+                }
         } else {
                 t->utente->sflags[0] &= ~SUT_CONSENT;
                 citta_logf("Data protection: user [%s] revoked the terms.",
@@ -537,7 +572,8 @@ void cmd_gcst(struct sessione *t, char *buf)
                         txt_free(&txt);
                 }
         }
-	cprintf(t, "%d\n", OK);
+
+	cprintf(t, "%d %d\n", OK, user_needs_registration);
 }
 
 /*

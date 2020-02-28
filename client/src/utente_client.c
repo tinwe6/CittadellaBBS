@@ -155,7 +155,7 @@ void registrazione(bool nuovo)
 	}
 
 	printf(_("Registrazione:\n\n"));
-	/* TODO Inserire un `leggi_file' sulla privacy */
+
 	if (nuovo)
 		do {
 			new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
@@ -167,24 +167,27 @@ void registrazione(bool nuovo)
                                          ));
 			}
 		} while (nome_reale[0] == 0);
-	else
+	else {
 		new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
 			      MAXLEN_RNAME-1);
+        }
 	printf(_("Sesso: (M/F) "));
-	if (nuovo)
+	if (nuovo) {
 		printf(": ");
-	else {
-		if (sesso)
+	} else {
+		if (sesso) {
 			c = 'F';
-		else
+                } else {
 			c = 'M';
+                }
 		printf("[%c]: ", c);
 	}
 	c = 0;
 	while (((c != 'm') && (c != 'M') && (c != 'f') && (c != 'F')
-		&& (c != 10) && (c != 13)) || (((c == 10) || (c == 13))
-					       && nuovo))
+		&& (c != 10) && (c != 13))
+               || (((c == 10) || (c == 13)) && nuovo)) {
 		c = inkey_sc(0);
+        }
 	printf("%c\n", c);
 	if ((c == 'M') || (c == 'm')) {
                 sesso = 0;
@@ -200,7 +203,7 @@ void registrazione(bool nuovo)
 	new_str_def_M(_("Stato"), stato, MAXLEN_STATO - 1);
 	new_str_def_m(_("Numero di telefono"), tel, MAXLEN_TEL-1);
 
-	if (nuovo)
+	if (nuovo) {
 		cml_print(_(
 "\nOra devi fornire il tuo indirizzo Email. Esso &egrave; essenziale per\n"
 "inviarti la chiave di validazione: senza di essa non potrai\n"
@@ -208,6 +211,7 @@ void registrazione(bool nuovo)
 "Se vuoi semplicemente entrare per dare un'occhiata,\n"
 "puoi comunque collegarti con il nome 'Ospite'.\n\n"
                             ));
+        }
 	c = 0;
 	do {
 		c++;
@@ -224,6 +228,7 @@ void registrazione(bool nuovo)
 			c = 0;
 		}
 	} while (c && (c < 3));
+
 	if (c) { /* Email non valido */
 		if (nuovo) {
 			printf(_(
@@ -258,7 +263,6 @@ void registrazione(bool nuovo)
 		  stato, cap, tel, email, url, sesso);
 	serv_gets(buf);
 	if (buf[0] != '2') {
-
 	        printf(_(
 "\n*** Problema con il server: registrazione non accettata.\n\n"
                          ));
@@ -738,19 +742,21 @@ void edit_user(void)
 	}
 
 	/* il server salva secpmsg (1= STEP_POST secondi per messaggio) */
-  	newmsgph=1000;
- 	while (newmsgph < 0 || newmsgph>((3600*STEP_POST/256)-1)) {
+  	newmsgph = 1000;
+ 	while (newmsgph < 0 || newmsgph > ((3600*STEP_POST / 256) - 1)) {
  		newmsgph = new_int_def(_(
 " Numero di messaggi per ora (0 per illimitati)"),
                                        msgph);
                 msgph = newmsgph;
  	}
-	if(msgph==0)
-                secpmsg=0;
- 	else
-                secpmsg=(int) (3600.0/(msgph*STEP_POST)+.5);
-  	if (secpmsg>255)
-                secpmsg=255;
+	if (msgph == 0) {
+                secpmsg = 0;
+        } else {
+                secpmsg = (int)(3600.0 / (msgph*STEP_POST) + .5);
+        }
+        if (secpmsg > 255) {
+                secpmsg = 255;
+        }
 
         /* validazione */
 	if (valkey[0] != 0) {
