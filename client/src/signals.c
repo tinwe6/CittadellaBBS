@@ -91,7 +91,7 @@ void hupsig(int sig)
 {
         IGNORE_UNUSED_PARAMETER(sig);
 
-        pulisci_ed_esci();
+        pulisci_ed_esci(SHOW_EXIT_BANNER);
 }
 
 /*

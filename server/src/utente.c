@@ -30,26 +30,6 @@
 #include "utente.h"
 #include "utility.h"
 
-/* Prototipi delle funzioni in questo file */
-void carica_utenti(void);
-void salva_utenti(void);
-void free_lista_utenti(void);
-struct dati_ut * trova_utente(const char *nome);
-struct dati_ut * trova_utente_n(long matr);
-const char * nome_utente_n(long matr);
-struct sessione *collegato(char *ut);
-struct sessione * collegato_n(long num);
-char check_password(char *pwd, char *real_pwd); /* verifica la password */
-void cripta(char *pwd);
-bool is_friend(struct dati_ut *amico, struct dati_ut *utente);
-bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente);
-void sut_set_all(int num, char flag);
-
-#ifdef USE_VALIDATION_KEY
-void invia_val_key(char *valkey, char *addr);
-void purge_invalid(void);
-#endif
-
 struct lista_ut *lista_utenti, *ultimo_utente;
 
 /******************************************************************************
@@ -152,6 +132,77 @@ void free_lista_utenti(void)
         }
 }
 
+/* Creates a new dati_ut structure initialized for a guest. */
+struct dati_ut * du_guest(void)
+{
+        struct dati_ut *utente;
+
+        CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
+        strcpy(utente->nome, "Ospite");
+        utente->livello = LVL_OSPITE;
+        utente->registrato = true;
+        utente->val_key[0] = 0;
+        utente->matricola = 0;
+        return utente;
+}
+
+
+/* Creates a new dati_ut structure initialized for a new user. */
+struct dati_ut * du_new_user(const char *nome, const char *passwd,
+                             bool is_first_user)
+{
+        struct dati_ut *utente;
+        int i;
+
+        CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
+
+        if (is_first_user) {
+                utente->val_key[0] = 0;     /* Niente Validazione */
+                utente->livello = LVL_SYSOP; /* Entra come sysop  */
+        } else {
+                utente->livello = livello_iniziale;
+                #ifdef USE_VALIDATION_KEY
+                utente->val_key[0] = 1; /* Deve venire validato */
+                #else
+                utente->val_key[0] = 0; /* Non si usa la valkey */
+                #endif
+        }
+        /* Lo battezziamo */
+        strcpy(utente->nome, nome);
+        strcpy(utente->password, passwd);
+        /* Inizializzazioni varie */
+        utente->matricola = dati_server.matricola++;
+        utente->chiamate = 0;
+        utente->post = 0;
+        utente->mail = 0;
+        utente->x_msg = 0;
+        utente->chat = 0;
+        utente->firstcall = time(0);
+        utente->lastcall = time(0);
+        utente->time_online = 0;
+        /* deve passare per la registrazione   */
+        utente->registrato = false;
+
+        /* Setta i valori iniziali dei flags */
+        utente->flags[0] = UTDEF_0;
+        utente->flags[1] = UTDEF_1;
+        utente->flags[2] = UTDEF_2;
+        utente->flags[3] = UTDEF_3;
+        utente->flags[4] = UTDEF_4;
+        utente->flags[5] = UTDEF_5;
+        utente->flags[6] = UTDEF_6;
+        utente->flags[7] = UTDEF_7;
+        for (i = 0; i < 8; i++) {
+                utente->sflags[i] = 0;
+        }
+
+        /* Inizializza friend-list ed enemy-list */
+        for (i = 0; i < 2*NFRIENDS; i++) {
+                utente->friends[i] = -1L;
+        }
+
+        return utente;
+}
 /*
  * Cerca l'utente di nome *nome e se esiste restituisce il puntatore alla
  * sua struttura di dati, altrimenti NULL.
@@ -262,7 +313,7 @@ void invia_val_key(char *valkey, char *addr)
         unlink(tmpf2);
         Free(tmpf);
         Free(tmpf2);
-}   
+}
 
 /*
  * Elimina gli utenti di livello 0 e gli utenti che non si sono
@@ -400,8 +451,24 @@ bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente)
         return false;
 }
 
+bool has_accepted_terms(struct dati_ut *user)
+{
+        return ((user->sflags[0] & SUT_CONSENT)
+                && !(user->sflags[0] & SUT_NEED_CONSENT));
+}
+
+bool must_renew_consent(struct dati_ut *user)
+{
+        return (user->sflags[0] & SUT_NEED_CONSENT);
+}
+
+bool has_requested_deletion(struct dati_ut *user)
+{
+        return (user->sflags[0] & SUT_DELETEME);
+}
+
 /*
- * Setta il flag 'flag' di sflag[num] per tutti gli utenti.
+ * Setta il bit 'flag' di sflag[num] per tutti gli utenti.
  */
 void sut_set_all(int num, char flag)
 {
@@ -409,6 +476,17 @@ void sut_set_all(int num, char flag)
 
         for (punto = lista_utenti; punto; punto = punto->prossimo)
 		punto->dati->sflags[num] |= flag;
+}
+
+/*
+ * Resetta il bit 'flag' di sflag[num] per tutti gli utenti.
+ */
+void sut_clear_all(int num, char flag)
+{
+        struct lista_ut *punto;
+
+        for (punto = lista_utenti; punto; punto = punto->prossimo)
+		punto->dati->sflags[num] &= ~flag;
 }
 
 /***************************************************************************/

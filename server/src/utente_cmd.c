@@ -52,7 +52,7 @@ void cmd_rusr(struct sessione *t);
 void cmd_rgst(struct sessione *t, char *buf);
 void cmd_breg(struct sessione *t);
 void cmd_greg(struct sessione *t);
-void cmd_cnst(struct sessione *t, char *buf);
+void cmd_gcst(struct sessione *t, char *buf);
 char cmd_cusr(struct sessione *t, char *nome, char notifica);
 void cmd_kusr(struct sessione *t, char *nome);
 void cmd_eusr(struct sessione *t, char *buf);
@@ -71,6 +71,10 @@ void cmd_frdg(struct sessione *t);
 void cmd_frdp(struct sessione *t, char *arg);
 void cmd_gmtr(struct sessione *t, char *nome);
 void notify_logout(struct sessione *t, int tipo);
+void stats_new_login(int logged_users);
+void stats_new_guest(void);
+void stats_new_user(void);
+void stats_new_validation(void);
 
 /******************************************************************************
 ******************************************************************************/
@@ -78,7 +82,7 @@ void notify_logout(struct sessione *t, int tipo);
  * Procedura di Login, passo 1.
  * Il client comunica al server il nome dell'utente.
  * Sintassi : "USER nome"
- * Risponde : "OK has_other_conn|is_guest|is_new_usr|is_first_usr|is_validated"
+ * Risponde : "OK already_conn|is_guest|is_new_usr|is_first_usr|is_validated"
  *   oppure ERROR se nome e' "" o se la sessione ha gia' eseguito un login
  *
  * For compatibility with protocol pre 0.4.5, we send as OK a full code that
@@ -137,16 +141,19 @@ void cmd_user(struct sessione *t, char *nome)
  * Verifica la password e associa alla sessione la struct utente.
  * (o la crea se necessario). Viene anche caricata la struttura UTR.
  * Sintassi : "USR1 nome|password"
+ * Risponde : "OK messaggio|is_first_user|terms_accepted|is_registered"
+ *          o "ERROR+PASSWORD messaggio" se password e' errata
  */
 void cmd_usr1(struct sessione *t, char *arg)
 {
         char passwd[MAXLEN_PASSWORD], nome[MAXLEN_UTNAME];
-        int i, err_pwd = 0;
-	bool primo_utente = false;
-	time_t ora;
-	struct tm *tmst;
+        bool wrong_pwd = false;
+        bool is_guest = false;
+        bool is_new_user = false;
+	bool is_first_user = false;
+        bool terms_accepted = false;
         struct sessione  *s;
-        struct lista_ut *punto;
+        struct lista_ut *punto = NULL;
         struct dati_ut *utente;
 
         if (t->logged_in) {
@@ -157,135 +164,105 @@ void cmd_usr1(struct sessione *t, char *arg)
         extractn(nome, arg, 0, MAXLEN_UTNAME);
 
         if (!strcmp(nome, "Ospite") || !strcmp(nome, "Guest")) {
-		punto = NULL;
-                CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
-                strcpy(utente->nome, "Ospite");
-                utente->livello = LVL_OSPITE;
-                utente->registrato = true;
-                utente->val_key[0] = 0;
-                utente->matricola = 0;
+                is_guest = true;
+                utente = du_guest();
                 t->logged_in = true;
                 t->stato = CON_COMANDI;
                 t->occupato = 0;
-                dati_server.ospiti++;
-        } else  /* E' un utente della BBS? */
+                stats_new_guest();
+        } else {
+                extractn(passwd, arg, 1, MAXLEN_PASSWORD);
                 utente = trova_utente(nome);
+                if (utente == NULL) { /* E' un utente della BBS? */
+                        /* Abbiamo un nuovo utente!                */
+                        is_new_user = true;
+                        citta_logf("Nuovo utente [%s].", nome);
+                        /* TODO Controllo Badnick.                 */
+                        CREATE(punto, struct lista_ut, 1, TYPE_LISTA_UT);
+                        punto->prossimo = NULL;
+                        if (ultimo_utente == NULL) {
+                                /* E' il primo utente della BBS!!! */
+                                is_first_user = true;
+                                dati_server.matricola = 0;
+                                lista_utenti = punto;
+                        } else {
+                                ultimo_utente->prossimo = punto;
+                        }
+                        ultimo_utente = punto;
 
-        if (utente == NULL) {
-                citta_logf("Nuovo utente [%s].", nome);
-		/* Controllo Badnick.                    *DA FARE*        */
-                /* Abbiamo un nuovo utente!
-                   Ora gli generiamo una struttura di dati */
-                CREATE(punto, struct lista_ut, 1, TYPE_LISTA_UT);
-                CREATE(utente, struct dati_ut, 1, TYPE_DATI_UT);
-		punto->dati = utente;
-		punto->prossimo = NULL;
-                if (ultimo_utente == NULL) {
-                        /* E' il primo utente della BBS!!! */
-                        /* Forse non e' il caso lasciare la prossima riga */
-                        dati_server.matricola = 0;
-                        lista_utenti = punto;
-			utente->val_key[0] = 0;     /* Niente Validazione */
-                        utente->livello = LVL_SYSOP; /* Entra come sysop  */
-			primo_utente = true;
-                } else {
-                        ultimo_utente->prossimo = punto;
-                        utente->livello = livello_iniziale;
-#ifdef USE_VALIDATION_KEY
-			utente->val_key[0] = 1; /* Deve venire validato */
-#else
-			utente->val_key[0] = 0; /* Non si usa la valkey */
-#endif
-                }
-                ultimo_utente = punto;
+                        cripta(passwd);
 
-                extractn(passwd, arg, 1, MAXLEN_PASSWORD);
-                cripta(passwd);
+                        utente = du_new_user(nome, passwd, is_first_user);
+                        punto->dati = utente;
 
-                /* Lo battezziamo */
-                strcpy(utente->nome, nome);
-                strcpy(utente->password, passwd);
-                /* Inizializzazioni varie */
-                utente->matricola = dati_server.matricola++;
-                utente->chiamate = 0;
-                utente->post = 0;
-                utente->mail = 0;
-                utente->x_msg = 0;
-                utente->chat = 0;
-                utente->firstcall = time(0);
-                utente->lastcall = time(0);
-                utente->time_online = 0;
-                /* deve passare per la registrazione   */
-                utente->registrato = false;
-
-                /* Setta i valori iniziali dei flags */
-                utente->flags[0] = UTDEF_0;
-                utente->flags[1] = UTDEF_1;
-                utente->flags[2] = UTDEF_2;
-                utente->flags[3] = UTDEF_3;
-                utente->flags[4] = UTDEF_4;
-                utente->flags[5] = UTDEF_5;
-                utente->flags[6] = UTDEF_6;
-                utente->flags[7] = UTDEF_7;
-                for (i = 0; i < 8; i++)
-                        utente->sflags[i] = 0;
-                /* Inizializza friend-list ed enemy-list */
-                for (i = 0; i < 2*NFRIENDS; i++)
-                        utente->friends[i] = -1L;
-                /* Si mette subito in stato di registrazione, altrimenti
-		 * potrebbe essere possibile bypassarla.                 */
-                t->stato = CON_REG;
-                t->occupato = 1;
-                dati_server.nuovi_ut++;
-        } else if (utente->livello != LVL_OSPITE) {
-                /* Verifica la Password */
-                extractn(passwd, arg, 1, MAXLEN_PASSWORD);
-                if (check_password(passwd, utente->password)) {
-                        /* Killa l'alter ego se presente */
-                        if (( (s = collegato(nome)) != NULL) && (s != t))
-                                s->cancella = true;
+                        /* Si mette subito in stato di registrazione,
+                         * altrimenti potrebbe essere possibile bypassarla. */
+                        t->stato = CON_CONSENT;
+                        t->occupato = 1;
+                        stats_new_user();
+                } else if (utente->livello != LVL_OSPITE) {
+                        /* Verifica la Password */
+                        if (check_password(passwd, utente->password)) {
+                                /* Killa l'alter ego se presente */
+                                if (( (s = collegato(nome)) != NULL) && (s != t)) {
+                                        s->cancella = true;
+                                }
 #ifdef USE_POP3
-                        /* Elimina la sessione POP3 se presente */
-                        pop3_kill_user(nome);
+                                /* Elimina la sessione POP3 se presente */
+                                pop3_kill_user(nome);
 #endif
-                        /* Passo in modo comandi */
-                        t->stato = CON_COMANDI;
-                        t->occupato = 0;
-                } else
-                        err_pwd = 1; /* password errata! */
+                        } else {
+                                wrong_pwd = true; /* password errata! */
+                        }
+                }
         }
 
-        if (err_pwd) {
+        if (wrong_pwd) {
                 cprintf(t, "%d Password errata.\n", ERROR+PASSWORD);
-                citta_logf("SECURE: Pwd errata per [%s] da [%s]", nome, t->host);
+                citta_logf("SECURE: Pwd errata per [%s] da [%s]", nome,
+                           t->host);
                 t->stato = CON_LIC;
         } else { /* Password corretta */
+                int code = OK;
                 /* Linkiamo la struttura dati dell'utente alla sua sessione */
                 t->utente = utente;
                 utr_load(t);
                 mail_load(t);
                 (utente->chiamate)++;
                 citta_logf("Login di [%s] da [%s].", utente->nome, t->host);
-		if (primo_utente)
-			cprintf(t, "%d Login eseguito.\n", OK + PRIMO_UT);
-		else
-			cprintf(t, "%d Login eseguito.\n", OK);
-		/* Aggiorna conteggio # utenti connessi */
+
+                if (!is_guest) {
+                        terms_accepted = has_accepted_terms(utente);
+                        if  (terms_accepted && utente->registrato) {
+                                /* Login completed */
+                                t->stato = CON_COMANDI;
+                                t->occupato = 0;
+                                assert(!is_new_user);
+                        } else if  (terms_accepted) {
+                                /* Registration has not been completed yet */
+                                t->stato = CON_REG;
+                                t->occupato = 1;
+                                assert(!is_new_user);
+                        } else {
+                                /* The user must accept the terms first */
+                                t->stato = CON_CONSENT;
+                                t->occupato = 1;
+                        }
+                }
+
+                /* TODO: this is for compatibility only, send simply OK     */
+		if (is_first_user) {
+                        code = OK + PRIMO_UT;
+                }
+                cprintf(t, "%d Login eseguito.|%d|%d|%d\n", code,
+                        is_first_user, terms_accepted, t->utente->registrato);
+
+                /* Update num connected users and server statistics */
 		logged_users++;
-		/* Aggiorna le statistiche              */
-		dati_server.login++;
-		time(&ora);
-		tmst = localtime(&ora);
-		dati_server.stat_ore[tmst->tm_hour]++;
-		dati_server.stat_giorni[tmst->tm_wday]++;
-		dati_server.stat_mesi[tmst->tm_mon]++;
-		/* Record di connessioni contemporanee? */
-		if (dati_server.max_users < logged_users) {
-			dati_server.max_users = logged_users;
-			time(&(dati_server.max_users_time));
-		}
+                stats_new_login(logged_users);
         }
 }
+
 
 /*
  * Completa la procedura di login: notifica l'entrata e invia dati
@@ -487,9 +464,14 @@ void cmd_rgst(struct sessione *t, char *buf)
 	}
 
 	if (extract_int(buf,0) == 0) {
-		cprintf(t, "%d\n", OK);
+                if (t->utente->registrato) {
+                        cprintf(t, "%d\n", OK);
+                } else {
+                        cprintf(t, "%d registration data expected\n", ERROR);
+                }
 		return;
 	}
+
         /* TODO Aggiungere controllo su utente->registrato                   */
 	/* Se viene modificato l'email, e' necessaria una nuova validazione. */
         /* Inoltre se nome_reale non viene fornito, errore.                  */
@@ -504,16 +486,19 @@ void cmd_rgst(struct sessione *t, char *buf)
         sesso = extract_int(buf, 9);
 #ifdef NO_DOUBLE_EMAIL
         if (!t->utente->registrato && !check_double_email(t->utente->email)) {
+                citta_logf("SECURE user [%s] is reusing email [%s]",
+                           t->utente->nome, t->utente->email);
                 cprintf(t, "%d\n", ERROR);
                 return;
         }
 #endif /*NO_DOUBLE_EMAIL*/
 
         t->utente->registrato = true;
-        if (sesso)
+        if (sesso) {
                 t->utente->sflags[0] |= SUT_SEX;
-        else
+        } else {
                 t->utente->sflags[0] &= ~SUT_SEX;
+        }
         cprintf(t, "%d\n", OK);
 }
 
@@ -541,23 +526,81 @@ void cmd_greg(struct sessione *t)
 }
 
 /*
- * Receives user consent for personal data processing.
- * The user must be in CON_REG state.
+ * Give ConSenT: Gives (or revokes) the user consent for personal data
+ *               processing.
+ * The user must be in CON_REG or CON_COMANDI state.
+ * Syntax: "GCST 0" revokes consent, "GCST 1" gives consent.
+ * Return: "OK need_reg" where need_reg is 1 if the user must do the
+ *         registration (and thus the connection placed in CON_REG state)
  */
-void cmd_cnst(struct sessione *t, char *buf)
+void cmd_gcst(struct sessione *t, char *buf)
 {
+        struct room *room;
+        struct text *txt;
         bool user_has_given_consent = extract_bool(buf, 0);
+        bool user_needs_registration = false;
 
+        t->utente->sflags[0] &= ~SUT_NEED_CONSENT;
         if (user_has_given_consent) {
                 t->utente->sflags[0] |= SUT_CONSENT;
                 citta_logf("Data protection: User [%s] accepted the terms.",
                            t->utente->nome);
-        } else {
+
+                if (has_requested_deletion(t->utente)) {
+                        t->utente->sflags[0] &= ~SUT_DELETEME;
+                        if ( (room = room_find(sysop_room))) {
+                                txt = txt_create();
+                                txt_putf(txt,
+"L'utente [%s] ha deciso di accettare le condizioni sul"
+                                         , t->utente->nome);
+                                txt_putf(txt,
+"trattamento dei dati e di mantenere il proprio account."
+                                         );
+                                txt_putf(txt,
+"*** <b>NON</b> cancellare l'account di [%s] ***"
+                                         , t->utente->nome);
+                                citta_post(room,
+                                           "Revoca richiesta di cancellazione",
+                                           txt);
+                                txt_free(&txt);
+                        }
+                }
+
+                /* we can proceed to the next step */
+                if (t->utente->registrato) {
+                        t->stato = CON_COMANDI;
+                } else {
+                        /* it's a new user, still need to register */
+                        user_needs_registration = true;
+                        t->stato = CON_REG;
+                }
+        } else if (!has_requested_deletion(t->utente)) {
                 t->utente->sflags[0] &= ~SUT_CONSENT;
+                t->utente->sflags[0] |= SUT_DELETEME;
                 citta_logf("Data protection: user [%s] revoked the terms.",
                            t->utente->nome);
+
+                if ( (room = room_find(sysop_room))) {
+                        txt = txt_create();
+                        txt_putf(txt,
+"L'utente [%s] non ha accettato le condizione sul"
+                                 , t->utente->nome);
+                        txt_putf(txt,
+"trattamento dei dati e percio' il suo account e tutti i suoi dati"
+                                 );
+                        txt_putf(txt,
+"personali vanno cancellati entro 48 ore."
+                                 );
+                        citta_post(room, "GDPR: Richiesta di cancellazione",
+                                   txt);
+                        txt_free(&txt);
+                }
+        } else {
+                /* the user was already marked for deletion, *
+                 * no need to notify it again...             */
         }
-	cprintf(t, "%d\n", OK);
+
+	cprintf(t, "%d %d\n", OK, user_needs_registration);
 }
 
 /*
@@ -702,7 +745,7 @@ void cmd_eusr(struct sessione *t, char *buf)
 				citta_logf("VALIDATE: validazione di [%s].",
 				     utente->nome);
 				/* Notifica all'utente interessato... */
-				dati_server.validazioni++;
+                                stats_new_validation();
 			}
 			extractn(newnick, buf, 13, MAXLEN_UTNAME);
                         if (*newnick && strncmp(nome, newnick, MAXLEN_UTNAME)
@@ -779,7 +822,7 @@ void cmd_aval(struct sessione *t, char *vk)
                         t->utente->livello = LIVELLO_VALIDATO;
                 citta_logf("VALIDATE: Auto-validazione di [%s].", t->utente->nome);
                 cprintf(t, "%d\n", OK);
-                dati_server.validazioni++;
+                stats_new_validation();
         } else
                 cprintf(t, "%d\n", ERROR);
 }
@@ -1063,4 +1106,43 @@ void notify_logout(struct sessione *t, int tipo)
 				punto->bytes_out += buflen;
 			}
 	}
+}
+
+/* TODO move the stats function in another file */
+
+/* updates server statistics after new successful login */
+void stats_new_login(int logged_users)
+{
+	struct tm *tmst;
+	time_t ora;
+
+        dati_server.login++;
+        time(&ora);
+        tmst = localtime(&ora);
+        dati_server.stat_ore[tmst->tm_hour]++;
+        dati_server.stat_giorni[tmst->tm_wday]++;
+        dati_server.stat_mesi[tmst->tm_mon]++;
+        /* Record di connessioni contemporanee? */
+        if (dati_server.max_users < logged_users) {
+                dati_server.max_users = logged_users;
+                time(&(dati_server.max_users_time));
+        }
+}
+
+/* updates server statistics after a new guest login */
+void stats_new_guest(void)
+{
+        dati_server.ospiti++;
+}
+
+/* updates server statistics after a new user login */
+void stats_new_user(void)
+{
+        dati_server.nuovi_ut++;
+}
+
+/* updates server statistics after a successful validation */
+void stats_new_validation(void)
+{
+        dati_server.validazioni++;
 }

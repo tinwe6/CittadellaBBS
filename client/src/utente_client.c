@@ -155,33 +155,34 @@ void registrazione(bool nuovo)
 	}
 
 	printf(_("Registrazione:\n\n"));
-	/* TODO Inserire un `leggi_file' sulla privacy */
-	if (nuovo)
+
+	if (nuovo) {
 		do {
 			new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
 				      MAXLEN_RNAME-1);
 			if (nome_reale[0] == 0) {
-				printf(_("Devi inserire il tuo nome reale, altrimenti non verrai validato.\nSe vuoi solo dare un'occhiata entra come 'Ospite'.\n"));
+				printf(_(
+"Devi inserire il tuo nome reale, altrimenti non verrai validato.\n"
+"Se vuoi solo dare un'occhiata entra come 'Ospite'.\n"
+                                         ));
 			}
 		} while (nome_reale[0] == 0);
-	else
+        } else {
 		new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
 			      MAXLEN_RNAME-1);
+        }
 	printf(_("Sesso: (M/F) "));
-	if (nuovo)
+	if (nuovo) {
 		printf(": ");
-	else {
-		if (sesso)
-			c = 'F';
-		else
-			c = 'M';
-		printf("[%c]: ", c);
+	} else {
+		printf("[%c]: ", sesso ? 'F' : 'M');
 	}
 	c = 0;
 	while (((c != 'm') && (c != 'M') && (c != 'f') && (c != 'F')
-		&& (c != 10) && (c != 13)) || (((c == 10) || (c == 13))
-					       && nuovo))
+		&& (c != 10) && (c != 13))
+               || (((c == 10) || (c == 13)) && nuovo)) {
 		c = inkey_sc(0);
+        }
 	printf("%c\n", c);
 	if ((c == 'M') || (c == 'm')) {
                 sesso = 0;
@@ -197,13 +198,15 @@ void registrazione(bool nuovo)
 	new_str_def_M(_("Stato"), stato, MAXLEN_STATO - 1);
 	new_str_def_m(_("Numero di telefono"), tel, MAXLEN_TEL-1);
 
-	if (nuovo)
+	if (nuovo) {
 		cml_print(_(
 "\nOra devi fornire il tuo indirizzo Email. Esso &egrave; essenziale per\n"
 "inviarti la chiave di validazione: senza di essa non potrai\n"
 "lasciare messaggi e usufruire di tutti i servizi della BBS.\n"
 "Se vuoi semplicemente entrare per dare un'occhiata,\n"
-"puoi comunque collegarti con il nome 'Ospite'.\n\n"));
+"puoi comunque collegarti con il nome 'Ospite'.\n\n"
+                            ));
+        }
 	c = 0;
 	do {
 		c++;
@@ -213,24 +216,37 @@ void registrazione(bool nuovo)
 		if (!check_email_syntax(email))
 			cml_print(_(
 "L'indirizzo Email fornito non &egrave; valido.\n"
-"L'indirizzo Email &egrave; essenziale per ottenere una chiave di validazione.\n"));
+"L'indirizzo Email &egrave; essenziale per ottenere una chiave di validazione."
+"\n"
+                                    ));
 		else {
 			c = 0;
 		}
 	} while (c && (c < 3));
+
 	if (c) { /* Email non valido */
 		if (nuovo) {
-			printf(_("\nCi dispiace, ma se non fornisci il tuo Email non puoi creare un tuo\n"
-				 "account personale. Puoi comunque visitare la BBS come 'Ospite'.\n"));
-			pulisci_ed_esci();
-		} else
-			printf(_("\nOk, teniamo il vecchio Email visto che non riesci a digitare quello nuovo :-)\n\n"));
-	}
+			printf(_(
+"\nCi dispiace, ma se non fornisci il tuo Email non puoi creare un tuo\n"
+"account personale. Puoi comunque visitare la BBS come 'Ospite'.\n")
+                               );
+			pulisci_ed_esci(NO_EXIT_BANNER);
+		} else {
+			printf(_(
+"\n"
+"Ok, teniamo il vecchio Email visto che non riesci a digitare quello nuovo :-)"
+"\n\n"
+                                 ));
+                }
+        }
 
 	new_str_def_m(_("URL della Home Page"), url, MAXLEN_URL - 1);
 
 	if (!nuovo) {
-	        printf(sesso ? _("Sei sicura di voler mantenere le modifiche? ") : _("Sei sicuro di voler mantenere le modifiche? "));
+	        printf(sesso
+                       ? _("Sei sicura di voler mantenere le modifiche? ")
+                       : _("Sei sicuro di voler mantenere le modifiche? ")
+                       );
 		if (si_no() == 'n') {
 		        serv_putf("RGST 0");
 			serv_gets(buf);
@@ -242,9 +258,14 @@ void registrazione(bool nuovo)
 		  stato, cap, tel, email, url, sesso);
 	serv_gets(buf);
 	if (buf[0] != '2') {
-
-	        printf(_("\n*** Problema con il server: registrazione non accettata.\n\n"));
-                cml_printf(_("Probabilmente l'email che hai fornito &egrave; gi&agrave; stato usato per un altro utente.\n&Egrave; vietato avere un doppio account su questa BBS. Riprova.\n\n"));
+	        printf(_(
+"\n*** Problema con il server: registrazione non accettata.\n\n"
+                         ));
+                cml_printf(_(
+"L'email che hai fornito &egrave; gi&agrave; stato usato per un altro utente."
+"\n"
+"&Egrave; vietato avere un doppio account su questa BBS. Riprova.\n\n"
+                             ));
                 hit_any_key();
         }
 }
@@ -299,7 +320,10 @@ char profile(char *nome_def)
 		return 1;
 
 	if (!strcmp(nick, "Ospite")) {
-		cml_print(_("\n`Ospite&acute; &egrave; il nome di un account pubblico per chi vuole visitare la BBS.\n"));
+		cml_print(_(
+"\n'Ospite' &egrave; il nome di un account pubblico "
+"per chi vuole visitare la BBS.\n"
+                            ));
 		return 0;
 	}
 
@@ -329,7 +353,9 @@ char profile(char *nome_def)
 				myprofile = !(strcmp(nome, nick));
 				printf(_("\nDati personali"));
 				if (myprofile)
-					printf(_(" [i dati tra parentesi quadre non sono visibili agli altri]"));
+					printf(_(
+" [i dati tra parentesi quadre non sono visibili agli altri]"
+                                                 ));
 				printf(":\n\n");
 				riga++;
 				extract(aaa, cmd+4, 1);
@@ -711,17 +737,21 @@ void edit_user(void)
 	}
 
 	/* il server salva secpmsg (1= STEP_POST secondi per messaggio) */
-  	newmsgph=1000;
- 	while (newmsgph < 0 || newmsgph>((3600*STEP_POST/256)-1)) {
- 		newmsgph = new_int_def(_(" Numero di messaggi per ora (0 per infiniti)"), msgph);
+  	newmsgph = 1000;
+ 	while (newmsgph < 0 || newmsgph > ((3600*STEP_POST / 256) - 1)) {
+ 		newmsgph = new_int_def(_(
+" Numero di messaggi per ora (0 per illimitati)"),
+                                       msgph);
                 msgph = newmsgph;
  	}
-	if(msgph==0)
-                secpmsg=0;
- 	else
-                secpmsg=(int) (3600.0/(msgph*STEP_POST)+.5);
-  	if (secpmsg>255)
-                secpmsg=255;
+	if (msgph == 0) {
+                secpmsg = 0;
+        } else {
+                secpmsg = (int)(3600.0 / (msgph*STEP_POST) + .5);
+        }
+        if (secpmsg > 255) {
+                secpmsg = 255;
+        }
 
         /* validazione */
 	if (valkey[0] != 0) {

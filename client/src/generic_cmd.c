@@ -78,7 +78,7 @@ static void strip_username(char * name, const char * str)
 /*
  * <W>ho: lista utenti connessi al server con relativi host e altre info.
  */
-void list_host (void)
+void list_host(void)
 {
         char aaa[LBUF];
         int chat;

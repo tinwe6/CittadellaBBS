@@ -117,6 +117,7 @@
 
 #define HELP_DOT_SYSOP     "(Opzioni)\nScegli:\n"            \
                            " <b>anner commands\n"            \
+                           " reset <d>ata protection consent\n" \
 			   " <e>nter message\n"              \
 			   " <f>ile message commands\n"      \
 			   " <r>ead commands\n"              \
@@ -139,7 +140,8 @@
 
 #define HELP_DOT_SYSOP_READ "(Opzioni)\nScegli:\n"           \
                             " system <l>ogs\n"               \
-                            " <s>erver statistics\n"
+                            " <s>erver statistics\n"         \
+                            " <u>nregistered users\n"
 
 #define HELP_DOT_SYSOP_SHUTDOWN "(Opzioni)\nScegli:\n"       \
 			        " <b>egin\n"                 \

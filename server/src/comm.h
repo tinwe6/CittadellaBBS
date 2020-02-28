@@ -114,13 +114,13 @@
 #define PTOU             860 /* Post TimeOUt                   */
 
 /* 900-999 Comandi che il client esegue quando puo`   */
-#define BHDR             900 /* Broadcast HeaDeR      */ 
+#define BHDR             900 /* Broadcast HeaDeR      */
 #define BTXT             902 /* Broadcast TeXT        */
 #define BEND             903 /* Broadcast END         */
 #define XHDR             901 /* Xmsg HeaDeR           */
 #define XTXT             902 /* Xmsg TeXT             */
 #define XEND             903 /* Xmsg END              */
-#define CHDR             904 /* Chat HeaDeR           */ 
+#define CHDR             904 /* Chat HeaDeR           */
 #define CTXT             905 /* Chat TeXT             */
 #define CEND             906 /* Chat END              */
 #define DEST             907 /* Aggiunge destinatario */
@@ -167,6 +167,7 @@
 #define CON_CHIUSA      (1<<22)       /* Connessione chiusa               */
 #define CON_REF_VOTO    (1<<23)       /* Vota un referendum               */
 #define CON_UPLOAD      (1<<24)       /* Upload file in corso             */
+#define CON_CONSENT     (1<<25)       /* Waiting for user consent         */
 #define CON_NOCHECK        (~0)       /* Non fare check sullo stato       */
 
 #define CON_MASK_COM   ( CON_BROAD | CON_XMSG | CON_CHAT)

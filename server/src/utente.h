@@ -45,12 +45,12 @@ struct dati_ut {
   char email[MAXLEN_EMAIL];	  /* Indirizzo E-mail                 */
   char url[MAXLEN_URL];           /* Indirizzo Home-Page              */
   /* TODO: Aggiungere data di nascita */
-        
+
   /* Dati di accesso */
   int chiamate;                   /* Numero di chiamate               */
   int post;                       /* Numero di post                   */
-  int mail;                       /* Numero di mail                   */ 
-  int x_msg;                      /* Numero di X-msg                  */ 
+  int mail;                       /* Numero di mail                   */
+  int x_msg;                      /* Numero di X-msg                  */
   int chat;                       /* Numero messaggi in chat          */
   /* TODO: aggiungere numero blog messages immessi ?                    */
   long firstcall;                 /* Prima chiamata                   */
@@ -60,7 +60,7 @@ struct dati_ut {
 
   /* Flags di configurazione */
   char flags[NUM_UTFLAGS];        /* 64 bits di configurazione        */
-  char sflags[NUM_UTSFLAGS];      /* bits conf. non modif. dall'utente*/    
+  char sflags[NUM_UTSFLAGS];      /* bits conf. non modif. dall'utente*/
   long friends[2*NFRIENDS];       /* Matricole utenti nella friendlist*/
                  /* Primi NFRIENDS -> amici, seconda meta' -> nemici. */
 
@@ -91,6 +91,9 @@ extern struct lista_ut *lista_utenti, *ultimo_utente;
 void carica_utenti(void);
 void salva_utenti(void);
 void free_lista_utenti(void);
+struct dati_ut * du_guest(void);
+struct dati_ut * du_new_user(const char *nome, const char *passwd,
+                             bool is_first_user);
 struct dati_ut * trova_utente(const char *nome);
 struct dati_ut * trova_utente_n(long matr);
 const char * nome_utente_n(long matr);
@@ -100,7 +103,11 @@ char check_password(char *pwd, char *real_pwd); /* verifica la password */
 void cripta(char *pwd);
 bool is_friend(struct dati_ut *amico, struct dati_ut *utente);
 bool is_enemy(struct dati_ut *nemico, struct dati_ut *utente);
+bool has_accepted_terms(struct dati_ut *user);
+bool must_renew_consent(struct dati_ut *user);
+bool has_requested_deletion(struct dati_ut *user);
 void sut_set_all(int num, char flag);
+void sut_clear_all(int num, char flag);
 
 #ifdef USE_VALIDATION_KEY
 void invia_val_key(char *valkey, char *addr);

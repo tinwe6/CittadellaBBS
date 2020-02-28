@@ -79,8 +79,14 @@ extern bool blog_vroom;  /* TRUE se in room virtuale dei blog                */
 extern char postref_room[];
 extern long postref_locnum;
 
+/* pulisci_ed_esci arg */
+typedef enum {
+        NO_EXIT_BANNER,
+        SHOW_EXIT_BANNER,
+} exit_banner;
+
 /* prototipi delle funzioni in cittaclient.c */
 char * interpreta_tilde_dir(const char *buf);
-void pulisci_ed_esci(void);
+void pulisci_ed_esci(exit_banner show_banner);
 
 #endif /* cittaclient.h */

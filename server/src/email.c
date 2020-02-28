@@ -119,7 +119,7 @@ bool send_email(struct text *txt, char * filename, char *subj, char *rcpt,
 		ret = false;
 	} else
 		ret = true;
-	
+
 	if (txt) {
 		unlink(tmpf);
 		Free(tmpf);
@@ -134,7 +134,7 @@ bool send_email(struct text *txt, char * filename, char *subj, char *rcpt,
 }
 
 #ifdef NO_DOUBLE_EMAIL
-int check_double_email (char *email) {
+int check_double_email(char *email) {
         FILE *email_fh;
         char comp_email[MAXLEN_EMAIL];
         bool found = false;
@@ -144,14 +144,16 @@ int check_double_email (char *email) {
                 fscanf(email_fh,"%s\n",comp_email);
                 found = !strcmp(comp_email, email);
         }
-        if (email_fh) 
+        if (email_fh) {
                 fclose(email_fh);
+        }
 
         if (!found) {
                 email_fh = fopen(FILE_DOUBLE_EMAIL, "a");
                 fprintf(email_fh, "%s\n", email);
                 fclose(email_fh);
         }
+
         return(!found);
 }
 #endif /* NO_DOUBLE_EMAIL */

@@ -61,14 +61,14 @@ static int urna_command(void);
 ****************************************************************************/
 /*
  * Attende un comando da stdin eseguendo gli eventuali comandi provenienti
- * dal server e restituisce il codice del comando del client corrispondente 
+ * dal server e restituisce il codice del comando del client corrispondente
  */
 int getcmd(char *str)
 {
         int a, cmd;
 
         strcpy(str, "");
-  
+
         /* Chiamata alla funzione che disegna il room prompt */
 	prompt_curr = P_ROOM;
         print_prompt();
@@ -268,7 +268,7 @@ int getcmd(char *str)
 		        if (SERVER_FIND)
                                 return(139);
 			break;
-                        /*	
+                        /*
                 case ';':
                         printf(_("Emote."));
                         return(133);
@@ -292,13 +292,13 @@ int getcmd(char *str)
 
 /*
  * Attende un comando da stdin eseguendo gli eventuali comandi provenienti
- * dal server e restituisce il codice del comando del client corrispondente 
+ * dal server e restituisce il codice del comando del client corrispondente
  */
 int get_msgcmd(char *str, int metadata)
 {
 	char prompt[LBUF];
         int a;
-	
+
         strcpy(str, "");
 	if (uflags[1] & UT_NOPROMPT)
 		return 1;
@@ -307,7 +307,7 @@ int get_msgcmd(char *str, int metadata)
 	prompt_curr = P_MSG;
         msg_prompt(prompt);
 	cml_printf("%s", prompt);
-	
+
         while (1) {
                 /* prende il carattere e lavora per il server */
                 a = inkey_sc(1);
@@ -402,8 +402,9 @@ static int dot_command(void)
                 cmd = 0;
                 /* prende il carattere e lavora per il server */
                 a = inkey_sc(1);
-		if ((a == 'S') && (livello < 10))
+                if ((a == 'S') && (livello < 10)) {
 			a = 0;
+                }
                 switch(a) {
 		case Key_BS:
                         delchar();
@@ -487,7 +488,7 @@ static int dot_command(void)
 static int aide_command(void)
 {
         int a, cmd;
-	
+
         printf(_("Aide "));
         while (1) {
                 cmd = 0;
@@ -541,7 +542,7 @@ static int aide_command(void)
 static int aide_edit_command(void)
 {
         int a;
-	
+
         printf(_("Edit "));
         while (1) {
                 a = inkey_sc(1);
@@ -596,7 +597,7 @@ static int aide_edit_command(void)
 static int aide_kill_command(void)
 {
         int a;
-	
+
         printf(_("Kill "));
         while (1) {
                 a = inkey_sc(1);
@@ -703,7 +704,7 @@ static int chat_command(void)
 		case Key_BS:
                         delnchar(5);
                         return 0;
-		case 'a': 
+		case 'a':
 			/* printf(_("Ascolta Canale # \n"));  */
                         break;
 		case 'e':
@@ -1016,7 +1017,7 @@ static int room_command(void)
 static int sysop_command(void)
 {
 	int a, cmd;
-	
+
         printf(_("Sysop "));
         while (1) {
                 cmd = 0;
@@ -1028,7 +1029,10 @@ static int sysop_command(void)
 		case 'b':
 			cmd = sysop_banners_command();
                         break;
-		case 'e':
+                case 'd':
+                        printf(_("Reset <d>ata protection consent flag."));
+                        return 146;
+                case 'e':
 			printf(_("Enter Message."));
                         return 79;
 		case 'f':
@@ -1037,7 +1041,7 @@ static int sysop_command(void)
 		case 'r':
 			cmd = sysop_read_command();
                         break;
-		case 's': 
+		case 's':
 			cmd = sysop_shutdown_command();
                         break;
 		case 'u':
@@ -1144,6 +1148,9 @@ static int sysop_read_command(void)
 		case 's':
                         printf(_("Server Statistics.\n"));
 			return 32;
+		case 'u':
+                        printf(_("Unregistered users.\n"));
+			return 147;
 		case '?': /* HELP */
 		case Key_F(1):
                         printf(HELP_DOT_SYSOP_READ);
@@ -1215,7 +1222,7 @@ static int toggle_command(void)
                 case 'd':
                         printf(_("debug mode: "));
                         return 144;
-		case 'e': 
+		case 'e':
 			printf(_("Expert mode : "));
                         return 68;
 		case 'f':
@@ -1232,10 +1239,10 @@ static int toggle_command(void)
 		case 'n':
 			printf(_("Notifiche Login/Logout : "));
 			return 70;
-		case 'x': 
+		case 'x':
 			printf(_("X-mgs reception : "));
                         return 92;
-		case 'u': 
+		case 'u':
 			printf(_("Automatic Follow Up for X-msg : "));
                         return 80;
 #ifdef LOCAL

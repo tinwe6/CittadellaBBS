@@ -31,5 +31,7 @@ void cmd_tabc(struct sessione *t, char *cmd);
 void cmd_edng(struct sessione *t, char *buf);
 void cmd_upgs(struct sessione *t);
 void cmd_upgr(struct sessione *t);
+void cmd_rcst(struct sessione *t);
+void cmd_uusr(struct sessione *t, char *buf);
 
 #endif /* generic.h */
