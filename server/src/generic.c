@@ -617,8 +617,47 @@ void cmd_upgr(struct sessione *t)
  */
 void cmd_rcst(struct sessione *t)
 {
-	sut_set_all(0, SUT_NEED_CONSENT);
+        sut_set_all(0, SUT_NEED_CONSENT);
 	citta_logf("SUT_NEED_CONSENT set for all users by [%s].",
                    t->utente->nome);
 	cprintf(t, "%d\n", OK);
+}
+
+/*
+ * Unregistered UsERs: sends the list of users that are not successfully
+ * registered or have not yet given their consent to the terms (Sysop only)
+ * Syntax: "UUSR unreg|no_cons"
+ *         unreg == true  : include unregistered users
+ *         no_cons == true: include users that have not yet accepted the terms
+ * Returns a list, each line corresponding to a user users
+ *         "SEGUE_LISTA"
+ *         "OK name|calls|numposts|lastcall|level|registered|consent|renew"
+ *         ...
+ *         "000"
+ * where consent is true if the user gave its consent at least once and never
+ * revoked it, and renew is true if the user must renew his consent.
+ */
+void cmd_uusr(struct sessione *t, char *buf)
+{
+        struct lista_ut *it;
+        struct dati_ut *user;
+        bool registration, consent;
+
+        registration = extract_bool(buf, 0);
+        consent = extract_bool(buf, 1);
+
+        cprintf(t, "%d Lista utenti (RUSR)\n", SEGUE_LISTA);
+        for (it = lista_utenti; it; it = it->prossimo) {
+                user = it->dati;
+                if ((registration && !user->registrato)
+                    || (consent && !has_accepted_terms(user))) {
+                        cprintf(t, "%d %s|%d|%d|%ld|%d|%d|%d|%d\n", OK,
+                                user->nome, user->chiamate, user->post,
+                                user->lastcall, user->livello,
+                                user->registrato,
+                                user->sflags[0] & SUT_CONSENT,
+                                must_renew_consent(user));
+                }
+        }
+        cprintf(t, "000\n");
 }

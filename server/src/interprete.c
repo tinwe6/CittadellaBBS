@@ -139,7 +139,7 @@ static const struct comando cmd_list[] = {
 { "FUPB", { .pass_arg = cmd_fupb }, PASS_ARG, CON_POST,    MINLVL_DOWNLOAD },
 { "FUPE", { .pass_arg = cmd_fupe }, PASS_ARG, CON_UPLOAD,  MINLVL_DOWNLOAD },
 { "FUPL", { .pass_arg = cmd_fupl }, PASS_ARG, CON_COMANDI, MINLVL_DOWNLOAD },
-{ "GCST", { .pass_arg = cmd_gcst}, PASS_ARG,CON_MASK_CNST,MINLVL_REGISTRATION},
+{ "GCST", { .pass_arg = cmd_gcst},  PASS_ARG, CON_CONSENT,MINLVL_REGISTRATION},
 { "GMTR", { .pass_arg = cmd_gmtr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },
 { "GOTO", { .pass_arg = cmd_goto }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
 { "GREG", { cmd_greg }, NO_ARG,   CON_REG,     MINLVL_REGISTRATION },
@@ -205,7 +205,7 @@ static const struct comando cmd_list[] = {
 { "RZPA", { cmd_rzpa }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
 { "SDWN", { .pass_arg = cmd_sdwn }, PASS_ARG, CON_COMANDI, MINLVL_SHUTDOWN },
 #ifdef USE_REFERENDUM
-{ "SCPU", { cmd_scpu }, NO_ARG,   CON_COMANDI, MINLVL_URNA },
+{ "SCPU", { cmd_scpu },             NO_ARG,   CON_COMANDI, MINLVL_URNA },
 #if 0
 { "SCVL", { .pass_arg = cmd_scvl }, PASS_ARG, CON_COMANDI, MINLVL_URNA },
 #endif
@@ -221,13 +221,14 @@ static const struct comando cmd_list[] = {
 #endif
 { "TABC", { .pass_arg = cmd_tabc }, PASS_ARG, CON_MASK_TABC, ILC_LOGGED_IN },
 { "TEXT", { .pass_arg = cmd_text }, PASS_ARG, CON_MASK_TEXT, ILC_NOCHECK },/*ved.*/
-{ "TIME", { cmd_time }, NO_ARG,   CON_COMANDI, ILC_NOCHECK },
+{ "TIME", { cmd_time },             NO_ARG,   CON_COMANDI, ILC_NOCHECK },
 { "TMSG", { .pass_arg = cmd_tmsg }, PASS_ARG, CON_COMANDI, ILC_UTENTE  },
-{ "UPGR", { cmd_upgr }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
-{ "UPGS", { cmd_upgs }, NO_ARG,   CON_COMANDI, LVL_SYSOP   },
+{ "UPGR", { cmd_upgr },             NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
+{ "UPGS", { cmd_upgs },             NO_ARG,   CON_COMANDI, LVL_SYSOP   },
+{ "UUSR", { .pass_arg = cmd_uusr }, PASS_ARG, CON_COMANDI, LVL_SYSOP   },
 { "USER", { .pass_arg = cmd_user }, PASS_ARG, CON_LIC,     ILC_NOCHECK },/*Control*/
 { "USR1", { .pass_arg = cmd_usr1 }, PASS_ARG, CON_LIC,     ILC_NOCHECK },/*Control*/
-{ "XEND", { cmd_xend }, NO_ARG,   CON_XMSG,    MINLVL_XMSG },
+{ "XEND", { cmd_xend },             NO_ARG,   CON_XMSG,    MINLVL_XMSG },
 { "XINM", { .pass_arg = cmd_xinm }, PASS_ARG, CON_XMSG,    MINLVL_XMSG },
 { "XMSG", { .pass_arg = cmd_xmsg }, PASS_ARG, CON_COMANDI, MINLVL_XMSG },
 {     "", { NULL   },    0    ,      0     ,       0     }
@@ -258,7 +259,9 @@ void interprete_comandi(struct sessione *t, char *com)
 		if (!strncmp(com, cmd_list[i].token, LTOKEN)) {
 			/* Controlla che l'utente e` nello stato giusto */
 			if ((cmd_list[i].stato & t->stato) == 0) {
-				cprintf(t, "%d\n", ERROR+WRONG_STATE);
+				cprintf(t, "%d %d|%d\n",
+                                        ERROR+WRONG_STATE, t->stato,
+                                        cmd_list[i].stato);
 				return;
 			}
 
