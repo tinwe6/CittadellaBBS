@@ -7,10 +7,10 @@ When a user first registers to the BBS, he is shown two texts:
 
 The former describes the privacy policy of the BBS, the latter specifies what
 use will be made of his personal data, his rights to have the data deleted,
-and include contact details of the management of the BBS.
+and includes contact details of the management of the BBS.
 
 The user is then asked whether he accepts the terms. If he accepts them, he
-can proceed with registration and enjoy the bbs. Otherwise the registration
+can proceed with registration and enjoy the BBS. Otherwise the registration
 is interrupted and the user is asked to login anonymously as a guest or leave
 the BBS.
 
@@ -67,14 +67,14 @@ data.
 
 ## Internal Mechanism
 
-The following flags are stored in the user data `dati_ut.sflags[0]`
+The following flags are stored in the user data `dati_ut.sflags[0]`:
 
 * `SUT_CONSENT` - set iff the user accepted the terms last time they were
-  presented to her
+  presented to her,
 * `SUT_NEED_CONSENT` - if set the user will be asked to renew her consent the
-  next time she logs in
+  next time she logs in,
 * `SUT_DELETEME` - the user has requested the deletion of her account and
-  related personal data
+  related personal data.
 
 If `SUT_CONSENT` is not set _or_ `SUT_NEED_CONSENT` is set, the user is asked
 to accept the terms at login time.
@@ -99,7 +99,7 @@ The server accepts the following commands:
 	- `unreg`: if true, include all users that have not completed their
           registration successfully,
 	- `no_consent`: if true, include all users that have not yet accepted
-          the terms,
+          the (new) terms,
 	- `deleteme`: if true, include all users that have requested the
           deletion of their account.
 
@@ -113,12 +113,11 @@ The server accepts the following commands:
   Here, `registered` is true if the user completed the registration procedure
   by providing her personal data, `consent` is true if the user gave her
   consent at least once and never revoked it, `renew` is true if the user must
-  renew her consent, and `delete` is true if the user asked the deletion of
+  renew her consent, and `delete` is true if the user requested the deletion of
   her account and personal data.
 
 **Note**: When the server receives the command `USR1`, sent by the client to
           authenticate the user with a password, it checks whether the user
-          needs to give or renew her consent. If so, the connection is enters
+          needs to give or renew her consent. If so, the connection enters
           the `CON_CONSENT` state that can be exited only through the `GCST`
           command with a positive consent.
-
