@@ -86,7 +86,7 @@
 
    Per i colori dei caratteri e dello sfondo dovrete scegliere fra i
    seguenti:
-   
+
       COL_BLACK,      COL_RED,  COL_GREEN,  COL_YELLOW,
        COL_BLUE,  COL_MAGENTA,   COL_CYAN,    COL_GRAY
     COL_DEFAULT:  colore di default
@@ -200,7 +200,8 @@
 #define C_MUSER         L_GREEN    /* Nomi utenti nell'header msg   */
 #define C_MFRIEND       L_RED      /* Nome amico   '    '      '    */
 #define C_MENEMY        L_BLACK    /* Nome nemico  '    '      '    */
-#define C_MANONIMO      WHITE      /* Nome nemico  '    '      '    */
+#define C_MANONIMO      WHITE      /* Nome anonim  '    '      '    */
+#define C_MBBS          MAGENTA    /* Nome BBS header citta_post    */
 
 #define C_COMANDI       GREEN      /* Comandi utente                */
 #define C_IDLE          L_RED      /* Notifiche idle                */

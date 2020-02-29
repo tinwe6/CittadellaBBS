@@ -118,7 +118,7 @@ void enter_message(int mode, bool reply, int aide)
 
 	if (mode == -1)
 		mode = (uflags[0] & UT_EDITOR ? 1 : 0);
-	
+
 	if (rflags & RF_MAIL) {
 		caio[0] = 0;
 		if ((!reply) && (get_recipient(caio, 1) == false))
@@ -360,7 +360,7 @@ bool read_msg(int mode, long local_number)
 	prompt_curr = P_MSG;
         if (mode < 8)
                 ciclo_msg();
-        
+
         return false;
 }
 
@@ -446,6 +446,7 @@ static struct message * receive_msg(Metadata_List *mdlist)
 {
         char aaa[LBUF], cmlstr[LBUF], col[LBUF];
         int hlines = 0;
+        long reply_lnum, nlines;
         struct message *msg;
 
         serv_gets(aaa);
@@ -453,16 +454,30 @@ static struct message * receive_msg(Metadata_List *mdlist)
                 print_err_fm(aaa+4);
                 return NULL;
         }
+
 	CREATE(msg, struct message, 1, 0);
+
         extract(msg->room, aaa+4, 1);
+        extract(msg->autore, aaa+4, 2);
         msg->ora = extract_long(aaa+4, 3);
         extract(msg->subject, aaa+4, 4);
         msg->flags = extract_long(aaa+4, 5);
+        extract(msg->recipient, aaa+4, 6);
+        extract(msg->reply_to, aaa+4, 7);
+        reply_lnum = extract_long(aaa+4, 8);
+        extract(msg->anonick, aaa+4, 9);
+        nlines = extract_long(aaa+4, 10);
+
+        /* This is to take care of a buf in citta_post() pre-0.4.5     */
+        /* TODO eliminate after the file message has made a round trip */
+        if (num_parms(aaa) < 11) {
+                reply_lnum = 0;
+                nlines = extract_long(aaa+4, 8);
+        }
+
         putchar('\n');
         /* Costruisce prima riga di Header del messaggio */
         color2cml(cmlstr, C_MSG_HDR);
-        extract(msg->autore, aaa+4, 2);
-        extract(msg->anonick, aaa+4, 9);
         if ((msg->flags & MF_ANONYMOUS) && !(rflags & RF_ASKANONYM)) {
                 strcpy(msg->autore, _("Anonimo"));
                 sprintf(msg->h1, "%s <b>****</b>", cmlstr);
@@ -472,63 +487,71 @@ static struct message * receive_msg(Metadata_List *mdlist)
                         strcpy(last_mail, msg->autore);
                 }
                 strdate(msg->h2, msg->ora);
-                if (msg->flags & MF_ANONYMOUS)
-                        color2cml(col, C_MANONIMO);
-                else if (is_friend(msg->autore))
-                        color2cml(col, C_MFRIEND);
-                else if (is_enemy(msg->autore))
-                        color2cml(col, C_MENEMY);
-                else
-                        color2cml(col, C_MUSER);
                 if (msg->flags & MF_ANONYMOUS) {
-                        if (msg->anonick[0] == 0)
+                        color2cml(col, C_MANONIMO);
+                } else if (msg->flags & MF_CITTA) {
+                        color2cml(col, C_MBBS);
+                } else if (is_friend(msg->autore)) {
+                        color2cml(col, C_MFRIEND);
+                } else if (is_enemy(msg->autore)) {
+                        color2cml(col, C_MENEMY);
+                } else {
+                        color2cml(col, C_MUSER);
+                }
+                if (msg->flags & MF_ANONYMOUS) {
+                        if (msg->anonick[0] == 0) {
                                 strcpy(msg->anonick, UTENTE_ANONIMO);
+                        }
                         sprintf(msg->h1,
                                 _("%s <b>%s</b>, %s - da [%s%s%s]"),
                                 cmlstr, msg->room, msg->h2, col, msg->anonick,
                                 cmlstr);
-                } else
+                } else {
                         sprintf(msg->h1,
                                 _("%s <b>%s</b>, %s - da %s%s%s"),
                                 cmlstr, msg->room, msg->h2, col, msg->autore,
                                 cmlstr);
+                }
                 strcpy(msg->h2, "");
-                if (msg->flags & MF_RH)
+                if (msg->flags & MF_RH) {
                         sprintf(msg->h2, " (%s Message)", NOME_ROOMHELPER);
-                else if (msg->flags & MF_RA)
+                } else if (msg->flags & MF_RA) {
                         sprintf(msg->h2, " (%s Message)", NOME_ROOMAIDE);
-                else if (msg->flags & MF_AIDE)
+                } else if (msg->flags & MF_AIDE) {
                         sprintf(msg->h2, " (%s Message)", NOME_AIDE);
-                else if (msg->flags & MF_SYSOP)
+                } else if (msg->flags & MF_SYSOP) {
                         sprintf(msg->h2, " (%s Message)", NOME_SYSOP);
+                }
                 strcat(msg->h1, msg->h2);
                 if (msg->flags & MF_MAIL) {
-                        extract(msg->recipient, aaa+4, 6);
                         sprintf(msg->h1+strlen(msg->h1),
                                 _(" per <b>%s</b>"), msg->recipient);
                 }
         }
-        
+
         /* Costruisce seconda riga di header del messaggio */
-        if (extract_long(aaa+4, 8)) { /* E' un reply */
+        if (reply_lnum) { /* E' un reply */
                 color2cml(cmlstr, C_MSG_SUBJ);
-                extract(msg->reply_to, aaa+4, 7);
                 if (strlen(msg->reply_to) == 0)
                         strcpy(msg->reply_to, UTENTE_ANONIMO);
-                if (msg->subject[0])
-                        sprintf(msg->h2, _("%s Reply: <b>%s</b>, msg #<b>%ld</b> da <b>%s</b>"),
-                                cmlstr, msg->subject, extract_long(aaa+4, 8),
+                if (msg->subject[0]) {
+                        sprintf(msg->h2,
+_("%s Reply: <b>%s</b>, msg #<b>%ld</b> da <b>%s</b>"),
+                                cmlstr, msg->subject, reply_lnum,
                                 msg->reply_to);
-                else
-                        sprintf(msg->h2, _("%s Reply al Messaggio #<b>%ld</b> da <b>%s</b>"),
-                                cmlstr, extract_long(aaa+4, 8), msg->reply_to);
+                } else {
+                        sprintf(msg->h2,
+                          _("%s Reply al Messaggio #<b>%ld</b> da <b>%s</b>"),
+                                cmlstr, reply_lnum, msg->reply_to);
+                }
         } else if (msg->subject[0]) {
                 color2cml(cmlstr, C_MSG_SUBJ);
                 sprintf(msg->h2, _("%s Subject: <b>%s</b>"), cmlstr,
                         msg->subject);
-        } else
+        } else {
                 msg->h2[0] = '\0';
-        
+        }
+
         msg->txt = txt_create();
         txt_put(msg->txt, msg->h1);
         cml_printf("%s",msg->h1);
@@ -543,9 +566,9 @@ static struct message * receive_msg(Metadata_List *mdlist)
         color2cml(cmlstr, C_MSG_BODY);
         txt_putf(msg->txt, "%s", cmlstr);
         setcolor(C_MSG_BODY);
-        
+
         md_init(mdlist);
-        
+
         if (msg->flags & MF_SPOILER) {
                 cml_printf(_(
 "\n   *** <b>SPOILER!</b> ***   Premi <a> per leggere il messaggio.\n"
@@ -555,14 +578,13 @@ static struct message * receive_msg(Metadata_List *mdlist)
                         cml_extract_md(aaa+4, mdlist);
                 }
         } else {
-	        /* we add 1 to extract_long(aaa+4, 10) (num lines in body)
-		   to account for the empty line between header and body  */
-                msg_pager(msg->txt, extract_long(aaa+4, 10) + 1, hlines,
-                          true, false, mdlist);
+	        /* we add 1 to nlines (arg 10 from server: num lines in body)
+		   to account for the empty line between header and body.   */
+                msg_pager(msg->txt, nlines + 1, hlines, true, false, mdlist);
 	}
         setcolor(C_DEFAULT);
         putchar('\n');
-        
+
         return msg;
 }
 
@@ -760,7 +782,7 @@ void clear_last_msg(bool clear_md)
 static void delete_message(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("Sei sicura di voler cancellare questo messaggio (s/n)? ") : _("Sei sicuro di voler cancellare questo messaggio (s/n)? "));
 	if (si_no() != 's')
 		return;
@@ -773,7 +795,7 @@ static void delete_message(void)
 static void undelete_message(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("Sei sicura di voler riesumare questo messaggio (s/n)? ") : _("Sei sicuro di voler riesumare questo messaggio (s/n)? "));
 	if (si_no() != 's')
 		return;
@@ -786,7 +808,7 @@ static void undelete_message(void)
 static void move_message(void)
 {
 	char buf[LBUF], room[LBUF];
-	
+
 	printf(_("Room di destinazione : "));
 	get_roomname("", room, false);
 	if (strlen(room) == 0)
@@ -809,7 +831,7 @@ static void move_message(void)
 static void copy_message(void)
 {
 	char buf[LBUF], room[LBUF];
-	
+
 	get_roomname(_("Room di destinazione : "), room, false);
 	if (strlen(room) == 0)
 		return;
@@ -832,7 +854,7 @@ static int entry_cmd(void)
 {
 	int c = 0;
 	char prompt_tmp;
-	
+
 	prompt_tmp = prompt_curr;
 	prompt_curr = P_ENT;
 	printf(_("Entry cmd (? lista opzioni) -> "));
@@ -852,10 +874,10 @@ static int entry_cmd(void)
 void set_all_read(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("\nSei sicura di voler lasciar perdere tutti i nuovi messaggi (s/n)? ") : _("\nSei sicuro di voler lasciar perdere tutti i nuovi messaggi (s/n)? "));
 	if (si_no() == 'n')
-		return;	
+		return;
 	serv_puts("RALL");
 	serv_gets(buf);
 	if (buf[0] != '2')

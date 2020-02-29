@@ -626,16 +626,18 @@ void cmd_rcst(struct sessione *t)
 /*
  * Unregistered UsERs: sends the list of users that are not successfully
  * registered or have not yet given their consent to the terms (Sysop only)
- * Syntax: "UUSR unreg|no_cons"
+ * Syntax: "UUSR unreg|no_cons|delete"
  *         unreg == true  : include unregistered users
  *         no_cons == true: include users that have not yet accepted the terms
+ *         delete == true: include users that requested account deletion
  * Returns a list, each line corresponding to a user users
  *         "SEGUE_LISTA"
- *         "OK name|calls|numposts|lastcall|level|registered|consent|renew"
+ *         "OK name|calls|numposts|lastcall|level|registered|consent|renew|del"
  *         ...
  *         "000"
  * where consent is true if the user gave its consent at least once and never
- * revoked it, and renew is true if the user must renew his consent.
+ * revoked it, renew is true if the user must renew his consent, and del is
+ * true is the account is marked for deletion.
  */
 void cmd_uusr(struct sessione *t, char *buf)
 {
