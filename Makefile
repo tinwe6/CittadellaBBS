@@ -19,10 +19,14 @@ OSFLAGS = -DMACOSX
 # Remove the hash mark to compile for terminals with white background.
 #BGCOL = -DWHITEBG
 
+# Remove hash mark to perform the tests
+TESTFLAGS = -DTESTS
+
 #############################################################################
 
 export OSFLAGS
 export BGCOL
+export TESTFLAGS
 
 SHELL = /bin/sh
 #MAKE = make -j 2

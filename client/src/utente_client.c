@@ -33,6 +33,7 @@
 #include "generic_cmd.h"
 #include "inkey.h"
 #include "macro.h"
+#include "string_utils.h"
 #include "tabc.h"
 #include "user_flags.h"
 #include "utente_client.h"
@@ -122,7 +123,6 @@ void lista_utenti(void)
  */
 void registrazione(bool nuovo)
 {
-	int c;
 	char buf[LBUF];
 	char nome_reale[MAXLEN_RNAME] = ""; /* Nome 'Real-life'             */
 	char via[MAXLEN_VIA] = "";	    /* Street address               */
@@ -132,6 +132,8 @@ void registrazione(bool nuovo)
 	char tel[MAXLEN_TEL] = "";	    /* Numero di telefono           */
 	char email[MAXLEN_EMAIL] = "";	    /* Indirizzo E-mail             */
 	char url[MAXLEN_URL] = "";	    /* Home page URL                */
+        int max_tries = 3;   /* max number of tries to enter name and email */
+        int tries, c;
 
 	if (!nuovo) {
 		/* Avverte il server che vogliamo editare la registrazione */
@@ -156,17 +158,31 @@ void registrazione(bool nuovo)
 
 	printf(_("Registrazione:\n\n"));
 
+        tries = 0;
 	if (nuovo) {
-		do {
+		while (true) {
+                        tries++;
 			new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
 				      MAXLEN_RNAME-1);
-			if (nome_reale[0] == 0) {
-				printf(_(
-"Devi inserire il tuo nome reale, altrimenti non verrai validato.\n"
-"Se vuoi solo dare un'occhiata entra come 'Ospite'.\n"
-                                         ));
+			if (is_valid_full_name(nome_reale)) {
+                                break;
+                        } else {
+                                if (tries < max_tries) {
+                                        printf(_(
+"\nDevi inserire il tuo nome reale, altrimenti non verrai validato.\n"
+"Se vuoi solo dare un'occhiata entra come 'Ospite'.\n\n"
+                                                 ));
+                                        nome_reale[0] = 0;
+                                } else {
+                                        printf(_(
+"\nTorna quando ti ricorderai come scrivere correttamente il tuo nome,\n"
+"oppure entra come 'Ospite' per dare un'occhiata.\n"
+                                                 ));
+                                        pulisci_ed_esci(NO_EXIT_BANNER);
+                                }
+                                sleep(1);
 			}
-		} while (nome_reale[0] == 0);
+		}
         } else {
 		new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
 			      MAXLEN_RNAME-1);
@@ -200,43 +216,47 @@ void registrazione(bool nuovo)
 
 	if (nuovo) {
 		cml_print(_(
-"\nOra devi fornire il tuo indirizzo Email. Esso &egrave; essenziale per\n"
-"inviarti la chiave di validazione: senza di essa non potrai\n"
+"\nOra devi fornire il tuo indirizzo Email. "
+"Esso &egrave; essenziale per inviarti\n"
+"la chiave di validazione: senza di essa non potrai\n"
 "lasciare messaggi e usufruire di tutti i servizi della BBS.\n"
 "Se vuoi semplicemente entrare per dare un'occhiata,\n"
 "puoi comunque collegarti con il nome 'Ospite'.\n\n"
                             ));
         }
-	c = 0;
-	do {
-		c++;
+
+        tries = 0;
+        while (true) {
+                tries++;
 		new_str_def_m(_("Indirizzo e-mail"), email, MAXLEN_EMAIL - 1);
 
-		/* Verifica se l'email e` ben formato */
-		if (!check_email_syntax(email))
-			cml_print(_(
+                if (is_valid_email(email)) {
+                        break;
+                } else {
+                        if (tries < max_tries) {
+                                cml_printf(_(
+"\n"
 "L'indirizzo Email fornito non &egrave; valido.\n"
 "L'indirizzo Email &egrave; essenziale per ottenere una chiave di validazione."
-"\n"
-                                    ));
-		else {
-			c = 0;
-		}
-	} while (c && (c < 3));
-
-	if (c) { /* Email non valido */
-		if (nuovo) {
-			printf(_(
+"\n\n"
+                                             ));
+                                email[0] = 0;
+                                sleep(1);
+                        } else {
+                                if (nuovo) {
+                                        printf(_(
 "\nCi dispiace, ma se non fornisci il tuo Email non puoi creare un tuo\n"
-"account personale. Puoi comunque visitare la BBS come 'Ospite'.\n")
-                               );
-			pulisci_ed_esci(NO_EXIT_BANNER);
-		} else {
-			printf(_(
+"account personale. Puoi comunque visitare la BBS come 'Ospite'.\n"
+                                                 ));
+                                        pulisci_ed_esci(NO_EXIT_BANNER);
+                                } else {
+                                        printf(_(
 "\n"
 "Ok, teniamo il vecchio Email visto che non riesci a digitare quello nuovo :-)"
 "\n\n"
-                                 ));
+                                                 ));
+                                }
+                        }
                 }
         }
 

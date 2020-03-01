@@ -19,7 +19,8 @@ libdir = ../lib
 
 # Compiler flags you want to use (other than profiling, such as -Wall)
 # Flag DEBUG per tenere le parti di codice dedicate al debugging
-MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DDEBUG
+# Flag TEST per i test
+MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DDEBUG $(TESTFLAGS)
 
 # Flags for profiling (see hacker.doc for more information)
 #PROFILE = -pg
@@ -46,7 +47,7 @@ CFLAGS = $(MYFLAGS) $(CRYPT) $(PROFILE) $(OSFLAGS)
 LFLAGS = $(LCRYPT)
 
 OBJFILES = argz.o cache.o cml2html.o cml_entities.o extract.o hash.o histo.o \
-	   metadata.o prefixtree.o terminale.o text.o versione.o
+	   metadata.o prefixtree.o string_utils.o terminale.o text.o versione.o
 
 all : libcitta.a
 
@@ -73,6 +74,8 @@ metadata.o : metadata.c metadata.h
 	$(CC) -c $(CFLAGS) metadata.c
 prefixtree.o : prefixtree.c prefixtree.h
 	$(CC) -c $(CFLAGS) prefixtree.c
+string_utils.o : string_utils.c string_utils.h
+	$(CC) -c $(CFLAGS) string_utils.c
 terminale.o : terminale.c terminale.h
 	$(CC) -c $(CFLAGS) terminale.c
 text.o : text.c text.h

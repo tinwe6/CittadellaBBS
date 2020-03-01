@@ -24,9 +24,9 @@
 #include "extract.h"
 #include "generic_cmd.h"
 #include "login.h"
+#include "macro.h"
 #include "user_flags.h"
 #include "utility.h"
-#include "macro.h"
 
 enum {
         USER_NOT_YET_VALIDATED,

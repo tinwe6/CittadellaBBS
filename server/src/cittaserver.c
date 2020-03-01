@@ -49,6 +49,7 @@
 #include "post.h"
 #include "signals.h"
 #include "socket_citta.h"
+#include "string_utils.h"
 #include "sysconfig.h"
 #include "ut_rooms.h"
 #include "utente_cmd.h"
@@ -188,6 +189,10 @@ int main(int argc, char **argv)
 	struct rlimit rlim;
 
 	pid_t pid;
+
+#ifdef  TESTS
+        test_string_utils();
+#endif
 
 	if (getuid() == 0) {
 		fprintf(stderr, "cittaserver: Si rifiuta codardamente di correre come radice\n");

@@ -61,6 +61,7 @@
 #include "room_cmd.h"
 #include "strutt.h"
 #include "signals.h"
+#include "string_utils.h"
 #include "sysconf_client.h"
 #include "sysop.h"
 #include "terminale.h"
@@ -146,6 +147,10 @@ int main(int argc, char **argv)
         long num_utente, ultimo_login, mail;
         int ut_conn, num_chiamata, login_status;
 	bool no_rc;
+
+#ifdef TESTS
+        test_string_utils();
+#endif
 
         /* Client locale o client remoto? */
 #ifdef LOCAL

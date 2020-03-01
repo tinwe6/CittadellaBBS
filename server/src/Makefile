@@ -52,7 +52,7 @@ MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DDEBUG -D_GNU_SOURCE -DSANE_STAT
 LZ = -lz
 
 #############################################################################
-CFLAGS = $(MYFLAGS) $(CRYPT) $(PROFILE) $(OSFLAGS)
+CFLAGS = $(MYFLAGS) $(CRYPT) $(PROFILE) $(OSFLAGS) $(TESTFLAGS)
 # -lutil per le libutil necessarie al cittademone.
 # LFLAGS = -L$(libdir) -lm -lcitta -lutil $(LCRYPT) $(LIBS)
 # attenzone, prima -lcitta e poi -lm...
@@ -90,7 +90,7 @@ $(bindir)/fm_admin : $(OBJFILES_FMADMIN)
 	$(CC) $(CFLAGS) $(OBJFILES_FMADMIN) $(LFLAGS) -o $@
 
 cittaserver.o : cittaserver.c cittaserver.h versione.h comm.h
-	$(CC) -c $(CFLAGS) $(COMMFLAGS) cittaserver.c 
+	$(CC) -c $(CFLAGS) $(COMMFLAGS) cittaserver.c
 banner.o : banner.c banner.h versione.h
 	$(CC) -c $(CFLAGS) banner.c
 blog.o : blog.c blog.h
@@ -225,19 +225,19 @@ conv_0.3.2 : $(CONV_0_3_2_OBJFILES)
 	$(CC) $(CFLAGS) $(CONV_0_3_2_OBJFILES) $(LFLAGS) $(EFENCE) \
     -o conv_0.3.2
 
-conv_0.3.2.o : conv_0.3.2.c 
-	$(CC) -c $(CFLAGS) $(CONV_0_3_2_MYFLAGS) $(COMMFLAGS) conv_0.3.2.c 
+conv_0.3.2.o : conv_0.3.2.c
+	$(CC) -c $(CFLAGS) $(CONV_0_3_2_MYFLAGS) $(COMMFLAGS) conv_0.3.2.c
 
 conv_read_old_0.3.2.o : conv_read_old_0.3.2.c
 	$(CC) -c $(CFLAGS) $(CONV_0_3_2_MYFLAGS) conv_read_old_0.3.2.c
 
-conv_conv_0.3.2.o : conv_conv_0.3.2.c 
+conv_conv_0.3.2.o : conv_conv_0.3.2.c
 	$(CC) -c $(CFLAGS) $(CONV_0_3_2_MYFLAGS) conv_conv_0.3.2.c
 
-conv_new_write_0.3.2.o : conv_new_write_0.3.2.c 
+conv_new_write_0.3.2.o : conv_new_write_0.3.2.c
 	$(CC) -c $(CFLAGS) $(CONV_0_3_2_MYFLAGS) conv_new_write_0.3.2.c
 
-mrproperconv: 
+mrproperconv:
 	-rm -f ./conv_0.3.2
 
 cleanconv:
