@@ -107,8 +107,8 @@ void lista_utenti(void)
                         setcolor(C_USERLIST_CHAT);
                         printf("%6d\n", chat);
                 }
-        IFNEHAK;
-}
+        IFNEHAK
+                }
 
 /*
  * Modifica la registrazione dell'utente. Se nuovo = 1 l'utente e' nuovo
