@@ -64,7 +64,7 @@ void putnspace(int n);
 void cleanline(void);
 char * space2under(char *stringa);
 char * find_filename(char *path, char *filename, size_t size);
-char * find_extension(char *path, char *extension, size_t size);
+char * find_extension(char *path);
 void strdate(char *str, long ora);
 int stampa_data(time_t ora);
 int stampa_data_breve(time_t ora);

@@ -420,15 +420,12 @@ char * find_filename(char *path, char *filename, size_t size)
 /*
  * Extracts the file extension from a file path.
  * Returns the pointer to the starting character of the extension inside
- * 'path'. Additionally, if 'extension' is not NULL, it copies the extension
- * into it. 'size' is the size of the buffer 'extension'.
+ * 'path'.
  */
-char * find_extension(char *path, char *extension, size_t size)
+char * find_extension(char *path)
 {
         char *ptr;
         size_t pathlen, i;
-
-	assert(size > MAXLEN_FILENAME);
 
         ptr = path;
         pathlen = strlen(path);
@@ -439,9 +436,6 @@ char * find_extension(char *path, char *extension, size_t size)
 		        ptr = path;
 		}
         }
-        if (extension) {
-	        snprintf(extension, size, "%s", ptr);
-	}
         return ptr;
 }
 

@@ -284,7 +284,7 @@ void mdop_upload_files(Metadata_List *mdlist)
                         mdlist->uploads--;
                 }
         }
-        putchar('\n');        
+        putchar('\n');
 }
 
 /******************************************************************************/
@@ -531,7 +531,7 @@ static bool mdop_file(char *filename, unsigned long filenum,
         }
         fclose(fp);
         putchar(' ');
-        
+
         serv_gets(buf);
 
         print_ok();
@@ -595,7 +595,7 @@ int md_type(char *filename)
 {
         char *extension;
 
-        extension = find_extension(filename, NULL, 0);
+        extension = find_extension(filename);
         if (!strcasecmp(extension, "jpg") ||
             !strcasecmp(extension, "jpeg") ||
             !strcasecmp(extension, "png") ||
