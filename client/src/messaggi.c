@@ -368,8 +368,7 @@ void show_msg(char *room, long num)
 {
         Metadata_List mdlist;
         struct message *msg;
-        bool spoiler = false, metadata = false, fine = false;
-	int c = 0;
+        bool spoiler = false, metadata = false;
         char buf[LBUF];
 
         serv_putf("RMSG %s|%ld", room, num);
@@ -389,13 +388,23 @@ void show_msg(char *room, long num)
 	}
 
         if (metadata || spoiler) {
+		bool fine = false;
+
                 do {
-                        cml_printf(_("---    \\<<b>a</b>>gain    \\<<b>A</b>>llegati    altro tasto per continuare --- "));
-                        while ((c==0) || ((c!=0) && (index("aA",c) == NULL)))
-                                c = getchar();
-                        putchar(c);
+			int ch = 0;
+
+			setcolor(C_MSGPROMPT);
+                        cml_printf(_(
+"    \\<<b>a</b>>gain   \\<<b>A</b>>llegati   (altro tasto per continuare) --- <b>Scegli:</b> "
+				     ));
+			while (ch == 0) {
+				ch = getchar();
+			}
+			if (ch == 'a' || ch == 'A') {
+				putchar(ch);
+			}
                         putchar('\n');
-                        switch (c) {
+                        switch (ch) {
                         case 'a':
                                 putchar('\n');
                                 setcolor(C_NORMAL);
@@ -411,9 +420,10 @@ void show_msg(char *room, long num)
                                 else
                                         cml_printf(_("Non ci sono allegati associati a questo post.\n"));
                                 break;
+			default:
+				fine = true;
                         }
                 } while (!fine);
-		/* TODO: check this loop: fine never becomes true!! */
         }
         md_free(&mdlist);
         Free(msg);
