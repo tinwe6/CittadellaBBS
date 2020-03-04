@@ -37,32 +37,36 @@
 #include "utility.h"
 #include "macro.h"
 
-/* prototipi delle funzioni in questo file */
-void room_list(void);
-void room_list_known(int mode);
-void room_goto(int mode, bool gotonext, const char *destroom);
-void room_create(void);
-void room_edit(int mode);
-void room_delete(void);
-void room_info(bool detailed, bool prof);
-void room_edit_info(void);
-void room_zap(void);
-void room_invite(void);
-void room_invited_who(void);
-void room_invite_req(void);
-void room_kick(void);
-void room_kick_end(void);
-void room_kicked_who(void);
-void room_new_ra(void);
-void room_new_rh(void);
-void room_swap(void);
-void room_resize(void);
-void room_zap_all(void);
-void room_unzap_all(void);
+const char blog_display_pre[] = BLOG_DISPLAY_PRE;
+
 static int room_print_known(char mode, char floors, int riga);
+static void debug_print_room_flags(void);
 
 /***************************************************************************/
 /***************************************************************************/
+/*
+ * Displays the room name with the correct colors and if it's a blog room
+ * (ie the name starts with ':')prepends the blog_display_pre string.
+ */
+void print_room(const char *roomname)
+{
+	int offset = 0;
+
+	push_color();
+	if (roomname[0] == ':') {
+		/* Blog room */
+		setcolor(COLOR_ROOMTYPE);
+		printf("%s", blog_display_pre);
+		offset = 1;
+	}
+	setcolor(COLOR_ROOM);
+	printf("%s", roomname + offset);
+	setcolor(COLOR_ROOMTYPE);
+	putchar('>');
+	pull_color();
+}
+
+
 /*
  * Lista di tutte le room (SYSOP only).
  */
@@ -127,7 +131,7 @@ void room_list (void)
 				fstr[7] = 'W';
 			if (tmst->tm_year > 99)
 				tmst->tm_year -= 100;
-                        printf("%3ld %-20s %4ld/%3ld %02d/%02d/%02d %8s %2d/%2d %s\n", 
+                        printf("%3ld %-20s %4ld/%3ld %02d/%02d/%02d %8s %2d/%2d %s\n",
                                num, nm, msgnum, maxmsg, tmst->tm_mday,
 			       tmst->tm_mon+1, tmst->tm_year, fstr, rlvl,
 			       wlvl, ra);
@@ -144,7 +148,7 @@ void room_list (void)
 void room_list_known(int mode)
 {
 	int riga;
-	
+
 	switch (mode) {
 	case 0:
 	case 1:
@@ -165,16 +169,16 @@ void room_list_known(int mode)
 		cml_printf(_("\n<b>   Altri floor con messaggi da leggere:</b>\n"));
 		riga++;
 		riga = room_print_known(1, 2, 4);
-		setcolor(C_KR_HDR); 
+		setcolor(C_KR_HDR);
 		cml_printf(_("\n<b>   Floor senza messaggi nuovi in:</b>\n"));
 		riga++;
 		room_print_known(2, 2, riga);
 		break;
 	case 5:
-		setcolor(C_KR_HDR); 
+		setcolor(C_KR_HDR);
 		printf(_("\n   Room con messaggi da leggere:\n"));
 		riga = room_print_known(1, 0, 4);
-		setcolor(C_KR_HDR); 
+		setcolor(C_KR_HDR);
 		printf(_("\n   Non ci sono messaggi nuovi in:\n"));
 		riga++;
 		room_print_known(2, 0, riga);
@@ -198,7 +202,7 @@ void room_list_known(int mode)
  * gotonext : FALSE --> chiede la room di destinazione (jump)
  *            TRUE  --> va nella prossima room
  * room_goto(4, 1) --> vai in Lobby), room_goto(5,1) --> vai in Mail)
- * room_goto(7, 1) --> vai a casa (blog). 
+ * room_goto(7, 1) --> vai a casa (blog).
  */
 void room_goto(int mode, bool gotonext, const char *destroom)
 {
@@ -220,17 +224,20 @@ void room_goto(int mode, bool gotonext, const char *destroom)
                         offset++;
                 }
         }
-        if (mode == 7)
+        if (mode == 7) {
                 dest = GOTO_BLOG;
+	}
 	serv_putf("GOTO %d|%s|%d", mode, roomname+offset, dest);
 	serv_gets(buf);
 	if (buf[0] == '2') {
                 barflag = 1;
                 if (dest == GOTO_BLOG) {
                         extractn(roomname, buf+4, 0, ROOMNAMELEN);
-                        sprintf(current_room, "La casa di %s", roomname);
-                } else
+                        sprintf(current_room, "</b>%s<b>%s", blog_display_pre,
+				roomname);
+                } else {
                         extractn(current_room, buf+4, 0, ROOMNAMELEN);
+		}
 
 		extract(room_type, buf+4, 1);
 		msg_num = extract_long(buf+4, 2);
@@ -242,56 +249,61 @@ void room_goto(int mode, bool gotonext, const char *destroom)
 		extractn(current_floor, buf+4, 8, FLOORNAMELEN);
 
                 if (DEBUG_MODE) {
-                        printf("Room Flags:\n");
-                        cml_printf("RF_BASE      : %s\n", print_si_no(rflags & RF_BASE));
-                        cml_printf("RF_MAIL      : %s\n", print_si_no(rflags & RF_MAIL));
-                        cml_printf("RF_ENABLED   : %s\n", print_si_no(rflags & RF_ENABLED));
-                        cml_printf("RF_INVITO    : %s\n", print_si_no(rflags & RF_INVITO));
-                        cml_printf("RF_SUBJECT   : %s\n", print_si_no(rflags & RF_SUBJECT));
-                        cml_printf("RF_GUESS     : %s\n", print_si_no(rflags & RF_GUESS));
-                        cml_printf("RF_DIRECTORY : %s\n", print_si_no(rflags & RF_DIRECTORY));
-                        cml_printf("RF_ANONYMOUS : %s\n", print_si_no(rflags & RF_ANONYMOUS));
-                        cml_printf("RF_ASKANONYM : %s\n", print_si_no(rflags & RF_ASKANONYM));
-                        cml_printf("RF_REPLY     : %s\n", print_si_no(rflags & RF_REPLY));
-                        cml_printf("RF_AUTOINV   : %s\n", print_si_no(rflags & RF_AUTOINV));
-                        cml_printf("RF_FLOOR     : %s\n", print_si_no(rflags & RF_FLOOR));
-                        cml_printf("RF_SONDAGGI  : %s\n", print_si_no(rflags & RF_SONDAGGI));
-                        cml_printf("RF_CITTAWEB  : %s\n", print_si_no(rflags & RF_CITTAWEB));
-                        cml_printf("RF_BLOG      : %s\n", print_si_no(rflags & RF_BLOG));
-                        cml_printf("RF_POSTLOCK  : %s\n", print_si_no(rflags & RF_POSTLOCK));
-                        cml_printf("RF_L_TIMEOUT : %s\n", print_si_no(rflags & RF_L_TIMEOUT));
-                        cml_printf("RF_FIND      : %s\n", print_si_no(rflags & RF_FIND));
-                        cml_printf("RF_DYNROOM   : %s\n", print_si_no(rflags & RF_DYNROOM));
-                        cml_printf("RF_DYNMSG    : %s\n", print_si_no(rflags & RF_DYNMSG));
+			debug_print_room_flags();
                 }
-		if (!msg_new)
+		if (!msg_new) {
 			barflag = 0;
-		cml_printf((msg_new == 1) ? _("<b>%s</b>%s - <b>%ld</b> nuovo su <b>%ld</b> messaggi.\n") : _("<b>%s</b>%s - <b>%ld</b> nuovi su <b>%ld</b> messaggi.\n"), current_room, room_type, msg_new, msg_num);
+		}
+		setcolor(C_COMANDI);
+		cml_printf((msg_new == 1)
+			   ? _(
+"<b>%s</b>%s - <b>%ld</b> nuovo su <b>%ld</b> messaggi.\n"
+			       ) : _(
+"<b>%s</b>%s - <b>%ld</b> nuovi su <b>%ld</b> messaggi.\n"
+				     ),
+			   current_room, room_type, msg_new, msg_num);
                 if (room_new || room_zap) { /* Altre info in Lobby */
-                        if (room_zap == 1)
-                                cml_printf(_("         Hai <b>%ld</b> room con messaggi non letti e <b>1</b> room dimenticata.\n"), room_new);
-                        else
-                                cml_printf(_("         Hai <b>%ld</b> room con messaggi non letti e <b>%ld</b> room dimenticate.\n"), room_new, room_zap);
+                        if (room_zap == 1) {
+                                cml_printf(_(
+"         Hai <b>%ld</b> room con messaggi non letti "
+"e <b>1</b> room dimenticata.\n"
+					     ), room_new);
+			} else {
+                                cml_printf(_(
+"         Hai <b>%ld</b> room con messaggi non letti "
+"e <b>%ld</b> room dimenticate.\n"
+					     ), room_new, room_zap);
+			}
                 }
-                if (utrflags & UTR_NEWGEN)
+                if (utrflags & UTR_NEWGEN) {
 			room_info(true, true);
+		}
 		/* TODO */
 		/* Attenzione!! il nome della dump room dovrebbe venire */
                 /* inviato dal server all'inizio del collegamento!!     */
-		if (!strcmp(current_room, "Cestino"))
+		if (!strcmp(current_room, "Cestino")) {
 			cestino = true;
-		else
+		} else {
 			cestino = false;
+		}
         } else {
 		if (buf[1] == '7') {
-                        if (offset)
+                        if (offset) {
                                 printf(_("Il blog di '%s' non esiste.\n"),
-                                       roomname+offset);
-                        else
+                                       roomname + offset);
+                        } else {
                                 printf(_("La room '%s' non esiste.\n"),
                                        roomname);
-                } else
-			printf(sesso ? _("Non sei autorizzata ad accedere alla room '%s'.\n") : _("Non sei autorizzato ad accedere alla room '%s'.\n"), roomname+offset);
+			}
+                } else {
+			printf(sesso
+			       ? _(
+			    "Non sei autorizzata ad accedere alla room '%s'.\n"
+				   ) : _(
+		            "Non sei autorizzato ad accedere alla room '%s'.\n"
+					 ),
+			       roomname + offset);
+		}
 	}
 }
 
@@ -310,13 +322,14 @@ void room_create(void)
 	fmnum = new_long_def(_("Numero File Messaggi (0: Basic): "), 0);
         */
         fmnum = 0;
-	maxmsg = new_long_def(_("Numero massimo di messaggi: "), 
+	maxmsg = new_long_def(_("Numero massimo di messaggi: "),
 			      DFLT_MSG_PER_ROOM);
 	serv_putf("RNEW %s|%ld|%ld", name, fmnum, maxmsg);
 	serv_gets(buf);
 	if (buf[0] == '2') {
 		num = extract_long(&buf[4], 0);
-		cml_printf(_("\nOk, la room #%ld [%s] &egrave; stata creata.\n\n"), num, name);
+		cml_printf(_("\nOk, la room #%ld [%s] &egrave; stata creata.\n"
+			     "\n"), num, name);
 		serv_putf("GOTO %d|%s", 0, name);
 		serv_gets(buf);
 		if (buf[0] == '2') {
@@ -327,7 +340,13 @@ void room_create(void)
 			utrflags = extract_long(buf+4, 4);
 			rflags = extract_long(buf+4, 5);
 			barflag = 0;
-			cml_printf((nnum == 1) ? _("<b>%s</b> - <b>%ld</b> nuovo su <b>%ld</b> messaggi.\n") : _("<b>%s</b> - <b>%ld</b> nuovi su <b>%ld</b> messaggi.\n"), current_room, nnew, nnum);
+			cml_printf((nnum == 1)
+				   ? _(
+"<b>%s</b> - <b>%ld</b> nuovo su <b>%ld</b> messaggi.\n"
+				       ) : _(
+"<b>%s</b> - <b>%ld</b> nuovi su <b>%ld</b> messaggi.\n"
+					     ),
+				   current_room, nnew, nnum);
 			room_edit(0);
 			room_info(false, false);
 		} else
@@ -335,7 +354,13 @@ void room_create(void)
 	} else {
 		switch(buf[1]) {
 		case '2':
-			printf(sesso ? _("Non sei autorizzata a creare nuove room.\n") : _("Non sei autorizzato a creare nuove room.\n"));
+			printf(sesso
+			       ? _(
+				   "Non sei autorizzata a creare nuove room.\n"
+				   )
+			       : _(
+				   "Non sei autorizzato a creare nuove room.\n"
+				   ));
 			break;
 		case '8':
 			printf(_("Numero File Messaggi non valido.\n"));
@@ -386,7 +411,7 @@ void room_edit(int mode)
 		if (newflags & RF_INVITO) {
 			if(new_si_no_def(_("Invito automatico"),
 					 IS_SET(flags, RF_AUTOINV)))
-				newflags |= RF_AUTOINV;			
+				newflags |= RF_AUTOINV;
 		} else if (new_si_no_def(_("Guess Room"),
 					 IS_SET(flags, RF_GUESS)))
 			newflags |= RF_GUESS;
@@ -451,7 +476,7 @@ void room_delete(void)
 	printf(sesso ? _("\nSei sicura di voler eliminare questa room (s/n)? ")
 	       : _("\nSei sicuro di voler eliminare questa room (s/n)? "));
 	if (si_no() == 'n')
-		return;	
+		return;
 	serv_puts("RDEL");
 	serv_gets(buf);
 	if (buf[0] == '2') {
@@ -586,7 +611,7 @@ void room_info(bool detailed, bool prof)
                 printf("   ");
                 X("<u>S</u>ondaggi", flags & RF_SONDAGGI);
                 printf("\n ");
-                
+
                 X("<u>R</u>eply  ", flags & RF_REPLY);
                 printf("   ");
                 X("Messaggi <u>a</u>nonimi      ", flags & RF_ANONYMOUS);
@@ -742,10 +767,10 @@ void room_edit_info(void)
 void room_zap(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("\nSei sicura di voler dimenticare questa room (s/n)? ") :_("\nSei sicuro di voler dimenticare questa room (s/n)? "));
 	if (si_no() == 'n')
-		return;	
+		return;
 	serv_puts("RZAP");
 	serv_gets(buf);
 	if (buf[0]!='2')
@@ -760,7 +785,7 @@ void room_zap(void)
 void room_invite(void)
 {
 	char nick[MAXLEN_UTNAME], buf[LBUF];
-	
+
 	get_username(_("Invita l'utente: "), nick);
 	if (nick[0] == '\0')
 		return;
@@ -856,7 +881,7 @@ void room_invite_req(void)
 void room_new_ra(void)
 {
 	char nick[MAXLEN_UTNAME], buf[LBUF];
-	
+
 	get_username(_("Nome nuovo room aide per questa room: "), nick);
 	if (nick[0] == '\0')
 		return;
@@ -881,7 +906,7 @@ void room_new_ra(void)
 		default:
 			printf(_("\nErrore.\n"));
 			break;
-		}	
+		}
 }
 
 /*
@@ -890,7 +915,7 @@ void room_new_ra(void)
 void room_new_rh(void)
 {
 	char nick[MAXLEN_UTNAME], buf[LBUF];
-	
+
 	get_username(_("Nome room helper per questa room: "), nick);
 	if (nick[0] == '\0')
 		return;
@@ -918,7 +943,7 @@ void room_new_rh(void)
 		default:
 			printf(_("\nErrore.\n"));
 			break;
-		}	
+		}
 }
 
 /*
@@ -1072,7 +1097,7 @@ void room_resize(void)
 {
 	char buf[LBUF];
 	long n;
-	
+
 	n = new_long(_("Numero di slot per la room: "));
 	if ((n<2) || (n>MAXROOMLEN)) {
 		printf(_("Valore non valido.\n"));
@@ -1091,14 +1116,14 @@ void room_resize(void)
 void room_zap_all(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("\nSei sicura di voler dimenticare tutte le room (s/n)? ") : _("\nSei sicuro di voler dimenticare tutte le room (s/n)? "));
 	if (si_no() == 'n')
-		return;	
+		return;
 	serv_puts("RZPA");
 	serv_gets(buf);
 	if (buf[0] != '2')
-		printf(_("Non puoi zappare tutte le room.\n"));	
+		printf(_("Non puoi zappare tutte le room.\n"));
 	else
 		room_goto(4, true, NULL);
 }
@@ -1106,14 +1131,14 @@ void room_zap_all(void)
 void room_unzap_all(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("\nSei sicura di volerti ricordare di tutte le room (s/n)? ") : _("\nSei sicuro di volerti ricordare di tutte le room (s/n)? "));
 	if (si_no() == 'n')
-		return;	
+		return;
 	serv_puts("RUZP");
 	serv_gets(buf);
 	if (buf[0] != '2')
-		printf(_("Non puoi farlo!\n"));	
+		printf(_("Non puoi farlo!\n"));
 }
 /***************************************************************************/
 /*
@@ -1126,7 +1151,7 @@ static int room_print_known(char mode, char floors, int riga)
 	char buf[LBUF], rn[LBUF];
 	long n;
 	size_t lung = 0;
-	
+
 	switch (floors) {
 	case 0: serv_putf("RKRL %d", mode);
 		break;
@@ -1139,7 +1164,7 @@ static int room_print_known(char mode, char floors, int riga)
         serv_gets(buf);
         if (buf[0] != '2')
 		return riga;
-	if (uflags[4] & UT_KRCOL) 
+	if (uflags[4] & UT_KRCOL)
 		while (serv_gets(buf), strcmp(buf, "000")) {
 			if (lung == 3) {
 				putchar('\n');
@@ -1161,7 +1186,7 @@ static int room_print_known(char mode, char floors, int riga)
                                 printf("Z");
                         */
 			lung++;
-		}		
+		}
 	else
 		while (serv_gets(buf), strcmp(buf, "000")) {
 			extract(rn, buf+4, 0);
@@ -1181,4 +1206,30 @@ static int room_print_known(char mode, char floors, int riga)
 	putchar('\n');
 	riga++;
 	return riga;
+}
+
+
+static void debug_print_room_flags(void)
+{
+	printf("Room Flags:\n");
+	cml_printf("RF_BASE      : %s\n", print_si_no(rflags & RF_BASE));
+	cml_printf("RF_MAIL      : %s\n", print_si_no(rflags & RF_MAIL));
+	cml_printf("RF_ENABLED   : %s\n", print_si_no(rflags & RF_ENABLED));
+	cml_printf("RF_INVITO    : %s\n", print_si_no(rflags & RF_INVITO));
+	cml_printf("RF_SUBJECT   : %s\n", print_si_no(rflags & RF_SUBJECT));
+	cml_printf("RF_GUESS     : %s\n", print_si_no(rflags & RF_GUESS));
+	cml_printf("RF_DIRECTORY : %s\n", print_si_no(rflags & RF_DIRECTORY));
+	cml_printf("RF_ANONYMOUS : %s\n", print_si_no(rflags & RF_ANONYMOUS));
+	cml_printf("RF_ASKANONYM : %s\n", print_si_no(rflags & RF_ASKANONYM));
+	cml_printf("RF_REPLY     : %s\n", print_si_no(rflags & RF_REPLY));
+	cml_printf("RF_AUTOINV   : %s\n", print_si_no(rflags & RF_AUTOINV));
+	cml_printf("RF_FLOOR     : %s\n", print_si_no(rflags & RF_FLOOR));
+	cml_printf("RF_SONDAGGI  : %s\n", print_si_no(rflags & RF_SONDAGGI));
+	cml_printf("RF_CITTAWEB  : %s\n", print_si_no(rflags & RF_CITTAWEB));
+	cml_printf("RF_BLOG      : %s\n", print_si_no(rflags & RF_BLOG));
+	cml_printf("RF_POSTLOCK  : %s\n", print_si_no(rflags & RF_POSTLOCK));
+	cml_printf("RF_L_TIMEOUT : %s\n", print_si_no(rflags & RF_L_TIMEOUT));
+	cml_printf("RF_FIND      : %s\n", print_si_no(rflags & RF_FIND));
+	cml_printf("RF_DYNROOM   : %s\n", print_si_no(rflags & RF_DYNROOM));
+	cml_printf("RF_DYNMSG    : %s\n", print_si_no(rflags & RF_DYNMSG));
 }

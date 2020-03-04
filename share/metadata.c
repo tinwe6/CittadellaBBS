@@ -115,11 +115,7 @@ int md_insert_room(Metadata_List *mdlist, char *room)
         if (!md)
                 return -1;
 
-        if (room[0] == ':') {
-                md->type = MD_BLOG;
-                offset = 1;
-        } else
-                md->type = MD_ROOM;
+	md->type = MD_ROOM;
 
         strncpy(md->content, room + offset, ROOMNAMELEN);
 
@@ -219,7 +215,7 @@ size_t md_convert2cml(Metadata_List *mdlist, int md_id, char *str)
                 len = sprintf(str, "<user=\"%s\">", md->content);
                 break;
         case MD_ROOM:
-                len = sprintf(str, "<room=\"%s\">", md->content);
+		len = sprintf(str, "<room=\"%s\">", md->content);
                 break;
         case MD_POST:
                 len = sprintf(str, "<post room=\"%s\" num=%ld>", md->content,

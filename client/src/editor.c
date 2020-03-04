@@ -16,6 +16,7 @@
 #include <assert.h>
 #include "editor.h"
 #include "cterminfo.h"
+#include "room_cmd.h" /* for blog_display_pre */
 
 /* Variabili globali */
 int Editor_Pos; /* Riga di inizio dell'editor                           */
@@ -29,7 +30,7 @@ int Editor_Vcurs; /*                  ... e verticale.                  */
 #include <stdio.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <string.h> 
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -266,7 +267,7 @@ static void refresh_line_curs(int *pos, int *curs);
 /***************************************************************************/
 /*
  * get_text_full() : editor interno full screen per testi.
- * 
+ *
  * Prende in input dall'utente un testo lungo al piu' 'max_linee' righe su
  * 'max_col' colonne e lo inserisce nella struttura 'txt'. Il testo termina
  * quando si lascia una riga vuota oppure si riempono tutte le righe a
@@ -276,7 +277,7 @@ static void refresh_line_curs(int *pos, int *curs);
  * Il testo viene formattato  automaticamente mandando a capo le parole che
  * non ci stanno in fondo alla riga.
  * Color e` il colore iniziale del cursore. Se color e` zero usa C_DEFAULT.
- * 
+ *
  * Valori di ritorno: EDIT_ABORT : Abort;
  *                             0 : Nessun testo;
  *                             N : Numero righe scritte.
@@ -329,7 +330,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	t.first->flag = 1;
 	t.first->next = NULL;
 	t.first->prev = NULL;
-        
+
         /* Inizializza il buffer di copia */
         t.buf_first = NULL;
         t.buf_last = NULL;
@@ -359,7 +360,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 			printf("%80s\rAbort.\n", "");
 			fine = TRUE;
 			break;
-			
+
 		case EDIT_DONE:
 			cti_ll();
 			putchar('\n');
@@ -370,7 +371,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 
 	if (ret == EDIT_NEWLINE) {
 		refresh_line_curs(t.curr->str, t.curr->str + t.curr->pos);
-		
+
 		if (get_line_wrap(&t, false) == EDIT_ABORT)
 			ret = EDIT_ABORT;
 		else {
@@ -382,7 +383,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 
 	Editor2CML(t.first, txt, color, t.mdlist);
 	Editor_Free(&t);
-	prompt_curr = prompt_tmp;	
+	prompt_curr = prompt_tmp;
 
 	if (Editor_Win) {
 		Editor_Win = 0;
@@ -396,7 +397,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 
 /*
  * Prende un testo dallo stdinput, lungo 'max'.
- * Il testo viene editato su una singola riga, e se e' piu' lungo dello 
+ * Il testo viene editato su una singola riga, e se e' piu' lungo dello
  * schermo scrolla.
  */
 static int get_line_wrap(Editor_Text *t, bool wrap)
@@ -441,7 +442,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 		case Ctrl('D'):
 			Editor_Key_Delete(t);
 			break;
-			
+
 			/* Deleting Words */
 		case Ctrl('W'):
 			Editor_Delete_Word(t);
@@ -449,7 +450,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 		case META('d'): /* Cancella la parola a destra del cursore */
 			Editor_Delete_Next_Word(t);
 			break;
-			
+
 			/* Cursor Motion */
 		case Key_UP:
 		case Ctrl('P'):
@@ -467,7 +468,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 		case Ctrl('B'):
 			Editor_Key_Left(t);
 			break;
-			
+
 			/* Extended Motion */
 		case Key_PAGEUP:
 		case META('v'):
@@ -870,7 +871,7 @@ static void Editor_Yank(Editor_Text *t)
 
         if (t->buf_riga == 0) /* Non c'e' nulla nel buffer di copia */
                 return;
-        
+
         if (t->curr->len)
                 Editor_Key_Enter(t);
         if ((t->curr->pos == 0) && (t->curr->len > 0)) {
@@ -1013,14 +1014,14 @@ static void Editor_Delete(Editor_Text *t)
 	putchar(' ');
 	if (tmpcol != t->curr_col)
 		setcolor(t->curr_col);
-	cti_mv(t->curr->pos+1, Editor_Vcurs);			
+	cti_mv(t->curr->pos+1, Editor_Vcurs);
 }
 
 /* Cancella la parola precedente al cursore. */
 static void Editor_Delete_Word(Editor_Text *t)
 {
 	int tmp;
-	
+
 	if (t->curr->pos == 0) {
 		Beep();
 		return;
@@ -1045,7 +1046,7 @@ static void Editor_Delete_Word(Editor_Text *t)
 static void Editor_Delete_Next_Word(Editor_Text *t)
 {
 	int tmp;
-	
+
 	tmp = t->curr->pos;
 	while ((t->curr->pos != t->curr->len)
 	       && (t->curr->str[t->curr->pos+1] == ' '))
@@ -1111,7 +1112,7 @@ static void Editor_Key_Up(Editor_Text *t)
                 do {
                         Editor_Curs_Right(t);
                 } while (mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
-        
+
 
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
@@ -1242,12 +1243,12 @@ static void Editor_Curs_Left(Editor_Text *t)
 	} else
 		Beep();
 }
-		
+
 /* Va alla pagina precedente */
 static void Editor_PageUp(Editor_Text *t)
 {
 	int i;
-	
+
 	if (t->curr->prev == NULL) {
 		Beep();
 		t->curr->pos = 0;
@@ -1375,7 +1376,7 @@ static void Editor_Copy_Line(Editor_Text *t)
         }
         t->buf_last = nl;
 	t->buf_riga++;
-        
+
 	memcpy(t->buf_last->str, t->curr->str + t->curr->pos,
 		(t->curr->len - t->curr->pos)*sizeof(int));
 	memcpy(t->buf_last->col, t->curr->col + t->curr->pos,
@@ -1452,7 +1453,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 		setcolor(t->curr_col);
 		cti_mv(t->curr->pos + 1, Editor_Vcurs);
 	}
-	len -= wlen; /* Tolgo la parola */ 
+	len -= wlen; /* Tolgo la parola */
 
 	if (nl->len > 0) {
 		/* Riga succ. non vuota: sposto il contenuto */
@@ -1493,7 +1494,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 			Editor_Scroll_Up(NRIGHE-1);
 		line_refresh(t->curr->prev, Editor_Vcurs - 1, 0);
 	}
-	
+
 	Editor_Refresh(t, Editor_Vcurs);
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
 	return 1;
@@ -1732,7 +1733,8 @@ static void Editor_Insert_PostRef(Editor_Text *t)
 static void Editor_Insert_Room(Editor_Text *t)
 {
         char roomname[LBUF];
-        char *ptr, tmpcol;
+        const char *ptr;
+	char tmpcol;
         int id, col;
 
         printf("\r%-80s\r", "");
@@ -1743,21 +1745,30 @@ static void Editor_Insert_Room(Editor_Text *t)
                         return;
                 strcpy(roomname, postref_room);
         }
-        if (roomname[0] == ':') { /* Blog room */
-                //dest = GOTO_BLOG;
-                //offset++;
-        }
 
         Editor_Head_Refresh(t, TRUE);
 
         id = md_insert_room(t->mdlist, roomname);
 
         tmpcol = t->curs_col;
+
+	int offset = 0;
+	if (roomname[0] == ':') { /* Blog room */
+		col = COLOR_ROOMTYPE;
+		Editor_Set_MDNum(col, id);
+		Editor_Set_Color(t, col);
+		for (ptr = blog_display_pre; *ptr; ptr++) {
+			Editor_Putchar(t, *ptr);
+		}
+		offset = 1;
+        }
+
         col = COLOR_ROOM;
         Editor_Set_MDNum(col, id);
         Editor_Set_Color(t, col);
-        for (ptr = roomname; *ptr; ptr++)
+        for (ptr = roomname + offset; *ptr; ptr++) {
                 Editor_Putchar(t, *ptr);
+	}
 
         col = COLOR_ROOMTYPE;
         Editor_Set_MDNum(col, id);
@@ -1765,7 +1776,7 @@ static void Editor_Insert_Room(Editor_Text *t)
         Editor_Putchar(t, '>');
 
         Editor_Set_Color(t, tmpcol);
-}        
+}
 
 /* Inserisce il riferimento a utente */
 static void Editor_Insert_User(Editor_Text *t)
@@ -1784,7 +1795,7 @@ static void Editor_Insert_User(Editor_Text *t)
         }
 
         Editor_Head_Refresh(t, TRUE);
-        
+
         id = md_insert_user(t->mdlist, username);
 
         tmpcol = t->curs_col;
@@ -1953,7 +1964,7 @@ static void Editor_Insert_Text(Editor_Text *t)
         FILE *fp;
         Editor_Line *nl;
 	int len, wlen, color, i;
-        int c = 0; 
+        int c = 0;
 
         if (Editor_Win)
                 cti_scroll_ureg();
@@ -2039,7 +2050,7 @@ static void Editor_Insert_Text(Editor_Text *t)
 
                                                 Editor_Putchar(t, c);
                                                 if (t->curr->len >= t->max) {
-                                                        
+
                                                 }
                                         }
                                 }
@@ -2195,7 +2206,7 @@ static void Editor_Refresh(Editor_Text *t, int start)
 {
 	Editor_Line *line;
 	int i;
-	
+
 	if (start < (Editor_Pos + 1))
 		start = Editor_Pos + 1;
 	line = t->curr;
@@ -2227,7 +2238,7 @@ static void Editor_Head_Refresh(Editor_Text *t, int mode)
 {
 	const char *insmode[3] = {"Insert   ", "Overwrite", "ASCII Art"};
 	char buf[LBUF];
-	
+
 	if (Editor_Win)
 		cti_scroll_ureg();
 	setcolor(COL_EDITOR_HEAD);
@@ -2310,7 +2321,7 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
 
         mdlist = t->mdlist;
 	while( (str = txt_get(txt))) {
-		t->curr->len = cml2editor(str, t->curr->str, t->curr->col, 
+		t->curr->len = cml2editor(str, t->curr->str, t->curr->col,
 					  &len, t->max, &color, mdlist);
 		t->curr->pos = 0;
 		t->curr->flag = 1;
@@ -2414,7 +2425,7 @@ static void help_edit(Editor_Text *t)
 static void refresh_line_curs(int *pos, int *curs)
 {
 	int i;
-	
+
 	putchar('\r');
 	putchar('>');
 	for (i=0; (i < 78) && (pos[i] != 0); putchar(pos[i++]));
@@ -2446,7 +2457,7 @@ static void editor2text(Editor_Line *line, struct text *txt)
 {
 	int i, pos, col;
 	char str[LBUF];
-	
+
 	col = COLOR(C_NORMAL, BLACK, ATTR_DEFAULT);
 	for (; line; line = line->next) {
 		pos = 0;
@@ -2480,7 +2491,7 @@ static void editor2text(Editor_Line *line, struct text *txt)
 static void Editor_Wrap_Word_noecho(Editor_Text *t)
 {
 	Editor_Line *nl;
-	int len, wlen = 0; 
+	int len, wlen = 0;
 
 	len = t->curr->len;
 	while ((len-wlen >= 0) && (t->curr->str[len-wlen] != ' '))
@@ -2510,7 +2521,7 @@ static void text2editor(Editor_Text *t, struct text *txt)
 {
 	char *str;
 	int i;
-	
+
 	if (txt == NULL)
 		return;
 	txt_rewind(txt);

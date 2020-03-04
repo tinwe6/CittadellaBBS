@@ -29,6 +29,7 @@
 #include "configurazione.h"
 #include "extract.h"
 #include "friends.h"
+#include "room_cmd.h" /* for blog_display_pre[] */
 #include "tabc.h"
 #include "utility.h"
 
@@ -156,7 +157,8 @@ void blog_goto(void)
 	serv_gets(buf);
 	if (buf[0] == '2') {
                 barflag = 1;
-		sprintf(current_room, "La casa di %s", blogname);
+		sprintf(current_room, "</b>%s<b>%s", blog_display_pre,
+			blogname);
 		*room_type = ':';
 		msg_num = extract_long(buf+4, 2);
 		msg_new = extract_long(buf+4, 3);
@@ -192,7 +194,7 @@ void blog_info(int det)
 	char buf[LBUF], raide[LBUF], rname[LBUF];
 	int  riga = 4;
 	long local, ct, mt, pt, flags;
-	
+
 	serv_puts("RINF");
 	serv_gets(buf);
 	if (buf[0] != '2') {

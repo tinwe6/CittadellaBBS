@@ -18,7 +18,11 @@
 
 #define DFLT_MSG_PER_ROOM 150
 
+#define BLOG_DISPLAY_PRE "La casa di "
+extern const char blog_display_pre[];
+
 /* prototipi delle funzioni in questo file */
+void print_room(const char *roomname);
 void room_list(void);
 void room_list_known(int mode);
 void room_goto(int mode, bool gotonext, const char *destroom);
