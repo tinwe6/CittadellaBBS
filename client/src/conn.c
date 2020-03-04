@@ -93,7 +93,7 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 {
 #define HELP_MSG \
 "Usage: cittaclient [OPTION]...\n"                                       \
-"Client application to connec t to a Cittadella/UX BBS server.\n\n"      \
+"Client application to connect to a Cittadella/UX BBS server.\n\n"       \
 "  -c         --compress    enforce compressed transmission\n"           \
 "  -C         --nocompress  do not compress the transmission\n"          \
 "  -d         --debug       debug mode\n"                                \
@@ -101,8 +101,8 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 "  -H         --help        display this help and exit\n"                \
 "  -h <host>  --host        specify host name\n"                         \
 "  -l         --localhost   connect to localhost\n"                      \
-"  -N         --norc        do not read config file and use default settings\n" \
 "  -n         --no-banner   skip the login/logout banners\n"             \
+"  -N         --norc        do not read config file and use default settings\n" \
 "  -p <port>  --port        specify a port (server must be on the same port)\n" \
 "  -u <name>  --username    log in using this user name\n"               \
 "  -v         --version     output version information and exit\n"       \
@@ -132,7 +132,7 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 	};
 	int option_index = 0;
 #endif /* HAS_GETOPT_LONG */
-        
+
 	char buf[LBUF];
         int porta;
         int c;
@@ -213,7 +213,7 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 			sprintf(buf, "PASSWORD \"\"");
 			cfg_add_opt(buf);
                         break;
-      
+
                 case 'v': /* cittaclient version */
                         printf("cittaclient version %s - Client for "
                                "Cittadella/UX BBS\n", CLIENT_RELEASE);
@@ -234,7 +234,7 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 # endif
 #endif
                 default:
-                        abort();
+                        exit(EXIT_FAILURE);
                 }
 	}
 }
@@ -249,7 +249,7 @@ int conn_server(char *host, int porta)
         struct hostent *hp;
         struct sockaddr_in sa;
         int s;
-  
+
         printf(_("Connessione al server.... \n"));
         bzero(&sa, sizeof(struct sockaddr_in));
 
@@ -266,26 +266,26 @@ int conn_server(char *host, int porta)
         if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
                 perror("conn_server");
                 exit(1);
-        }	
+        }
 
         signal(SIGALRM, timeout);
         alarm(30);
 
         if (connect(s, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-                printf(_("Impossibile aprire la connessione a %s %d\n"), 
+                printf(_("Impossibile aprire la connessione a %s %d\n"),
                        host, porta);
                 exit(1);
         }
-  
+
         alarm(0);
         signal(SIGALRM, SIG_IGN);
-  
+
         return(s);
 }
 
 /* Write connection timeout message and exit the client */
 /* Note: the parameter signum is not used               */
-void timeout(int signum) 
+void timeout(int signum)
 {
         IGNORE_UNUSED_PARAMETER(signum);
         printf("\rConnection timed out.\n");
@@ -363,7 +363,7 @@ void serv_putf(char *format, ...)
 	char *str;
 	int len = TMPBUF_LEN;
 	int ret, ok = 0;
-	
+
 	/* Uses vsnprintf(), conforms to BSD, ISOC9X, UNIX98 standards */
 	va_start(ap, format);
 	CREATE(str, char, len, 0);
@@ -488,8 +488,8 @@ int elabora_input(void)
 	char ch;
 
         CREATE(buf, char, bufsize, 0);
-	len = 0;    
-    
+	len = 0;
+
         do {
                 buf[len++] = ch = (char) serv_getc();
 		if (len == bufsize) {
@@ -568,7 +568,7 @@ int elabora_input(char *str, const int max)
  * arrivato e lo elimina dalla coda. La stringa restituita in dest va
  * liberata con free().
  */
-bool prendi_da_coda(struct coda_testo *coda, char **dest) 
+bool prendi_da_coda(struct coda_testo *coda, char **dest)
 {
         struct blocco_testo *tmp;
 
@@ -590,7 +590,7 @@ bool prendi_da_coda(struct coda_testo *coda, char **dest)
  * Prende da coda i comandi di un tipo particolare.
  * mode = 0: tutto; 1: Chat;
  */
-bool prendi_da_coda_t(struct coda_testo *coda, char **dest, int mode) 
+bool prendi_da_coda_t(struct coda_testo *coda, char **dest, int mode)
 {
         struct blocco_testo *tmp, *prev;
 
