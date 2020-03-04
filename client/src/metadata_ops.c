@@ -435,23 +435,36 @@ static bool mdop_link(char *link, char *label)
 static bool mdop_file(char *filename, unsigned long filenum,
 		      unsigned long size)
 {
-        char buf[LBUF], fname[LBUF], filepath[LBUF], link[LBUF], *application;
+        char buf[LBUF], fname[LBUF], filepath[LBUF];
+	char *application;
         unsigned long len, i, prog_step;
         FILE *fp;
         int c = 0, progress, j, type;
         struct stat sb;
 
         if (!local_client) {
-                cml_printf(_("Usando il client locale potrai scaricare e aprire gli allegati direttamente\n"
-                             "dal client. Nel frattempo, puoi accedere al file aprendo il link seguente"));
+                cml_printf(_(
+			     "Devi usare il client locale per scaricare "
+			     ));
+#if 0
+		/* TODO the client should ask a cittaweb link from which
+		   the user can download the file using a web browser.   */
+		cml_printf(_(
+"Usando il client locale potrai scaricare e aprire gli allegati direttamente\n"
+"dal client. Nel frattempo, puoi accedere al file aprendo il link seguente"
+			     ));
                 /* Richiedi la prenotazione per un download */
-                strcpy(link, "http://localhost:4040/"); // TODO
+		char link[LBUF];
+                strcpy(link, "http://localhost:4040/");
 
                 push_color();
                 setcolor(COLOR_LINK);
                 printf("%s", link);
                 pull_color();
-                cml_printf(_("nel tuo browser (link valido per un download).\n"));
+                cml_printf(_(
+			     "nel tuo browser (link valido per un download).\n"
+			     ));
+#endif
                 return false;
         }
         cml_printf(_("File <b>%s</b> (%lu bytes) --- Vuoi scaricarlo ora? "),
