@@ -78,10 +78,11 @@ int login(void)
 	}
 
         do {
-                if (first_go) {
-			printf(_("\nNome    : %s\n"), nome);
+                if (first_go && nome[0] != '\0') {
                         first_go = false;
+			printf(_("\nNome    : %s\n"), nome);
                 } else {
+                        first_go = false;
                         printf(_(
 "\nInserire il nome che si vuole utilizzare presso la bbs oppure 'Ospite' \n"
 "nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"
