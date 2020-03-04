@@ -12,7 +12,7 @@
 /* Valori di default delle opzioni di configurazione */
 #ifdef LOCAL                 /* Client locale        */
 /* Default Host:             bbs.cittadellabbs.it    */
-#define HOST_DFLT            "178.128.136.78" // "81.208.47.96"
+#define HOST_DFLT            "178.62.204.156"
 #define EDITOR_DFLT          ""
 #define SHELL_DFLT           ""
 #ifdef MACOSX
