@@ -33,8 +33,8 @@ struct serverinfo {
 	char versione[20];
 	char nodo[50];
 	char dove[50];
+	int  protocol_vcode;
 	int  newclient_vcode;
-	char newclient[20];
 	char num_canali_chat;
 	int maxlineebug;      /* Numero massimo di righe nei bug rep. */
 	int maxlineebx;       /* Numero massimo di righe nei messaggi */
