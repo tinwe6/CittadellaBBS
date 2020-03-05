@@ -148,13 +148,13 @@ void registrazione(bool nuovo)
                 }
         }
 
-        printf(_("Registrazione:\n\n"));
+        printf(_("Registrazione: (i campi con un asterisco sono obbligatori)\n\n"));
 
         tries = 0;
         if (nuovo) {
                 while (true) {
                         tries++;
-                        new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
+                        new_str_M(_("Nome e Cognome (*): "), nome_reale,
                                       MAXLEN_RNAME-1);
                         if (is_valid_full_name(nome_reale)) {
                                 break;
@@ -176,7 +176,7 @@ void registrazione(bool nuovo)
                         }
                 }
         } else {
-                new_str_def_M(_("Nome e Cognome (VERI)"), nome_reale,
+                new_str_def_M(_("Nome e Cognome (*)"), nome_reale,
                               MAXLEN_RNAME-1);
                 if (is_valid_full_name(nome_reale)) {
                         cml_print(_(
@@ -216,47 +216,55 @@ void registrazione(bool nuovo)
                 cml_print(_(
 "\nOra devi fornire il tuo indirizzo Email. "
 "Esso &egrave; essenziale per inviarti\n"
-"la chiave di validazione: senza di essa non potrai\n"
-"lasciare messaggi e usufruire di tutti i servizi della BBS.\n"
+"la chiave di validazione: senza di essa non potrai lasciare messaggi\n"
+"e usufruire di tutti i servizi della BBS.\n"
 "Se vuoi semplicemente entrare per dare un'occhiata,\n"
 "puoi comunque collegarti con il nome 'Ospite'.\n\n"
                             ));
         }
 
         tries = 0;
+	char new_email[MAXLEN_EMAIL];
         while (true) {
+		strncpy(new_email, email, MAXLEN_EMAIL);
                 tries++;
-                new_str_def_m(_("Indirizzo e-mail"), email, MAXLEN_EMAIL - 1);
-
-                if (is_valid_email(email)) {
+		if (*new_email) {
+			new_str_def_m(_("Indirizzo e-mail (*)"), new_email,
+				      MAXLEN_EMAIL - 1);
+		} else {
+			new_str_m(_("Indirizzo e-mail (*): "), new_email,
+				  MAXLEN_EMAIL - 1);
+		}
+                if (is_valid_email(new_email)) {
                         break;
                 } else {
                         if (tries < max_tries) {
                                 cml_printf(_(
 "\n"
-"L'indirizzo Email fornito non &egrave; valido.\n"
-"L'indirizzo Email &egrave; essenziale per ottenere una chiave di validazione."
+"L'indirizzo email fornito non &egrave; valido. Devi inserire un indirizzo\n"
+"corretto per poter ricevere una chiave di validazione e registrarti alla BBS."
 "\n\n"
                                              ));
-                                email[0] = 0;
                                 sleep(1);
                         } else {
                                 if (nuovo) {
                                         printf(_(
-"\nCi dispiace, ma se non fornisci il tuo Email non puoi creare un tuo\n"
+"\nCi dispiace, ma se non inserisci il tuo e-mail non puoi creare un tuo\n"
 "account personale. Puoi comunque visitare la BBS come 'Ospite'.\n"
                                                  ));
                                         pulisci_ed_esci(NO_EXIT_BANNER);
+					sleep(1);
                                 } else {
                                         printf(_(
 "\n"
-"Ok, teniamo il vecchio Email visto che non riesci a digitare quello nuovo :-)"
-"\n\n"
+"Ok, teniamo il vecchio e-mail visto che non riesci a digitare quello nuovo "
+":-)\n\n"
                                                  ));
                                 }
                         }
                 }
         }
+	strncpy(email, new_email, MAXLEN_EMAIL);
 
         new_str_def_m(_("URL della Home Page"), url, MAXLEN_URL - 1);
 
