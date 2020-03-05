@@ -241,14 +241,9 @@ static int login_new_user (bool is_first_user)
         }
 
         if (is_first_user) {
-		cml_printf(_(
-"\n\nCongratulazioni!!\n"
-"Sei il primo utente di questa BBS, e sar&agrave; tuo compito gestirla.\n"
-"Hai automaticamente il livello 'Sysop', che ti rende onnipotente.\n\n"
-"Questo non ti risparmia per&ograve; dal compito di dare il buon esempio\n"
-"agli altri utenti, perci&ograve; passiamo comunque alla fase di\n"
-"registrazione, anche se non hai bisogno di validarti... :)\n\n"
-                             ));
+		printf("\n\n");
+		leggi_file(STDMSG_MESSAGGI, STDMSGID_INTRO_FIRST_USER);
+		putchar('\n');
 		hit_any_key();
         }
 
