@@ -11,7 +11,7 @@
 #OSFLAGS = -DLINUX
 
 # Remove the hash mark below if compiling under Mac OS X
-OSFLAGS = -DMACOSX
+#OSFLAGS = -DMACOSX
 
 # Remove the hash mark below if compiling under Windows with Cygwin:
 #OSFLAGS = -DWINDOWS
@@ -20,7 +20,7 @@ OSFLAGS = -DMACOSX
 #BGCOL = -DWHITEBG
 
 # Remove hash mark to perform the tests
-TESTFLAGS = -DTESTS
+#TESTFLAGS = -DTESTS
 
 #############################################################################
 
