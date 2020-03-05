@@ -400,34 +400,36 @@ static int login_user(int user_is_validated)
         }
 
         /* If the user is not correctly registered, go through registration. */
-        /* This shouldn't happen, some older users might need it though      */
+        /* This can happen if the connection was interrupted during the      */
+	/* first call while providing the personal data.                     */
         if (!is_registered) {
-                leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
+		leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
                 putchar('\n');
                 hit_any_key();
                 putchar('\n');
                 registrazione(true);
+		return LOGIN_NUOVO;
         }
 
-        if (user_is_validated == USER_IS_VALIDATED) {
-                return LOGIN_VALIDATO;
-        }
-
-        /* Se ha la validation key esegue l'autovalidazione */
-	printf(_(
-            "\nHai ricevuto la chiave di validazione e vuoi validarti? (s/n) "
-                 ));
-	if (si_no()=='n') {
+	if (user_is_validated != USER_IS_VALIDATED) {
+		/* Se ha la validation key esegue l'autovalidazione */
 		printf(_(
+"\nHai ricevuto la chiave di validazione e vuoi validarti? (s/n) "
+			 ));
+		if (si_no()=='n') {
+			printf(_(
 "\nPotrai eseguire la validazione la prossima volta che ti colleghi.\n"
 "Nel frattempo puoi visitare la BBS come utente non validato. Ricorda tuttavia"
 "\n"
 "che la validazione va eseguita entro 48 ore dalla prima connessione.\n"
-                         ));
-        } else if (auto_validazione()) {
-		return LOGIN_APPENA_VALIDATO;
-        }
-	return LOGIN_NONVAL;
+				 ));
+		} else if (auto_validazione()) {
+			return LOGIN_APPENA_VALIDATO;
+		}
+		return LOGIN_NONVAL;
+	}
+
+	return LOGIN_VALIDATO;
 }
 
 
@@ -598,7 +600,7 @@ void user_config(int type)
 "\nutilizzando digitando i tasti <b>.eu</b>\n")
                           );
 		save_userconfig(true);
-}
+	}
 	setcolor(C_DEFAULT);
 
 	cml_printf(

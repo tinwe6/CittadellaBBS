@@ -148,7 +148,7 @@ void registrazione(bool nuovo)
                 }
         }
 
-        printf(_("Registrazione: (i campi con un asterisco sono obbligatori)\n\n"));
+        printf(_("Registrazione (i campi con un asterisco sono obbligatori):\n\n"));
 
         tries = 0;
         if (nuovo) {
@@ -177,10 +177,10 @@ void registrazione(bool nuovo)
                 }
         } else {
                 new_str_def_M(_("Nome e Cognome (*)"), nome_reale,
-                              MAXLEN_RNAME-1);
-                if (is_valid_full_name(nome_reale)) {
+                              MAXLEN_RNAME - 1);
+                if (!is_valid_full_name(nome_reale)) {
                         cml_print(_(
-"\nIl nome che hai inserito non &egrave; valido. devi inserire nome e cognome!"
+"\nIl nome che hai inserito non &egrave; valido. Devi inserire nome e cognome!"
 "\n\n"
                                     ));
                 }
@@ -197,14 +197,14 @@ void registrazione(bool nuovo)
                || (((c == 10) || (c == 13)) && nuovo)) {
                 c = inkey_sc(0);
         }
-        printf("%c\n", c);
         if ((c == 'M') || (c == 'm')) {
+		putchar('M');
                 sesso = 0;
-                putchar('\n');
         } else if ((c == 'F') || (c == 'f')) {
+		putchar('F');
                 sesso = 1;
-                putchar('\n');
         }
+	putchar('\n');
 
         new_str_def_M(_("Indirizzo"), via, MAXLEN_VIA - 1);
         new_str_def_M(_("Citt&agrave;"), citta, MAXLEN_CITTA - 1);
@@ -214,12 +214,12 @@ void registrazione(bool nuovo)
 
         if (nuovo) {
                 cml_print(_(
-"\nOra devi fornire il tuo indirizzo Email. "
-"Esso &egrave; essenziale per inviarti\n"
-"la chiave di validazione: senza di essa non potrai lasciare messaggi\n"
-"e usufruire di tutti i servizi della BBS.\n"
-"Se vuoi semplicemente entrare per dare un'occhiata,\n"
-"puoi comunque collegarti con il nome 'Ospite'.\n\n"
+"\n Ora devi fornire il tuo indirizzo e-mail. "
+" Verr&agrave; usato per inviarti\n"
+" la chiave di validazione, senza la quale non potrai lasciare messaggi\n"
+" e usufruire di tutti i servizi della BBS.\n"
+" Se vuoi semplicemente entrare per dare un'occhiata, puoi comunque\n"
+" collegarti con il nome 'Ospite'.\n\n"
                             ));
         }
 
@@ -241,7 +241,7 @@ void registrazione(bool nuovo)
                         if (tries < max_tries) {
                                 cml_printf(_(
 "\n"
-"L'indirizzo email fornito non &egrave; valido. Devi inserire un indirizzo\n"
+"L'indirizzo e-mail fornito non &egrave; valido. Devi inserire un indirizzo\n"
 "corretto per poter ricevere una chiave di validazione e registrarti alla BBS."
 "\n\n"
                                              ));
@@ -296,13 +296,13 @@ void registrazione(bool nuovo)
                 }
                 if (email_taken) {
                         cml_printf(_(
-"L'email che hai fornito &egrave; gi%agrave; in uso e non possiamo accettarlo:"
-"\n"
+"L'e-mail che hai fornito &egrave; gi%agrave; in uso e non possiamo "
+"accettarlo:\n"
 "Non &egrave; permesso avere pi&ugrave; di un account in questa BBS.\n\n"
                                      ));
                 } else if (email_invalid) {
                         cml_printf(_(
-"L'indirizzo Email fornito non &egrave; valido.\n"
+"L'indirizzo e-mail fornito non &egrave; valido.\n"
                                      ));
                 }
 		if (!(name_invalid || email_invalid || email_taken)) {
@@ -1012,7 +1012,7 @@ void chupwd(void)
                         switch (buf[1]) {
                         case '0':
                                 printf(_(
-"\nCi sono stati problemi per inviare l'Email."
+"\nCi sono stati problemi per inviare l'e-mail."
                                          ));
                                 break;
                         case '2':
