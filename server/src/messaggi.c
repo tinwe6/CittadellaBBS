@@ -31,7 +31,7 @@
 #include "x.h"
 
 #ifdef USE_STRING_TEXT
-# include <argz.h> 
+# include <argz.h>
 #endif
 
 #ifdef USE_CACHE_POST
@@ -114,7 +114,7 @@ int save_post(struct sessione *t, char *arg)
             && (!(t->utente->sflags[1] & SUT_NOANONYM))
             && extract_int(arg,1)) {
                 flags |= MF_ANONYMOUS;
-                if (room->data->flags & RF_ASKANONYM)                    
+                if (room->data->flags & RF_ASKANONYM)
                         extract(anonick, arg, 6);
                 lastpost_author = -1;
         }
@@ -175,13 +175,13 @@ int save_post(struct sessione *t, char *arg)
                 else {
                         strncpy(destinatario, "***", MAXLEN_UTNAME);
                         switch (t->text_com) {
-                        case TXT_MAILSYSOP: 
+                        case TXT_MAILSYSOP:
                                 strncpy(destinatario, "Sysop", MAXLEN_UTNAME);
                                 break;
-                        case TXT_MAILAIDE: 
+                        case TXT_MAILAIDE:
                                 strncpy(destinatario, "Aide", MAXLEN_UTNAME);
                                 break;
-                        case TXT_MAILRAIDE: 
+                        case TXT_MAILRAIDE:
                                 strncpy(destinatario, "Room Aide", MAXLEN_UTNAME);
                                 break;
                         }
@@ -201,7 +201,7 @@ int save_post(struct sessione *t, char *arg)
 	msgnum = fm_put(fmnum, strtxt, len, header, &msgpos);
 #else
 	msgnum = fm_put(fmnum, t->text, header, &msgpos);
-#endif		
+#endif
 	if (msgnum) {
 		/* Aggiorna le strutture dei post */
 		if (room->data->flags & RF_MAIL) {
@@ -315,12 +315,12 @@ void cmd_read(struct sessione *t, char *cmd)
                         fullroom = t->fullroom[room->pos];
 		if (t->utente->flags[4] & UT_LASTOLD)
 			while ((i < room->data->maxmsg)
-                               && ((room->msg->num[i] < fullroom) 
+                               && ((room->msg->num[i] < fullroom)
                                    || (room->msg->num[i] < lowest)))
                                 i++;
                 else
 			while ((i < room->data->maxmsg)
-                               && ((room->msg->num[i] <= fullroom) 
+                               && ((room->msg->num[i] <= fullroom)
                                    || (room->msg->num[i] < lowest)))
                                 i++;
 		break;
@@ -363,7 +363,7 @@ void cmd_read(struct sessione *t, char *cmd)
 		} else {
 			i = room->data->maxmsg - 1;
 			while((room->msg->num[i] >= t->lastread) && (i >= 0))
-				i--;			
+				i--;
 			if (room->msg->num[i] < lowest)
 				i = -1;
 		}
@@ -514,7 +514,7 @@ static int msg_send(struct sessione *t, struct room *room, int i, bool reply)
                 strcpy(header, header1);
 #endif
                 /* Invia l'header
-                 * Header: 0 - Room Name; 1 - Author; 2 - Date; 
+                 * Header: 0 - Room Name; 1 - Author; 2 - Date;
                  *         3 - Subject; 4 - Flags; 5 - Recipient;
                  *         6 - Reply to; 7 - Reply lnum;
                  *         8 - Nickname
@@ -523,7 +523,7 @@ static int msg_send(struct sessione *t, struct room *room, int i, bool reply)
                 if (extract_long(header, 5) & MF_ANONYMOUS)
                         clear_parm(header, 2);
 
-                /* Questo test e' per compatibilita'... da togliere 
+                /* Questo test e' per compatibilita'... da togliere
                    quando avremo fatto il giro del fullroom.       */
                 if (num_parms(header) > 8) {
 #ifdef USE_STRING_TEXT
@@ -808,9 +808,9 @@ void cmd_mmov(struct sessione *t, char *arg)
 			}
 #endif
 		}
-	} else 
+	} else
 		cprintf(t, "%d\n", ERROR+ACC_PROIBITO);
-}	
+}
 
 /*
  * Copia messaggio corrente.
@@ -858,8 +858,8 @@ void cmd_mcpy(struct sessione *t, char *arg)
 	    && (t->room->data->fmnum == room->data->fmnum)) {
 		msg_copy(room, t->room, msgnum);
 		cprintf(t, "%d\n", OK);
-	} else 
-		cprintf(t, "%d\n", ERROR+ACC_PROIBITO);	
+	} else
+		cprintf(t, "%d\n", ERROR+ACC_PROIBITO);
 }
 
 /*
@@ -878,7 +878,7 @@ int citta_post(struct room *room, char *subject, struct text *txt)
 	fmnum = room->data->fmnum;
 	flags |= MF_CITTA;
 	time(&ora);
-	sprintf(header, "%s|Cittadella BBS|%ld|%s|%ld|", room->data->name,
+	sprintf(header, "%s|Cittadella BBS|%ld|%s|%ld||||", room->data->name,
 		ora, subject, flags);
 #ifdef USE_STRING_TEXT
 	len = text2string(txt, &strtxt);

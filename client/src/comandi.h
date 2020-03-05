@@ -16,10 +16,12 @@
 #ifndef _COMANDI_H
 #define _COMANDI_H   1
 
+#include <stdbool.h>
+
 extern char barflag;
 
 /* prototipi delle funzioni in comandi.h */
 int getcmd(char *c);
-int get_msgcmd(char *str, int metadata);
+int get_msgcmd(char *str, bool has_metadata);
 
 #endif /* comandi.h */

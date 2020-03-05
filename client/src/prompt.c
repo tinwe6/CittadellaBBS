@@ -72,13 +72,16 @@ void room_prompt(char *pr)
 " -----------------------------------------------------------------------\n"));
 	}
 	setcolor(C_ROOMPROMPT);
-	/* TODO at the moment blog_vroom is unused */
+	/* TODO at the moment blog_vroom is unused, current_room is already */
+	/* formatted appropriately if it is a blog room.                    */
+	/*
 	if (blog_vroom)
 	        strcpy(tmp, _("La casa di <b>%s</b>"));
 	else
-	        strcpy(tmp, "<b>%s</b>%c");
+	*/
+	strcpy(tmp, "<b>%s</b>%c");
 	if ((SERVER_FLOORS) && (uflags[4] & UT_FLOOR)) {
-	        sprintf(tmp1, "\n<b>%%s</b>: %s ", tmp); 
+	        sprintf(tmp1, "\n<b>%%s</b>: %s ", tmp);
 		sprintf(pr, tmp1, current_floor, current_room, *room_type);
 	} else {
 		sprintf(tmp1, "\n%s ", tmp);
@@ -171,7 +174,7 @@ void scelta_prompt(char *prompt)
 void print_prompt(void)
 {
 	char prompt[LBUF];
-	
+
 	push_color();
 	switch(prompt_curr) {
 	case P_ROOM:

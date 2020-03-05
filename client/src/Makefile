@@ -40,11 +40,11 @@ WFLAGS = -ansi -pedantic -W -Wtraditional -Wshadow -Wpointer-arith \
 #MYFLAGS = -g -Wall -pedantic -Wstrict-prototypes -Wmissing-prototypes \
 #		  -Wconversion
 #MYFLAGS = -Wall -DUTMPLIB -O3 -fomit-frame-pointer
-MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DUTMPLIB
+MYFLAGS = -g -std=c99 -pedantic -Wall -Wextra -DUTMPLIB $(TESTFLAGS)
 
 #flags for profiling (see hacker.doc for more information)
 #PROFILE = -pg
-PROFILE = 
+PROFILE =
 
 # Flags for linking with libefence
 #EFENCE = -lefence
@@ -95,7 +95,7 @@ OBJALL = $(COMMONOBJ) $(LOCALOBJ) $(REMOTEOBJ) $(DEBUGOBJ)
 all : $(bindir)/cittaclient $(bindir)/remote_cittaclient \
 	$(bindir)/debug_cittaclient
 
-$(bindir) :  
+$(bindir) :
 	mkdir $(bindir)
 
 $(bindir)/cittaclient : $(OBJFILES) $(bindir)
@@ -112,7 +112,7 @@ cfg_test:  cittacfg.c cittacfg.h
 	$(CC) $(CFLAGS) -DCFG_TEST cittacfg.c -o $(bindir)/cfg_test
 
 cittaclient.o : cittaclient.c cittaclient.h versione.h
-	$(CC) -c $(CFLAGS) $(COMMFLAGS) -DLOCAL cittaclient.c 
+	$(CC) -c $(CFLAGS) $(COMMFLAGS) -DLOCAL cittaclient.c
 rcittaclient.o : cittaclient.c cittaclient.h versione.h
 	$(CC) -c $(CFLAGS) $(COMMFLAGS) cittaclient.c -o rcittaclient.o
 conn.o : conn.c

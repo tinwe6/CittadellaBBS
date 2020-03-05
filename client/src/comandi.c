@@ -34,8 +34,6 @@
 char barflag = 1;
 
 /* prototipi delle funzioni in questo file */
-int getcmd(char *c);
-int get_msgcmd(char *str, int metadata);
 static int dot_command(void);
 static int aide_command(void);
 static int aide_edit_command(void);
@@ -292,9 +290,10 @@ int getcmd(char *str)
 
 /*
  * Attende un comando da stdin eseguendo gli eventuali comandi provenienti
- * dal server e restituisce il codice del comando del client corrispondente
+ * dal server e restituisce il codice del comando del client corrispondente.
+ * Accetta il comando <A> per esamniare allegati solo se has_metadata==true
  */
-int get_msgcmd(char *str, int metadata)
+int get_msgcmd(char *str, bool has_metadata)
 {
 	char prompt[LBUF];
         int a;
@@ -316,7 +315,7 @@ int get_msgcmd(char *str, int metadata)
                         printf(_("Again.\r"));
 			return 3;
 		case 'A':
-                        if (metadata) {
+                        if (has_metadata) {
                                 printf(_("esamina Allegati.\r"));
                                 return 12;
                         }

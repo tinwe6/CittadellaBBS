@@ -61,6 +61,7 @@
 #include "room_cmd.h"
 #include "strutt.h"
 #include "signals.h"
+#include "string_utils.h"
 #include "sysconf_client.h"
 #include "sysop.h"
 #include "terminale.h"
@@ -147,6 +148,10 @@ int main(int argc, char **argv)
         int ut_conn, num_chiamata, login_status;
 	bool no_rc;
 
+#ifdef TESTS
+        test_string_utils();
+#endif
+
         /* Client locale o client remoto? */
 #ifdef LOCAL
         local_client = true;
@@ -224,7 +229,7 @@ int main(int argc, char **argv)
         /* Identificazione client/server */
         info_sul_server();
         ident_client();
-        if (CLIENT_VERSION_CODE > serverinfo.newclient_vcode) {
+        if (CLIENT_VERSION_CODE > serverinfo.protocol_vcode) {
                 printf("Legacy server: entering compatibility mode.\n");
                 serverinfo.legacy = true;
         }
@@ -273,8 +278,9 @@ int main(int argc, char **argv)
 	/* upgrade: se nuovo client, riconfigura. */
 	setcolor(C_NEWS);
 	if ((sflags[0] & SUT_UPGRADE) &&
-	    (CLIENT_VERSION_CODE == serverinfo.newclient_vcode))
+	    (CLIENT_VERSION_CODE == serverinfo.newclient_vcode)) {
 		upgrade_client(CLIENT_VERSION_CODE);
+	}
 
         /* Controllo posta, validazione utenti etc... (CHECK) */
 	setcolor(CYAN);
@@ -965,16 +971,17 @@ static void info_sul_server(void)
                 serverinfo.server_vcode = extract_int(buf, 1);
                 extractn(serverinfo.nodo, buf, 2, 50);
                 extractn(serverinfo.dove, buf, 3, 50);
-                serverinfo.newclient_vcode  = extract_int(buf, 4);
-                serverinfo.num_canali_chat  = extract_int(buf, 5);
-                serverinfo.maxlineebug      = extract_int(buf, 6);
-                serverinfo.maxlineebx       = extract_int(buf, 7);
-                serverinfo.maxlineenews     = extract_int(buf, 8);
-                serverinfo.maxlineepost     = extract_int(buf, 9);
-                serverinfo.maxlineeprfl     = extract_int(buf, 10);
-                serverinfo.maxlineeroominfo = extract_int(buf, 11);
-                serverinfo.flags            = extract_int(buf, 12);
-                extract(comp, buf, 13);
+                serverinfo.protocol_vcode   = extract_int(buf, 4);
+                serverinfo.newclient_vcode  = extract_int(buf, 5);
+                serverinfo.num_canali_chat  = extract_int(buf, 6);
+                serverinfo.maxlineebug      = extract_int(buf, 7);
+                serverinfo.maxlineebx       = extract_int(buf, 8);
+                serverinfo.maxlineenews     = extract_int(buf, 9);
+                serverinfo.maxlineepost     = extract_int(buf, 10);
+                serverinfo.maxlineeprfl     = extract_int(buf, 11);
+                serverinfo.maxlineeroominfo = extract_int(buf, 12);
+                serverinfo.flags            = extract_int(buf, 13);
+                extract(comp, buf, 14);
 
                 printf("\nServer: %s version ", serverinfo.software);
 		version_print(serverinfo.server_vcode);
@@ -983,7 +990,7 @@ static void info_sul_server(void)
 		version_print(CLIENT_VERSION_CODE);
 		putchar('\n');
 
-                if (CLIENT_VERSION_CODE < serverinfo.newclient_vcode) {
+                if (CLIENT_VERSION_CODE < serverinfo.protocol_vcode) {
                         printf(_("\nATTENZIONE: Questo client e' obsoleto.\n"
                                "Per collegarti alla BBS, scarica il nuovo Cittaclient "));
 			version_print(serverinfo.newclient_vcode);

@@ -39,7 +39,7 @@
 
 /* Prototipi funzioni statiche */
 static bool mdop_user(char *user);
-static bool mdop_room(char *room);
+static bool mdop_room(char *room, bool ask_confirm);
 static bool mdop_post(char *room, long num);
 static bool mdop_blog(char *user, long num);
 static bool mdop_link(char *link, char *label);
@@ -74,32 +74,38 @@ bool mdop(Metadata_List *mdlist)
                         return false;
                 }
                 putchar('\n');
-        } else
+        } else {
                 n = 1;
+	}
 
         md = mdlist->md[n-1];
 
         switch (md->type) {
         case MD_USER:
                 ret = mdop_user(md->content);
+		putchar('\n');
                 break;
         case MD_ROOM:
-                ret = mdop_room(md->content);
+		/* we ask for confirmation only if there's one single attach */
+                ret = mdop_room(md->content, (mdlist->num == 1));
                 break;
         case MD_POST:
                 ret = mdop_post(md->content, md->locnum);
+		putchar('\n');
                 break;
         case MD_BLOG:
                 ret = mdop_blog(md->content, md->locnum);
+		putchar('\n');
                 break;
         case MD_LINK:
                 mdop_link(md->content, md->str);
+		putchar('\n');
                 break;
         case MD_FILE:
                 mdop_file(md->content, md->filenum, md->size);
+		putchar('\n');
                 break;
         }
-        putchar('\n');
 
         return ret;
 
@@ -134,10 +140,7 @@ void mdop_print_list(Metadata_List *mdlist)
                         break;
                 case MD_ROOM:
                         printf("Abbandona e vai alla room ");
-                        push_color();
-                        setcolor(COLOR_ROOM);
-                        printf("%s>", md->content);
-                        pull_color();
+			print_room(md->content);
                         break;
                 case MD_POST:
                         printf("Post ");
@@ -146,10 +149,7 @@ void mdop_print_list(Metadata_List *mdlist)
                         cml_printf("#<b>%ld</b>", md->locnum);
                         pull_color();
                         cml_printf(_(" nella room "));
-                        push_color();
-                        setcolor(COLOR_ROOM);
-                        printf("%s>", md->content);
-                        pull_color();
+			print_room(md->content);
                         putchar('.');
                         break;
                 case MD_BLOG:
@@ -284,7 +284,7 @@ void mdop_upload_files(Metadata_List *mdlist)
                         mdlist->uploads--;
                 }
         }
-        putchar('\n');        
+        putchar('\n');
 }
 
 /******************************************************************************/
@@ -317,14 +317,18 @@ static bool mdop_user(char *user)
         return false;
 }
 
-static bool mdop_room(char *room)
+static bool mdop_room(char *room, bool ask_confirm)
 {
         char *destroom;
 
-        cml_printf(_("*** Room <b>%s</b>>\n"), room);
-        cml_printf(_("    Vuoi abbandonare questa room e andarci? "));
-        if (si_no() == 'n')
-                return false;
+	if (ask_confirm) {
+		cml_printf(_("*** Room: "));
+		print_room(room);
+		putchar('\n');
+		cml_printf(_("    Vuoi abbandonare questa room e andarci? "));
+		if (si_no() == 'n')
+			return false;
+	}
 
         putchar('\n');
         destroom = Strdup(room);
@@ -435,23 +439,36 @@ static bool mdop_link(char *link, char *label)
 static bool mdop_file(char *filename, unsigned long filenum,
 		      unsigned long size)
 {
-        char buf[LBUF], fname[LBUF], filepath[LBUF], link[LBUF], *application;
+        char buf[LBUF], fname[LBUF], filepath[LBUF];
+	char *application;
         unsigned long len, i, prog_step;
         FILE *fp;
         int c = 0, progress, j, type;
         struct stat sb;
 
         if (!local_client) {
-                cml_printf(_("Usando il client locale potrai scaricare e aprire gli allegati direttamente\n"
-                             "dal client. Nel frattempo, puoi accedere al file aprendo il link seguente"));
+                cml_printf(_(
+			     "Devi usare il client locale per scaricare "
+			     ));
+#if 0
+		/* TODO the client should ask a cittaweb link from which
+		   the user can download the file using a web browser.   */
+		cml_printf(_(
+"Usando il client locale potrai scaricare e aprire gli allegati direttamente\n"
+"dal client. Nel frattempo, puoi accedere al file aprendo il link seguente"
+			     ));
                 /* Richiedi la prenotazione per un download */
-                strcpy(link, "http://localhost:4040/"); // TODO
+		char link[LBUF];
+                strcpy(link, "http://localhost:4040/");
 
                 push_color();
                 setcolor(COLOR_LINK);
                 printf("%s", link);
                 pull_color();
-                cml_printf(_("nel tuo browser (link valido per un download).\n"));
+                cml_printf(_(
+			     "nel tuo browser (link valido per un download).\n"
+			     ));
+#endif
                 return false;
         }
         cml_printf(_("File <b>%s</b> (%lu bytes) --- Vuoi scaricarlo ora? "),
@@ -531,7 +548,7 @@ static bool mdop_file(char *filename, unsigned long filenum,
         }
         fclose(fp);
         putchar(' ');
-        
+
         serv_gets(buf);
 
         print_ok();
@@ -595,7 +612,7 @@ int md_type(char *filename)
 {
         char *extension;
 
-        extension = find_extension(filename, NULL, 0);
+        extension = find_extension(filename);
         if (!strcasecmp(extension, "jpg") ||
             !strcasecmp(extension, "jpeg") ||
             !strcasecmp(extension, "png") ||

@@ -35,6 +35,7 @@
 #include "socket_citta.h"
 #include "utente.h"
 #include "utente_cmd.h"
+#include "string_utils.h"
 #include "ut_rooms.h"
 #include "utility.h"
 
@@ -77,7 +78,7 @@ void stats_new_user(void);
 void stats_new_validation(void);
 
 /******************************************************************************
-******************************************************************************/
+ ******************************************************************************/
 /*
  * Procedura di Login, passo 1.
  * Il client comunica al server il nome dell'utente.
@@ -97,7 +98,7 @@ void cmd_user(struct sessione *t, char *nome)
         bool is_new_user = false;
         bool is_first_user = false;
         bool is_validated = false;
-	int code;
+        int code;
 
         if (t->logged_in || (strlen(nome) == 0)) {
                 cprintf(t, "%d\n", ERROR);
@@ -115,7 +116,7 @@ void cmd_user(struct sessione *t, char *nome)
                 /* E' un utente della BBS? */
                 utente = trova_utente(nome);
                 if (utente == NULL) {
-			/* Abbiamo un nuovo utente! */
+                        /* Abbiamo un nuovo utente! */
                         is_new_user = true;
                         code = NUOVO_UTENTE;
                         is_first_user = (ultimo_utente == NULL);
@@ -124,7 +125,7 @@ void cmd_user(struct sessione *t, char *nome)
                         is_validated = (utente->val_key[0] == 0);
                         code = is_validated ? UT_VALIDATO : NON_VALIDATO;
 #else
-			utente->val_key[0] = 0;
+                        utente->val_key[0] = 0;
                         is_validated = true;
                         code = UT_VALIDATO;
 #endif
@@ -150,7 +151,7 @@ void cmd_usr1(struct sessione *t, char *arg)
         bool wrong_pwd = false;
         bool is_guest = false;
         bool is_new_user = false;
-	bool is_first_user = false;
+        bool is_first_user = false;
         bool terms_accepted = false;
         struct sessione  *s;
         struct lista_ut *punto = NULL;
@@ -173,7 +174,7 @@ void cmd_usr1(struct sessione *t, char *arg)
         } else {
                 extractn(passwd, arg, 1, MAXLEN_PASSWORD);
                 utente = trova_utente(nome);
-                if (utente == NULL) { /* E' un utente della BBS? */
+                if (utente == NULL) {   /* E' un utente della BBS? */
                         /* Abbiamo un nuovo utente!                */
                         is_new_user = true;
                         citta_logf("Nuovo utente [%s].", nome);
@@ -195,8 +196,8 @@ void cmd_usr1(struct sessione *t, char *arg)
                         utente = du_new_user(nome, passwd, is_first_user);
                         punto->dati = utente;
 
-                        /* Si mette subito in stato di registrazione,
-                         * altrimenti potrebbe essere possibile bypassarla. */
+                        /* Go straight to CON_CONSENT otherwise the user     *
+                         * could skip the consent form and the registration. */
                         t->stato = CON_CONSENT;
                         t->occupato = 1;
                         stats_new_user();
@@ -204,7 +205,8 @@ void cmd_usr1(struct sessione *t, char *arg)
                         /* Verifica la Password */
                         if (check_password(passwd, utente->password)) {
                                 /* Killa l'alter ego se presente */
-                                if (( (s = collegato(nome)) != NULL) && (s != t)) {
+                                if (( (s = collegato(nome)) != NULL)
+                                    && (s != t)) {
                                         s->cancella = true;
                                 }
 #ifdef USE_POP3
@@ -251,14 +253,14 @@ void cmd_usr1(struct sessione *t, char *arg)
                 }
 
                 /* TODO: this is for compatibility only, send simply OK     */
-		if (is_first_user) {
+                if (is_first_user) {
                         code = OK + PRIMO_UT;
                 }
                 cprintf(t, "%d Login eseguito.|%d|%d|%d\n", code,
                         is_first_user, terms_accepted, t->utente->registrato);
 
                 /* Update num connected users and server statistics */
-		logged_users++;
+                logged_users++;
                 stats_new_login(logged_users);
         }
 }
@@ -276,23 +278,23 @@ void cmd_chek(struct sessione *t)
         struct dati_ut *ut;
         int ut_conn = 0;
 
-	if ((t->utente == NULL) || (t->utente->livello <= LVL_OSPITE)) {
-		cprintf(t, "%d\n", ERROR);
-		return;
-	}
+        if ((t->utente == NULL) || (t->utente->livello <= LVL_OSPITE)) {
+                cprintf(t, "%d\n", ERROR);
+                return;
+        }
         ut = t->utente;
 
-	/* Notifica a tutti che l'utente e' entrato (oh.. che bello!) */
-	sprintf(buf, "%d %c%s\n", LGIN, SESSO(ut), ut->nome);
+        /* Notifica a tutti che l'utente e' entrato (oh.. che bello!) */
+        sprintf(buf, "%d %c%s\n", LGIN, SESSO(ut), ut->nome);
         buflen = strlen(buf);
-	for (punto = lista_sessioni; punto; punto = punto->prossima) {
+        for (punto = lista_sessioni; punto; punto = punto->prossima) {
                 ut_conn++;
-		if ((punto->utente) && (punto != t) &&
-		    (punto->utente->flags[3] & UT_LION)) {
-			metti_in_coda(&punto->output, buf, buflen);
-			punto->bytes_out += buflen;
-		}
-	}
+                if ((punto->utente) && (punto != t) &&
+                    (punto->utente->flags[3] & UT_LION)) {
+                        metti_in_coda(&punto->output, buf, buflen);
+                        punto->bytes_out += buflen;
+                }
+        }
 
         /* Cambiare, completare... listing follows, etc... */
         t->logged_in = true;
@@ -300,9 +302,9 @@ void cmd_chek(struct sessione *t)
         t->occupato = 0;
         cprintf(t, "%d %d|%ld|%d|%d|%ld|%s|%d\n", OK, ut_conn, ut->matricola,
                 ut->livello, ut->chiamate, ut->lastcall, ut->lasthost,
-		mail_new(t));
-	t->utente->lastcall = t->ora_login;
-	t->utente->sflags[0] &= ~SUT_NEWS;
+                mail_new(t));
+        t->utente->lastcall = t->ora_login;
+        t->utente->sflags[0] &= ~SUT_NEWS;
 }
 
 /*
@@ -310,18 +312,18 @@ void cmd_chek(struct sessione *t)
  */
 void cmd_quit(struct sessione *t)
 {
-	time_t time_online;
+        time_t time_online;
 
-	notify_logout(t, LGOT);
+        notify_logout(t, LGOT);
         t->stato = CON_CHIUSA;
-	/* Aggiorna ultima chiamata, ultimo host e tempo online */
-	/*        strcpy(t->utente->lasthost, t->host); */
-	time_online = (time(0) - t->ora_login);
+        /* Aggiorna ultima chiamata, ultimo host e tempo online */
+        /*        strcpy(t->utente->lasthost, t->host); */
+        time_online = (time(0) - t->ora_login);
         cprintf(t, "%d %ld|%ld|%ld|%ld\n", OK, t->num_cmd, t->bytes_in,
-		t->bytes_out, time_online);
+                t->bytes_out, time_online);
         if ((t->utente) && (!strcmp(t->utente->nome, "Ospite")
-			    || !strcmp(t->utente->nome, "Guest")))
-		Free(t->utente);
+                            || !strcmp(t->utente->nome, "Guest")))
+                Free(t->utente);
 }
 
 /*
@@ -332,7 +334,7 @@ void cmd_prfl(struct sessione *t, char *nome)
         struct dati_ut *utente;
         struct sessione *sess;
         struct room *r;
-	char buf[LBUF], buf1[LBUF];
+        char buf[LBUF], buf1[LBUF];
         char connesso = 0;
 
         utente = trova_utente(nome);
@@ -350,7 +352,7 @@ void cmd_prfl(struct sessione *t, char *nome)
 
         /* 1 - dati privati */
         if ((t->utente == utente) || ((utente->flags[2] & UT_VFRIEND) &&
-				      is_friend(t->utente, utente)))
+                                      is_friend(t->utente, utente)))
                 sprintf(buf, "%d 1|%s|%s|%s|%s|%s|%s|%s|%s|%c\n", OK,
                         utente->nome_reale, utente->via, utente->cap,
                         utente->citta, utente->stato, utente->tel,
@@ -395,35 +397,35 @@ void cmd_prfl(struct sessione *t, char *nome)
                 utente->matricola, utente->chiamate, utente->post,
                 utente->x_msg, utente->firstcall, utente->time_online,
                 utente->lastcall, utente->lasthost, (sess ? sess->ora_login:0),
-		utente->mail, utente->chat, (utente->flags[7] & UT_BLOG_ON)
-		? 1 : 0);
+                utente->mail, utente->chat, (utente->flags[7] & UT_BLOG_ON)
+                ? 1 : 0);
 
         /* 6 - Dati upload/download file */
         fs_send_ustats(t, utente->matricola);
 
-	/* 3 - Room Aide in...   */
+        /* 3 - Room Aide in...   */
         cprintf(t, "%d 3\n", SEGUE_LISTA);
-	for (r = lista_room.first; r; r = r->next)
-		/* Non e' efficiente: cambiare!!! */
-		if (utr_getf(utente->matricola, r->pos) & UTR_ROOMAIDE)
-			cprintf(t, "%d %s\n", OK, r->data->name);
-	cprintf(t, "000\n");
+        for (r = lista_room.first; r; r = r->next)
+                /* Non e' efficiente: cambiare!!! */
+                if (utr_getf(utente->matricola, r->pos) & UTR_ROOMAIDE)
+                        cprintf(t, "%d %s\n", OK, r->data->name);
+        cprintf(t, "000\n");
 
-	/* 4 - Room Helper in... */
+        /* 4 - Room Helper in... */
         cprintf(t, "%d 4\n", SEGUE_LISTA);
-	for (r = lista_room.first; r; r = r->next)
-		if (utr_getf(utente->matricola, r->pos) & UTR_ROOMHELPER)
-			cprintf(t, "%d %s\n", OK, r->data->name);
-	cprintf(t, "000\n");
+        for (r = lista_room.first; r; r = r->next)
+                if (utr_getf(utente->matricola, r->pos) & UTR_ROOMHELPER)
+                        cprintf(t, "%d %s\n", OK, r->data->name);
+        cprintf(t, "000\n");
 
         /* 5 - Dati connessione attuale */
         if (connesso)
                 cprintf(t, "%d 5|%s|%ld|%d|%d|%d|%d|%d\n", OK, sess->host,
                         sess->ora_login, sess->occupato, sess->idle.cicli,
                         sess->idle.min, sess->idle.ore,
-			(sess->stato == CON_LOCK) ? 1 : 0);
+                        (sess->stato == CON_LOCK) ? 1 : 0);
 
-	cprintf(t, "000\n");
+        cprintf(t, "000\n");
 }
 
 /*
@@ -436,80 +438,121 @@ void cmd_rusr(struct sessione *t)
         cprintf(t, "%d Lista utenti (RUSR)\n", SEGUE_LISTA);
         for (punto = lista_utenti; punto; punto = punto->prossimo)
                 cprintf(t, "%d %s|%d|%d|%ld|%d|%d|%d|%d\n", OK,
-			punto->dati->nome, punto->dati->chiamate,
-			punto->dati->post, punto->dati->lastcall,
-			punto->dati->livello, punto->dati->x_msg,
-			punto->dati->mail, punto->dati->chat);
-	cprintf(t, "000\n");
+                        punto->dati->nome, punto->dati->chiamate,
+                        punto->dati->post, punto->dati->lastcall,
+                        punto->dati->livello, punto->dati->x_msg,
+                        punto->dati->mail, punto->dati->chat);
+        cprintf(t, "000\n");
 }
 
+
 /*
- * Riceve i dati di registrazione da parte del client e li immette nella
- * stuttura dati dell'utente.
- * Syntax: "RGST mode|nome_reale|via|citta|stato|cap|tel|email|url|sesso"
- *         mode = 0 : non mantiene le modifiche, 1 : effettua le modifiche
+ * Receives the registrarion data from the client, validates it and stores it
+ * in the user data structure. The connection must be in the CON_REG state,
+ * and is set to CON_COMANDI unless the user is not successfully registered
+ * at the end of the process, in which case it stays in state CON_REG.
+ * Syntax: "RGST mode|real_name|street|town|country|cap|tel|email|url|sex"
+ *         mode = 0 : do not preserve the change, 1 : perform the changes
+ * Mode 0 is necessary for registered users that edit their registration and
+ * do not want to keep the changes.
+ * Returns: "OK" if the operation is successfull,
+ *          "ERROR msg|name|email|taken|reg" where 'name' / 'email' is true
+ *          if the name / email is not valid, 'taken' is true if the email is
+ *          already in use by another user (to avoid double accounts), 'reg'
+ *          is true if the user is currently registered.
+ * NOTE: the condition that the connection is in state CON_REG is not really
+ * necessary, and by removing it we could eliminate the need for command BREG.
  */
 void cmd_rgst(struct sessione *t, char *buf)
 {
-        char sesso;
-	int stato;
+        bool email_taken = false;
 
-	stato = t->stato;
-        t->occupato = 0;
-        t->stato = CON_COMANDI;
-
-	if (stato != CON_REG) {
-		cprintf(t, "%d\n", ERROR+WRONG_STATE);
-		return;
-	}
-
-	if (extract_int(buf,0) == 0) {
-                if (t->utente->registrato) {
-                        cprintf(t, "%d\n", OK);
-                } else {
-                        cprintf(t, "%d registration data expected\n", ERROR);
-                }
-		return;
-	}
-
-        /* TODO Aggiungere controllo su utente->registrato                   */
-	/* Se viene modificato l'email, e' necessaria una nuova validazione. */
-        /* Inoltre se nome_reale non viene fornito, errore.                  */
-        extractn(t->utente->nome_reale, buf, 1, MAXLEN_RNAME);
-        extractn(t->utente->via, buf, 2, MAXLEN_VIA);
-        extractn(t->utente->citta, buf, 3, MAXLEN_CITTA);
-        extractn(t->utente->stato, buf, 4, MAXLEN_STATO);
-        extractn(t->utente->cap, buf, 5, MAXLEN_CAP);
-        extractn(t->utente->tel, buf, 6, MAXLEN_TEL);
-        extractn(t->utente->email, buf, 7, MAXLEN_EMAIL);
-        extractn(t->utente->url, buf, 8, MAXLEN_URL);
-        sesso = extract_int(buf, 9);
-#ifdef NO_DOUBLE_EMAIL
-        if (!t->utente->registrato && !check_double_email(t->utente->email)) {
-                citta_logf("SECURE user [%s] is reusing email [%s]",
-                           t->utente->nome, t->utente->email);
-                cprintf(t, "%d\n", ERROR);
+        if (t->stato != CON_REG) {
+                cprintf(t, "%d wrong state||||\n", ERROR+WRONG_STATE);
                 return;
         }
-#endif /*NO_DOUBLE_EMAIL*/
 
-        t->utente->registrato = true;
-        if (sesso) {
-                t->utente->sflags[0] |= SUT_SEX;
-        } else {
-                t->utente->sflags[0] &= ~SUT_SEX;
+        bool save_data = extract_bool(buf, 0);
+        if (!save_data) {
+                if (!t->utente->registrato) {
+                        /* stay in CON_REG state, the user must register */
+                        cprintf(t, "%d data expected||||0\n", ERROR);
+                } else {
+                        t->occupato = 0;
+                        t->stato = CON_COMANDI;
+                        cprintf(t, "%d\n", OK);
+                }
+                return;
         }
-        cprintf(t, "%d\n", OK);
+
+        char real_name[MAXLEN_RNAME + 1];
+        char email[MAXLEN_EMAIL + 1];
+        extractn(real_name, buf, 1, MAXLEN_RNAME);
+        extractn(email, buf, 7, MAXLEN_EMAIL);
+        bool valid_name = is_valid_full_name(real_name);
+        bool valid_email = is_valid_email(email);
+
+        if (!strcmp(email, t->utente->email)) {
+#ifdef USE_VALIDATION_KEY
+                /* TODO The email chaged: generate new validation key. */
+#endif
+
+#ifdef NO_DOUBLE_EMAIL
+                /*
+                  TODO eliminate old email from the list of used emails or
+                  else changing from email A to B prevents to go back to A
+
+                  TODO the check should be perfored always, not just for new
+                  users.
+                */
+                if (!t->utente->registrato && !check_double_email(t->utente->email)) {
+                        citta_logf("SECURE user [%s] is reusing email [%s]",
+                                   t->utente->nome, t->utente->email);
+                        valid_email = false;
+                        email_taken = true;
+                }
+#endif /*NO_DOUBLE_EMAIL*/
+        }
+
+        if (valid_name && valid_email) {
+                strncpy(t->utente->nome_reale, real_name, MAXLEN_RNAME);
+                strncpy(t->utente->email, email, MAXLEN_EMAIL);
+                extractn(t->utente->via, buf, 2, MAXLEN_VIA);
+                extractn(t->utente->citta, buf, 3, MAXLEN_CITTA);
+                extractn(t->utente->stato, buf, 4, MAXLEN_STATO);
+                extractn(t->utente->cap, buf, 5, MAXLEN_CAP);
+                extractn(t->utente->tel, buf, 6, MAXLEN_TEL);
+                extractn(t->utente->url, buf, 8, MAXLEN_URL);
+                bool sex = extract_bool(buf, 9);
+                if (sex) {
+                        t->utente->sflags[0] |= SUT_SEX;
+                } else {
+                        t->utente->sflags[0] &= ~SUT_SEX;
+                }
+
+                t->utente->registrato = true;
+                t->occupato = 0;
+                t->stato = CON_COMANDI;
+                cprintf(t, "%d\n", OK);
+        } else {
+                if (t->utente->registrato) {
+                        t->occupato = 0;
+                        t->stato = CON_COMANDI;
+                }
+                cprintf(t, "%d invalid data|%d|%d|%d|%d\n", ERROR, !valid_name,
+                        !valid_email, email_taken, t->utente->registrato);
+        }
 }
+
 
 /*
  * Mette l'utente nello stato di registrazione
  */
 void cmd_breg(struct sessione *t)
 {
-	t->stato = CON_REG;
-	t->occupato = 1;
-	cprintf(t, "%d\n", OK);
+        t->stato = CON_REG;
+        t->occupato = 1;
+        cprintf(t, "%d\n", OK);
 }
 
 /*
@@ -519,10 +562,10 @@ void cmd_greg(struct sessione *t)
 {
         struct dati_ut *ut;
 
-	ut = t->utente;
-	cprintf(t, "%d %s|%s|%s|%s|%s|%s|%s|%s|%d\n", OK, ut->nome_reale,
-		ut->via, ut->citta, ut->cap, ut->stato, ut->tel, ut->email,
-		ut->url, (ut->sflags[0]) & SUT_SEX);
+        ut = t->utente;
+        cprintf(t, "%d %s|%s|%s|%s|%s|%s|%s|%s|%d\n", OK, ut->nome_reale,
+                ut->via, ut->citta, ut->cap, ut->stato, ut->tel, ut->email,
+                ut->url, (ut->sflags[0]) & SUT_SEX);
 }
 
 /*
@@ -600,7 +643,7 @@ void cmd_gcst(struct sessione *t, char *buf)
                  * no need to notify it again...             */
         }
 
-	cprintf(t, "%d %d\n", OK, user_needs_registration);
+        cprintf(t, "%d %d\n", OK, user_needs_registration);
 }
 
 /*
@@ -619,8 +662,9 @@ char cmd_cusr(struct sessione *t, char *nome, char notifica)
                 if (notifica) {
                         cprintf(t, "%d\n", ERROR+ACC_PROIBITO);
                         if (t->utente)
-				citta_logf("SECURE: CUSR non autorizzato di [%s] da [%s].",
-				     t->utente->nome, t->host);
+                                citta_logf(
+"SECURE: CUSR non autorizzato di [%s] da [%s].",
+                                           t->utente->nome, t->host);
                 }
                 return ok;
         }
@@ -641,7 +685,7 @@ char cmd_cusr(struct sessione *t, char *nome, char notifica)
                 cprintf(t, "%d %d\n", OK, ok);
                 if (ok)
                         citta_logf("KO: [%s] cacciato da [%s].", nome,
-			     t->utente->nome);
+                                   t->utente->nome);
         }
         return(ok);
 }
@@ -694,7 +738,7 @@ void cmd_kusr(struct sessione *t, char *nome)
         }
         if (ok)
                 citta_logf("KILL: [%s] e' stato eliminato da [%s].", nome,
-		     t->utente->nome);
+                           t->utente->nome);
 
         /* Notifica il risultato al client */
         cprintf(t, "%d %d\n", OK, ok);
@@ -707,68 +751,77 @@ void cmd_eusr(struct sessione *t, char *buf)
 {
         char nome[MAXLEN_UTNAME];
         char newnick[MAXLEN_UTNAME];
-	int lvl, spp;
+        int lvl, spp;
         struct dati_ut *utente;
         struct text *txt;
         struct room *room;
         struct sessione *s;
 
-	extractn(nome, buf, 0, MAXLEN_UTNAME);
-	utente = trova_utente(nome);
-	if (utente == NULL)
-		cprintf(t, "%d No '%s' user.\n", ERROR+NO_SUCH_USER, nome);
-	else if (utente->livello > t->utente->livello)
-        	cprintf(t, "%d\n", ERROR+ACC_PROIBITO);
-	else {
-		lvl = extract_int(buf, 9);
-		if (lvl > t->utente->livello) {
-			cprintf(t, "%d\n", ERROR+ARG_NON_VAL);
-		} else {
-			extractn(utente->nome_reale, buf, 1, MAXLEN_RNAME);
-			extractn(utente->via, buf, 2, MAXLEN_VIA);
-			extractn(utente->citta, buf, 3, MAXLEN_CITTA);
-			extractn(utente->stato, buf, 4, MAXLEN_STATO);
-			extractn(utente->cap, buf, 5, MAXLEN_CAP);
-			extractn(utente->tel, buf, 6, MAXLEN_TEL);
-			extractn(utente->email, buf, 7, MAXLEN_EMAIL);
-			extractn(utente->url, buf, 8, MAXLEN_URL);
-			spp = extract_int(buf, 11);
-			utente->sflags[1] = extract_int(buf, 12);
-			if (spp > 255)
+        extractn(nome, buf, 0, MAXLEN_UTNAME);
+        utente = trova_utente(nome);
+        if (utente == NULL)
+                cprintf(t, "%d No '%s' user.\n", ERROR+NO_SUCH_USER, nome);
+        else if (utente->livello > t->utente->livello)
+                cprintf(t, "%d\n", ERROR+ACC_PROIBITO);
+        else {
+                lvl = extract_int(buf, 9);
+                if (lvl > t->utente->livello) {
+                        cprintf(t, "%d\n", ERROR+ARG_NON_VAL);
+                } else {
+                        extractn(utente->nome_reale, buf, 1, MAXLEN_RNAME);
+                        extractn(utente->via, buf, 2, MAXLEN_VIA);
+                        extractn(utente->citta, buf, 3, MAXLEN_CITTA);
+                        extractn(utente->stato, buf, 4, MAXLEN_STATO);
+                        extractn(utente->cap, buf, 5, MAXLEN_CAP);
+                        extractn(utente->tel, buf, 6, MAXLEN_TEL);
+                        extractn(utente->email, buf, 7, MAXLEN_EMAIL);
+                        extractn(utente->url, buf, 8, MAXLEN_URL);
+                        spp = extract_int(buf, 11);
+                        utente->sflags[1] = extract_int(buf, 12);
+                        if (spp > 255)
                                 spp = 255;
-			utente->secondi_per_post = spp;
-			utente->livello = lvl;
-			if (extract_int(buf, 10) && (utente->val_key[0])) {
-				utente->val_key[0] = 0;
-				if (utente->livello <= LIVELLO_INIZIALE)
-					utente->livello = LIVELLO_VALIDATO;
-				citta_logf("VALIDATE: validazione di [%s].",
-				     utente->nome);
-				/* Notifica all'utente interessato... */
+                        utente->secondi_per_post = spp;
+                        utente->livello = lvl;
+                        if (extract_int(buf, 10) && (utente->val_key[0])) {
+                                utente->val_key[0] = 0;
+                                if (utente->livello <= LIVELLO_INIZIALE)
+                                        utente->livello = LIVELLO_VALIDATO;
+                                citta_logf("VALIDATE: validazione di [%s].",
+                                           utente->nome);
+                                /* Notifica all'utente interessato... */
                                 stats_new_validation();
-			}
-			extractn(newnick, buf, 13, MAXLEN_UTNAME);
+                        }
+                        extractn(newnick, buf, 13, MAXLEN_UTNAME);
                         if (*newnick && strncmp(nome, newnick, MAXLEN_UTNAME)
                             && (trova_utente(newnick) == NULL)) {
-                                citta_logf("Cambiamento nick [%s] --> [%s]", nome,
-                                      newnick);
+                                citta_logf("Cambiamento nick [%s] --> [%s]",
+                                           nome, newnick);
                                 if ( (room = room_find(lobby))) {
                                         txt = txt_create();
-                                        txt_putf(txt, "L'utente [%s] ha cambiato nome, e si collegher&agrave;", nome);
-                                        txt_putf(txt, "d'ora in avanti col nuovo nome <b>%s</b>.", newnick);
-                                        citta_post(room, "Un utente ha cambiato nickname!", txt);
+                                        txt_putf(txt,
+"L'utente [%s] ha cambiato nome, e si collegher&agrave;",
+                                                 nome);
+                                        txt_putf(txt,
+"d'ora in avanti col nuovo nome <b>%s</b>.",
+                                                 newnick);
+                                        citta_post(room,
+                                            "Un utente ha cambiato nickname!",
+                                                   txt);
                                         txt_free(&txt);
                                 }
                                 txt = txt_create();
-                                txt_putf(txt, "Il nickname del tuo utente [%s]", nome);
-				txt_putf(txt, "e` stato cambiato in [%s].",
-					 newnick);
+                                txt_putf(txt,
+                                         "Il nickname del tuo utente [%s]",
+                                         nome);
+                                txt_putf(txt, "e` stato cambiato in [%s].",
+                                         newnick);
                                 if (!send_email(txt, NULL,
-                                         "Il tuo nickname e` stato modificato!",
+"Il tuo nickname e` stato modificato!",
                                                 utente->email, EMAIL_SINGLE))
-                                        citta_logf("Email di notifica %s -> %s non inviato.",
-                                              nome, newnick);
-				txt_free(&txt);
+                                        citta_logf(
+"Email di notifica %s -> %s non inviato.",
+                                                   nome, newnick);
+                                txt_free(&txt);
                                 blog_newnick(utente, newnick);
                                 strncpy(utente->nome, newnick, MAXLEN_UTNAME);
                         }
@@ -776,9 +829,9 @@ void cmd_eusr(struct sessione *t, char *buf)
                         if ( (s = collegato_n(utente->matricola)))
                                 cprintf(s, "%d\n", RFLG);
 
-			cprintf(t, "%d %s\n", OK, nome);
-		}
-	}
+                        cprintf(t, "%d %s\n", OK, nome);
+                }
+        }
         t->occupato = 0;
         t->stato = CON_COMANDI;
 }
@@ -791,20 +844,20 @@ void cmd_gusr(struct sessione *t, char *nome)
 {
         struct dati_ut *ut;
 
-	t->occupato = 1;
-	t->stato = CON_EUSR;
-	ut = trova_utente(nome);
-	if (ut == NULL) {
-		cprintf(t, "%d l'utente %s non esiste.\n", ERROR+NO_SUCH_USER,
-			nome);
+        t->occupato = 1;
+        t->stato = CON_EUSR;
+        ut = trova_utente(nome);
+        if (ut == NULL) {
+                cprintf(t, "%d l'utente %s non esiste.\n", ERROR+NO_SUCH_USER,
+                        nome);
                 t->occupato = 0;
                 t->stato = CON_COMANDI;
-		return;
-	}
-	cprintf(t, "%d %s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%d|%d\n", OK, ut->nome_reale,
-		ut->via, ut->citta, ut->cap, ut->stato, ut->tel, ut->email,
-		ut->url, ut->livello, ut->val_key, ut->secondi_per_post,
-                ut->sflags[1]);
+                return;
+        }
+        cprintf(t, "%d %s|%s|%s|%s|%s|%s|%s|%s|%d|%s|%d|%d\n", OK,
+                ut->nome_reale, ut->via, ut->citta, ut->cap, ut->stato,
+                ut->tel, ut->email, ut->url, ut->livello, ut->val_key,
+                ut->secondi_per_post, ut->sflags[1]);
 }
 
 /*
@@ -814,13 +867,14 @@ void cmd_gusr(struct sessione *t, char *nome)
 void cmd_aval(struct sessione *t, char *vk)
 {
         if (!strcmp(t->utente->val_key, vk)) {
-		/* Impedisce di entrare a ospite con livello */
-		/* superiore modificando il client */
+                /* Impedisce di entrare a ospite con livello */
+                /* superiore modificando il client */
                 /* Validation key corretta */
                 t->utente->val_key[0] = 0;
                 if (t->utente->livello <= LIVELLO_INIZIALE)
                         t->utente->livello = LIVELLO_VALIDATO;
-                citta_logf("VALIDATE: Auto-validazione di [%s].", t->utente->nome);
+                citta_logf("VALIDATE: Auto-validazione di [%s].",
+                           t->utente->nome);
                 cprintf(t, "%d\n", OK);
                 stats_new_validation();
         } else
@@ -836,24 +890,24 @@ void cmd_gval(struct sessione *t)
 #ifdef USE_VALIDATION_KEY
         char valkey[VALKEYLEN+1];
 
-	if (t->utente->val_key[0] != 0) {
+        if (t->utente->val_key[0] != 0) {
                 /* genera chiave validazione */
                 gen_rand_string(valkey, VALKEYLEN);
                 strcpy(t->utente->val_key, valkey);
                 /* questa puo' servire se il mail non arriva: */
-                citta_logf("VALIDATE: Valkey [%s] per [%s].", t->utente->val_key,
-		     t->utente->nome);
+                citta_logf("VALIDATE: Valkey [%s] per [%s].",
+                           t->utente->val_key, t->utente->nome);
                 /* Invia la val_key per posta elettronica */
                 invia_val_key(valkey, t->utente->email);
                 cprintf(t, "%d\n", OK);
         } else { /* Prima l'utente si deve registrare! */
                 cprintf(t, "%d Utente gia' validato.\n", ERROR);
-		citta_logf("SECURE: Richiesta valkey da [%s] validato.",
-		     t->utente->nome);
+                citta_logf("SECURE: Richiesta valkey da [%s] validato.",
+                           t->utente->nome);
         }
 #else
-	t->utente->val_key[0] = 0;
-	cprintf(t, "%d\n", OK);
+        t->utente->val_key[0] = 0;
+        cprintf(t, "%d\n", OK);
 #endif
 }
 
@@ -862,15 +916,15 @@ void cmd_gval(struct sessione *t)
  */
 void cmd_pwdc(struct sessione *t, char *pwd)
 {
-	if ((t->utente == NULL) || (t->utente->livello == LVL_OSPITE)) {
-		cprintf(t, "%d\n", ERROR);
-		return;
-	}
+        if ((t->utente == NULL) || (t->utente->livello == LVL_OSPITE)) {
+                cprintf(t, "%d\n", ERROR);
+                return;
+        }
         if (check_password(pwd, t->utente->password))
                 cprintf(t, "%d\n", OK);
         else {
-		citta_logf("SECURE: PWDC, Pwd errata per [%s] da [%s]",
-		     t->utente->nome, t->host);
+                citta_logf("SECURE: PWDC, Pwd errata per [%s] da [%s]",
+                           t->utente->nome, t->host);
                 cprintf(t, "%d\n", ERROR);
         }
 }
@@ -898,66 +952,69 @@ void cmd_pwdn(struct sessione *t, char *buf)
 void cmd_pwdu(struct sessione *t, char *buf)
 {
         char pwd[MAXLEN_PASSWORD], newpwd[MAXLEN_PASSWORD],
-	     nome[MAXLEN_UTNAME], buf1[LBUF];
+                nome[MAXLEN_UTNAME], buf1[LBUF];
         struct dati_ut *utente;
         char *tmpf, *tmpf2;
 #ifdef MKSTEMP
-	int fd1, fd2;
+        int fd1, fd2;
 #endif
         FILE *tf;
 
-	extractn(pwd, buf, 0, MAXLEN_PASSWORD);
-	extractn(nome, buf, 1, MAXLEN_UTNAME);
-	utente = trova_utente(nome);
-	if (utente == NULL) {
-		cprintf(t, "%d L'utente [%s] non esiste.\n",
-			ERROR+NO_SUCH_USER, nome);
-		return;
-	}
-	if (check_password(pwd, t->utente->password)) {
-		/* Genera la nuova password di 8 caratteri */
-		gen_rand_string(newpwd, 8);
-		/* Invia la nuova password all'utente via Email */
+        extractn(pwd, buf, 0, MAXLEN_PASSWORD);
+        extractn(nome, buf, 1, MAXLEN_UTNAME);
+        utente = trova_utente(nome);
+        if (utente == NULL) {
+                cprintf(t, "%d L'utente [%s] non esiste.\n",
+                        ERROR+NO_SUCH_USER, nome);
+                return;
+        }
+        if (check_password(pwd, t->utente->password)) {
+                /* Genera la nuova password di 8 caratteri */
+                gen_rand_string(newpwd, 8);
+                /* Invia la nuova password all'utente via Email */
 #ifdef MKSTEMP
-		tmpf = Strdup(TEMP_PWDU_TEMPLATE);
-		tmpf2 = Strdup(TEMP_PWDU_TEMPLATE);
+                tmpf = Strdup(TEMP_PWDU_TEMPLATE);
+                tmpf2 = Strdup(TEMP_PWDU_TEMPLATE);
 
-		fd1 = mkstemp(tmpf);
-		fd2 = mkstemp(tmpf2);
-		close(fd1);
-		close(fd2);
+                fd1 = mkstemp(tmpf);
+                fd2 = mkstemp(tmpf2);
+                close(fd1);
+                close(fd2);
 #else
-		tmpf = tempnam(TMPDIR, PFX_PWDU);
-		tmpf2 = tempnam(TMPDIR, PFX_PWDU);
+                tmpf = tempnam(TMPDIR, PFX_PWDU);
+                tmpf2 = tempnam(TMPDIR, PFX_PWDU);
 #endif
-		sprintf(buf1, "cat ./lib/messaggi/pwdmail > %s", tmpf);
-		system(buf1);
-		tf = fopen(tmpf, "a");
-		fprintf(tf, "%s\n", newpwd);
-		fclose(tf);
-		sprintf(buf1, "cat %s ./lib/messaggi/endmail > %s",
-			tmpf, tmpf2);
-		system(buf1);
-		sprintf(buf1, "mail -s 'New Cittadella Password for %s' %s < %s\n", nome, utente->email, tmpf2);
-		if (system(buf1) == -1) {
-			citta_logf("SYSERR: New Password for [%s] not sent.",
-			     nome);
-			cprintf(t, "%d Could not send mail.\n",	ERROR);
-		} else {
-			cripta(newpwd);
-			strcpy(utente->password, newpwd);
-			citta_logf("AIDE: New Password for [%s] generated by [%s].",
-			     nome, t->utente->nome);
-			cprintf(t, "%d Pwd changed.\n", OK);
-		}
-		unlink(tmpf);
-		unlink(tmpf2);
-		Free(tmpf);
-		Free(tmpf2);
-	} else {
-		citta_logf("SECURE: [%s] PWDU fallito.", t->utente->nome);
-		cprintf(t, "%d User pwd wrong.\n", ERROR+PASSWORD);
-	}
+                sprintf(buf1, "cat ./lib/messaggi/pwdmail > %s", tmpf);
+                system(buf1);
+                tf = fopen(tmpf, "a");
+                fprintf(tf, "%s\n", newpwd);
+                fclose(tf);
+                sprintf(buf1, "cat %s ./lib/messaggi/endmail > %s",
+                        tmpf, tmpf2);
+                system(buf1);
+                sprintf(buf1,
+                        "mail -s 'New Cittadella Password for %s' %s < %s\n",
+                        nome, utente->email, tmpf2);
+                if (system(buf1) == -1) {
+                        citta_logf("SYSERR: New Password for [%s] not sent.",
+                                   nome);
+                        cprintf(t, "%d Could not send mail.\n",	ERROR);
+                } else {
+                        cripta(newpwd);
+                        strcpy(utente->password, newpwd);
+                        citta_logf(
+                             "AIDE: New Password for [%s] generated by [%s].",
+                                   nome, t->utente->nome);
+                        cprintf(t, "%d Pwd changed.\n", OK);
+                }
+                unlink(tmpf);
+                unlink(tmpf2);
+                Free(tmpf);
+                Free(tmpf2);
+        } else {
+                citta_logf("SECURE: [%s] PWDU fallito.", t->utente->nome);
+                cprintf(t, "%d User pwd wrong.\n", ERROR+PASSWORD);
+        }
 }
 
 /*
@@ -996,17 +1053,17 @@ void cmd_prfg (struct sessione *t, char *nome)
  */
 void cmd_cfgg(struct sessione *t, char *cmd)
 {
-	if (extract_int(cmd, 0))
-		t->stato = CON_CONF;
-	cprintf(t, "%d %d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d\n",
-		OK, t->utente->flags[0], t->utente->flags[1],
-		t->utente->flags[2], t->utente->flags[3],
-		t->utente->flags[4], t->utente->flags[5],
-		t->utente->flags[6], t->utente->flags[7],
-		t->utente->sflags[0], t->utente->sflags[1],
-		t->utente->sflags[2], t->utente->sflags[3],
-		t->utente->sflags[4], t->utente->sflags[5],
-		t->utente->sflags[6], t->utente->sflags[7]);
+        if (extract_int(cmd, 0))
+                t->stato = CON_CONF;
+        cprintf(t, "%d %d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d\n",
+                OK, t->utente->flags[0], t->utente->flags[1],
+                t->utente->flags[2], t->utente->flags[3],
+                t->utente->flags[4], t->utente->flags[5],
+                t->utente->flags[6], t->utente->flags[7],
+                t->utente->sflags[0], t->utente->sflags[1],
+                t->utente->sflags[2], t->utente->sflags[3],
+                t->utente->sflags[4], t->utente->sflags[5],
+                t->utente->sflags[6], t->utente->sflags[7]);
 }
 
 /*
@@ -1022,8 +1079,8 @@ void cmd_cfgp(struct sessione *t, char *arg)
         if (extract_int(arg, 0))
                 for (i = 0; i < 8; i++)
                         t->utente->flags[i] = (char) extract_int(arg, i+1);
-	cprintf(t, "%d\n", OK);
-	t->stato = CON_COMANDI;
+        cprintf(t, "%d\n", OK);
+        t->stato = CON_COMANDI;
 }
 
 void cmd_frdg(struct sessione *t)
@@ -1032,42 +1089,42 @@ void cmd_frdg(struct sessione *t)
         int i;
         long matr;
 
-	cprintf(t, "%d\n", SEGUE_LISTA);
-	for (i = 0; i < NFRIENDS; i++){
-		matr = t->utente->friends[i];
-		if (matr != -1) {
-			amico = trova_utente_n(matr);
-			if (amico != NULL)
-				cprintf(t, "%d %d|%ld|%s\n", OK, i, matr,
-					amico->nome);
-			else
-				/* Utente con quella matricola eliminato */
-				t->utente->friends[i] = -1;
-		}
-	}
-	cprintf(t, "000\n");
-	for (i = NFRIENDS; i < 2*NFRIENDS; i++){
-		matr = t->utente->friends[i];
-		if (matr != -1) {
-			amico = trova_utente_n(matr);
-			if (amico != NULL)
-				cprintf(t, "%d %d|%ld|%s\n", OK, i, matr,
-					amico->nome);
-			else
-				/* Utente con quella matricola eliminato */
-				t->utente->friends[i] = -1;
-		}
-	}
-	cprintf(t, "000\n");
+        cprintf(t, "%d\n", SEGUE_LISTA);
+        for (i = 0; i < NFRIENDS; i++){
+                matr = t->utente->friends[i];
+                if (matr != -1) {
+                        amico = trova_utente_n(matr);
+                        if (amico != NULL)
+                                cprintf(t, "%d %d|%ld|%s\n", OK, i, matr,
+                                        amico->nome);
+                        else
+                                /* Utente con quella matricola eliminato */
+                                t->utente->friends[i] = -1;
+                }
+        }
+        cprintf(t, "000\n");
+        for (i = NFRIENDS; i < 2*NFRIENDS; i++){
+                matr = t->utente->friends[i];
+                if (matr != -1) {
+                        amico = trova_utente_n(matr);
+                        if (amico != NULL)
+                                cprintf(t, "%d %d|%ld|%s\n", OK, i, matr,
+                                        amico->nome);
+                        else
+                                /* Utente con quella matricola eliminato */
+                                t->utente->friends[i] = -1;
+                }
+        }
+        cprintf(t, "000\n");
 }
 
 void cmd_frdp(struct sessione *t, char *arg)
 {
         int i;
 
-	for (i = 0; i < 2*NFRIENDS; i++)
-		t->utente->friends[i] = extract_long(arg, i);
-	cprintf(t, "%d\n", OK);
+        for (i = 0; i < 2*NFRIENDS; i++)
+                t->utente->friends[i] = extract_long(arg, i);
+        cprintf(t, "%d\n", OK);
 }
 
 void cmd_gmtr(struct sessione *t, char *nome)
@@ -1095,7 +1152,7 @@ void notify_logout(struct sessione *t, int tipo)
         struct sessione *punto;
 
         if ((t->stato > CON_LIC) && (t->utente) &&
-	    (t->utente->livello > LVL_OSPITE) && (t->utente->registrato)) {
+            (t->utente->livello > LVL_OSPITE) && (t->utente->registrato)) {
                 sprintf(buf, "%d %c%s\n", tipo, SESSO(t->utente),
                         t->utente->nome);
                 buflen = strlen(buf);
@@ -1104,8 +1161,8 @@ void notify_logout(struct sessione *t, int tipo)
                             && (punto->utente->flags[3] & UT_LION)) {
                                 metti_in_coda(&punto->output, buf, buflen);
 				punto->bytes_out += buflen;
-			}
-	}
+                        }
+        }
 }
 
 /* TODO move the stats function in another file */
@@ -1113,8 +1170,8 @@ void notify_logout(struct sessione *t, int tipo)
 /* updates server statistics after new successful login */
 void stats_new_login(int logged_users)
 {
-	struct tm *tmst;
-	time_t ora;
+        struct tm *tmst;
+        time_t ora;
 
         dati_server.login++;
         time(&ora);

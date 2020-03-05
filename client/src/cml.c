@@ -26,9 +26,10 @@
 #include "inkey.h"
 #include "macro.h"
 #include "metadata.h"
+#include "room_cmd.h" /* for blog_display_pre[] */
 #include "utility.h"
 
-/* 
+/*
         CML Specifications:
 
    Character entity references: &name;
@@ -68,7 +69,7 @@ int cml_print_max(const char *str, int max)
 {
 	char *out;
 	int len, col;
- 
+
 	col = getcolor();
 	out = cml_eval_max(str, &len, max, &col, NULL);
 	printf("%s", out);
@@ -232,8 +233,7 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 {
 	register const char *p;
 	register int curr_state = ET_TEXT;
-	const char *tmp;
-	char *out, *tmp2;
+	char *out;
 	size_t pos = 0, max = LBUF, len = 0;
 	int ret;
 
@@ -243,12 +243,13 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 	if (totlen != NULL)
 		*totlen = maxlen;
 
-	CREATE(out, char, max+1, 0);
+	CREATE(out, char, max + 1, 0);
 
 	for (p = str; *p; p++) {
+		/* TODO: why 40? is this enough in all cases (eg link?) */
 		if ((max - pos) < 40) { /* potrebbe non bastare il posto */
 			max *= 2;
-			RECREATE(out, char, max+1);
+			RECREATE(out, char, max + 1);
 		}
 		switch(*p) {
 		case '\\':
@@ -265,18 +266,20 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 			break;
 		case '<':
 			switch (curr_state) {
-			case ET_TEXT:
-				tmp = p;
-				tmp2 = cml_parse_tag(&tmp, color, mdlist);
-				if (tmp2 != NULL) {
-					p = (const char *)tmp2;
-					while(*p)
-						out[pos++] = *(p++);
-					p = tmp;
-					Free(tmp2);
-				} else
+			case ET_TEXT: {
+				const char *ptr = p;
+				char *tag = cml_parse_tag(&ptr, color, mdlist);
+				if (tag != NULL) {
+					const char *ptr2 = (const char *)tag;
+					while(*ptr2) {
+						out[pos++] = *(ptr2++);
+					}
+					p = ptr;
+					Free(tag);
+				} else {
 					out[pos++] = '<';
-				break;
+				}
+			} break;
 			case ET_ESCAPE:
 				out[pos++] = *p;
 				len++;
@@ -301,9 +304,9 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 				out[pos++] = *p;
 				len++;
 				break;
-			case ET_TEXT:
-				tmp = p;
-				ret = cml_entity(&tmp);
+			case ET_TEXT: {
+			        const char *ptr = p;
+				ret = cml_entity(&ptr);
 				if (ret != -1) {
 					if (HAS_ISO8859) {
 						out[pos++] = ret;
@@ -316,7 +319,7 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 							len++;
 						}
 					}
-					p = tmp;
+					p = ptr;
 					/* Si mangia il ';' finale se c'e' */
 					/* Prima o poi sara` obbligatorio. */
 					if (*(p+1) == ';')
@@ -325,6 +328,8 @@ char * cml_eval_max(const char *str, int *totlen, int maxlen, int *color,
 					out[pos++] = '&';
 					len++;
 				}
+			} break;
+			default:
 				break;
 			}
 			break;
@@ -370,7 +375,7 @@ int cml2editor(const char *str, int *outstr, int *outcol, int *totlen,
 	size_t pos = 0, len = 0;
 	int ret;
 
-	if (str == NULL) 
+	if (str == NULL)
 		return 0;
 
 	if (totlen != NULL)
@@ -499,7 +504,7 @@ static char * cml_parse_tag(const char **str, int *color,
 	register char *o;
 	register int curr_state;
 	char digit, tmp[LBUF], strbuf1[LBUF], strbuf2[LBUF];
-	int tmpcol;
+	int md_id, tmpcol;
         unsigned long size, flags, num;
 
 	tmpcol = *color;
@@ -653,14 +658,30 @@ static char * cml_parse_tag(const char **str, int *color,
 			switch (curr_state) {
 			case TAG_START:
                                 if (!strncmp(p+1, "oom=\"", 5)) {
+					/* room */
                                         p += 6;
                                         p = cml_getstr(strbuf1, p);
                                         if (*p != '>')
                                                 return NULL;
-                                        o += sprintf(o,
-                 "1;33;40m%s\x1b[0;33m>\x1b[0%d;3%d;4%dm",
-                                                     strbuf1, CC_ATTR(*color),
-                                                     CC_FG(*color), CC_BG(*color));
+					if (strbuf1[0] == ':') {
+						o += sprintf(o,
+"0;33;40m%s\x1b[1;33m%s\x1b[0;33m>\x1b[0%d;3%d;4%dm",
+							     blog_display_pre,
+							     strbuf1 + 1,
+							     CC_ATTR(*color),
+							     CC_FG(*color),
+							     CC_BG(*color)
+							     );
+					} else {
+						o += sprintf(o,
+"1;33;40m%s\x1b[0;33m>\x1b[0%d;3%d;4%dm",
+							     strbuf1,
+							     CC_ATTR(*color),
+							     CC_FG(*color),
+							     CC_BG(*color)
+							     );
+					}
+
                                         /*md_id = md_insert_room(mdlist, strbuf1);*/
                                         *str = p;
                                         return Strdup(tmp);
@@ -791,7 +812,7 @@ static char * cml_parse_tag(const char **str, int *color,
 				return Strdup(tmp);
 			}
 			*(o++) = ';';
-		        curr_state = TAG_START;	
+		        curr_state = TAG_START;
 			break;
 		}
 	}
@@ -1055,7 +1076,7 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
 {
 	const char *p;
 	char strbuf1[LBUF], strbuf2[LBUF];
-	/* int md_id; */
+	int md_id;
         unsigned long num, size, flags;
 
 	if (**str != '<')
@@ -1070,7 +1091,7 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                 }
                 if (*p != '>')
                         return;
-                /* md_id = md_insert_blogpost(mdlist, strbuf1,num); */
+                md_id = md_insert_blogpost(mdlist, strbuf1, num);
                 *str = p;
                 return;
         } else if (!strncmp(p, "file name=\"", 11)) {
@@ -1092,7 +1113,8 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
 
                 if (*p != '>')
                         return;
-                /* md_id = md_insert_file(mdlist, strbuf1, NULL, num, size, flags); */
+                md_id = md_insert_file(mdlist, strbuf1, NULL, num, size,
+				       flags);
                 *str = p;
                 return;
         } else if (!strncmp(p, "link=\"", 6)) {
@@ -1101,11 +1123,13 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                 if (!strncmp(p, " label=\"", 8)) {
                         p += 8;
                         p = cml_getstr(strbuf2, p);
-                } else
+                } else {
                         strbuf2[0] = 0;
-                if (*p != '>')
+		}
+                if (*p != '>') {
                         return;
-                /* md_id = md_insert_link(mdlist, strbuf1, strbuf2); */
+		}
+                md_id = md_insert_link(mdlist, strbuf1, strbuf2);
                 *str = p;
                 return;
         } else if (!strncmp(p, "post room=\"", 11)) {
@@ -1117,7 +1141,7 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                 }
                 if (*p != '>')
                         return;
-                /* md_id = md_insert_post(mdlist, strbuf1, num); */
+                md_id = md_insert_post(mdlist, strbuf1, num);
                 *str = p;
                 return;
         } else if (!strncmp(p, "room=\"", 6)) {
@@ -1125,7 +1149,7 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                 p = cml_getstr(strbuf1, p);
                 if (*p != '>')
                         return;
-                /* md_id = md_insert_room(mdlist, strbuf1); */
+                md_id = md_insert_room(mdlist, strbuf1);
                 *str = p;
                 return;
         } else if (!strncmp(p, "user=\"", 6)) {
@@ -1133,7 +1157,7 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                 p = cml_getstr(strbuf1, p);
                 if (*p != '>')
                         return;
-                /* md_id = md_insert_user(mdlist, strbuf1); */
+                md_id = md_insert_user(mdlist, strbuf1);
                 *str = p;
                 return;
         }

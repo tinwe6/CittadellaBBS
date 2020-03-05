@@ -116,7 +116,7 @@ int new_str_def_m(char *prompt, char *str, int max)
 /*
  * Prompt da stdin di un numero intero, positivo se neg = 0, accetta '-'
  * come primo carattere se neg = 1. Se enter, mette un \n alla fine.
- */ 
+ */
 void get_number(char *str, bool neg, bool enter)
 {
         int a, b;
@@ -124,10 +124,10 @@ void get_number(char *str, bool neg, bool enter)
         int max = NUM_DIGIT; /* numero massimo di cifre */
 
         b = strlen(str);
-        do { 
+        do {
                 a = 0;
                 a = inkey_sc(0);
-                if (isdigit(a) || (a == 8) || 
+                if (isdigit(a) || (a == 8) ||
                     (neg && (a == '-') && (b == 0))) {
                         if ((a == 8) && (b != 0)) {
                                 delchar();
@@ -153,7 +153,7 @@ void get_number(char *str, bool neg, bool enter)
 int get_int(bool enter)
 {
         char str[NUM_DIGIT+1]="";
-  
+
         get_number(str, false, enter);
         return strtol(str, NULL, 10);
 }
@@ -161,7 +161,7 @@ int get_int(bool enter)
 long get_long(bool enter)
 {
         char str[NUM_DIGIT+1]="";
-  
+
         get_number(str, false, enter);
         return strtol(str, NULL, 10);
 }
@@ -195,7 +195,7 @@ unsigned long new_ulong(char *prompt)
 int new_int_def(char *prompt, int def)
 {
         char str[NUM_DIGIT+1]="";
-        
+
         cml_printf("%s [%d]: ", prompt, def);
         get_number(str, false, true);
         if (str[0] == 0)
@@ -208,7 +208,7 @@ int new_int_def(char *prompt, int def)
 int new_sint_def(char *prompt, int def)
 {
         char str[NUM_DIGIT+1]="";
-  
+
         cml_printf("%s [%d]: ", prompt, def);
         get_number(str, true, true);
         if (str[0] == 0)
@@ -220,7 +220,7 @@ int new_sint_def(char *prompt, int def)
 long new_long_def(char *prompt, long def)
 {
         char str[NUM_DIGIT+1]="";
-        
+
         cml_printf("%s [%ld]: ", prompt, def);
         get_number(str, false, true);
         if (str[0] == '\0')
@@ -330,7 +330,7 @@ int hit_but_char(char but)
 void us_sleep(unsigned int n)
 {
         struct timeval timeout;
-        
+
         timeout.tv_sec = 0;
         timeout.tv_usec = n;
         select(0, NULL, NULL, NULL, &timeout);
@@ -381,7 +381,7 @@ void cleanline(void)
 char *space2under(char *stringa)
 {
     int i;
-        
+
     for(i = 0; stringa[i] != '\0'; i++)
             if (stringa[i] == ' ') stringa[i] = '_';
 
@@ -420,15 +420,12 @@ char * find_filename(char *path, char *filename, size_t size)
 /*
  * Extracts the file extension from a file path.
  * Returns the pointer to the starting character of the extension inside
- * 'path'. Additionally, if 'extension' is not NULL, it copies the extension
- * into it. 'size' is the size of the buffer 'extension'.
+ * 'path'.
  */
-char * find_extension(char *path, char *extension, size_t size)
+char * find_extension(char *path)
 {
         char *ptr;
         size_t pathlen, i;
-
-	assert(size > MAXLEN_FILENAME);
 
         ptr = path;
         pathlen = strlen(path);
@@ -439,9 +436,6 @@ char * find_extension(char *path, char *extension, size_t size)
 		        ptr = path;
 		}
         }
-        if (extension) {
-	        snprintf(extension, size, "%s", ptr);
-	}
         return ptr;
 }
 
@@ -474,7 +468,7 @@ int stampa_data_breve(time_t ora)
 void strdate(char *str, long ora)
 {
         struct tm *tmst;
-	
+
 	tmst = localtime(&ora);
 	sprintf(str, "%d %s %d alle %2.2d:%2.2d", tmst->tm_mday,
 		mese[tmst->tm_mon], 1900+tmst->tm_year, tmst->tm_hour,
@@ -487,7 +481,7 @@ void strdate(char *str, long ora)
 void stampa_datal(long ora)
 {
         struct tm *tmst;
-	
+
 	tmst = localtime(&ora);
 	printf("%d %s %d alle %2.2d:%2.2d", tmst->tm_mday, mese_esteso[tmst->tm_mon],
 	       1900+tmst->tm_year, tmst->tm_hour, tmst->tm_min);
@@ -499,7 +493,7 @@ void stampa_datal(long ora)
 void stampa_giorno(long ora)
 {
         struct tm *tmst;
-	
+
 	tmst = localtime(&ora);
 	cml_printf("<b>%d %s %d</b>", tmst->tm_mday, mese_esteso[tmst->tm_mon],
                    1900+tmst->tm_year);
@@ -511,7 +505,7 @@ void stampa_giorno(long ora)
 void stampa_datall(long ora)
 {
         struct tm *tmst;
-	
+
 	tmst = localtime(&ora);
 	cml_printf("%s %d %s %d alle %2.2d:%2.2d",
 		   settimana_esteso[tmst->tm_wday],
@@ -525,7 +519,7 @@ void stampa_datall(long ora)
 void stampa_data_smb(long ora)
 {
         struct tm *tmst;
-	
+
 	tmst = localtime(&ora);
 	printf("%s %d %s %d alle %2.2d:%2.2d", settimana[tmst->tm_wday],
 	       tmst->tm_mday, mese[tmst->tm_mon],
@@ -538,7 +532,7 @@ void stampa_data_smb(long ora)
 void stampa_ora(long ora)
 {
         struct tm *tmst;
-	
+
 	tmst = localtime(&ora);
 	cml_printf("%s %d %s %d - %2.2d:%2.2d:%2.2d",
 	       settimana_esteso[tmst->tm_wday], tmst->tm_mday,
@@ -576,14 +570,14 @@ int bisestile(int anno){
 	return(0);
 }
 
-/*  Se chiamata con pos=0 accetta ogni data 
- *  se chiamata con pos>0 accetta date successive a oggi 
- *  (con delta TIME_DELTA minimo di scarto) 
+/*  Se chiamata con pos=0 accetta ogni data
+ *  se chiamata con pos>0 accetta date successive a oggi
+ *  (con delta TIME_DELTA minimo di scarto)
  *  se pos<0 accetta date precedenti.
  *   date comprese tutte tra
  *  "The Epoch" e quanto parole di 32 bits permettono
  *  inoltre dà dei valori di default
- *  pari a 
+ *  pari a
  *
  *  -- primo = 1 settimana
  *  -- giorno = +7 giorni
@@ -612,7 +606,7 @@ int new_date(struct tm *data,int pos)
 			printf(_("La data dev'essere nel futuro (almeno il "));
 		else if (pos<0)
 			printf(_("La data dev'essere nel passato (al massimo il "));
-                
+
 		if (pos!=0){
                         stampa_data(minimo);
                         printf(")\n");
@@ -625,10 +619,10 @@ int new_date(struct tm *data,int pos)
                 oggi=gmtime(&adesso);
                 time_def=adesso+5*TEMPO_MINIMO;
                 domani=gmtime(&time_def);
-		  
+
 		if(pos!=0){
                         printf(_("Ti va bene %d %s %d alle %2.2d:%2.2d? (s/n) "),
-                               data->tm_mday, mese[data->tm_mon], 
+                               data->tm_mday, mese[data->tm_mon],
                                1900+data->tm_year, data->tm_hour, data->tm_min);
                         c = si_no();
                         if (c=='s'){
@@ -646,15 +640,15 @@ int new_date(struct tm *data,int pos)
 					giorno = new_int_def(" Giorno: ",
                                                              domani->tm_mday);
 				defm=oggi->tm_mon+1; /* +1 perche' gennaio=0!*/
-                                
+
 				if ((giorno-oggi->tm_mday)*pos<0){
                                         defm+=pos;
 				}
 				while((month < 1) || (month > 12))
 					month = new_int_def(_(" Mese: "),
                                                             defm);
-                                
-				if (((month == 4) || (month == 6) 
+
+				if (((month == 4) || (month == 6)
 				     || (month == 9) || (month == 11))
 				    && (giorno>30)) {
 					printf(_("Burlone: %s non ha %d giorni!\n"),
@@ -669,7 +663,7 @@ int new_date(struct tm *data,int pos)
 					giorno = -1;
 				}
 			}
-                        
+
 			defanno=oggi->tm_year+1900;
 			if ((pos*(month-(oggi->tm_mon)))<0)
 					defanno+=pos;
@@ -714,16 +708,16 @@ int new_date(struct tm *data,int pos)
 		data->tm_isdst = -1;
 		scelta = mktime(data);
 		printf(_("Hai scelto %d %s %d alle %2.2d:%2.2d, va bene? "),
-		       data->tm_mday, mese[data->tm_mon], 
+		       data->tm_mday, mese[data->tm_mon],
 		       1900+data->tm_year, data->tm_hour, data->tm_min);
 		c = si_no();
 		if ((adesso-scelta)*pos>-TEMPO_MINIMO+100){
 			printf(_("Data troppo vicina\n"));
 		}
-	}  while( (c != 's') || 
-		  ( (pos == 0) || 
-		    ( (adesso-scelta)*pos>-DELTA_TIME+100  || 
-		 (adesso-scelta)*pos>-TEMPO_MINIMO+100)   
+	}  while( (c != 's') ||
+		  ( (pos == 0) ||
+		    ( (adesso-scelta)*pos>-DELTA_TIME+100  ||
+		 (adesso-scelta)*pos>-TEMPO_MINIMO+100)
 		)) ;
 	return(0);
 }
@@ -735,7 +729,6 @@ int min_lungh(char *str , int min) {
 	for(s = str; *s; s++)
 	        if (*s > 32 && *s < 127)
 		        l++;
-		
+
 	return (l >= min);
 }
-

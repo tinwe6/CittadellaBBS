@@ -24,9 +24,9 @@
 #include "extract.h"
 #include "generic_cmd.h"
 #include "login.h"
+#include "macro.h"
 #include "user_flags.h"
 #include "utility.h"
-#include "macro.h"
 
 enum {
         USER_NOT_YET_VALIDATED,
@@ -78,10 +78,11 @@ int login(void)
 	}
 
         do {
-                if (first_go) {
-			printf(_("\nNome    : %s\n"), nome);
+                if (first_go && nome[0] != '\0') {
                         first_go = false;
+			printf(_("\nNome    : %s\n"), nome);
                 } else {
+                        first_go = false;
                         printf(_(
 "\nInserire il nome che si vuole utilizzare presso la bbs oppure 'Ospite' \n"
 "nel caso si voglia solo dare un'occhiata ('Esci' chiude la connessione).\n"
@@ -240,14 +241,9 @@ static int login_new_user (bool is_first_user)
         }
 
         if (is_first_user) {
-		cml_printf(_(
-"\n\nCongratulazioni!!\n"
-"Sei il primo utente di questa BBS, e sar&agrave; tuo compito gestirla.\n"
-"Hai automaticamente il livello 'Sysop', che ti rende onnipotente.\n\n"
-"Questo non ti risparmia per&ograve; dal compito di dare il buon esempio\n"
-"agli altri utenti, perci&ograve; passiamo comunque alla fase di\n"
-"registrazione, anche se non hai bisogno di validarti... :)\n\n"
-                             ));
+		printf("\n\n");
+		leggi_file(STDMSG_MESSAGGI, STDMSGID_INTRO_FIRST_USER);
+		putchar('\n');
 		hit_any_key();
         }
 
@@ -404,34 +400,36 @@ static int login_user(int user_is_validated)
         }
 
         /* If the user is not correctly registered, go through registration. */
-        /* This shouldn't happen, some older users might need it though      */
+        /* This can happen if the connection was interrupted during the      */
+	/* first call while providing the personal data.                     */
         if (!is_registered) {
-                leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
+		leggi_file(STDMSG_MESSAGGI, STDMSGID_REGISTRATION);
                 putchar('\n');
                 hit_any_key();
                 putchar('\n');
                 registrazione(true);
+		return LOGIN_NUOVO;
         }
 
-        if (user_is_validated == USER_IS_VALIDATED) {
-                return LOGIN_VALIDATO;
-        }
-
-        /* Se ha la validation key esegue l'autovalidazione */
-	printf(_(
-            "\nHai ricevuto la chiave di validazione e vuoi validarti? (s/n) "
-                 ));
-	if (si_no()=='n') {
+	if (user_is_validated != USER_IS_VALIDATED) {
+		/* Se ha la validation key esegue l'autovalidazione */
 		printf(_(
+"\nHai ricevuto la chiave di validazione e vuoi validarti? (s/n) "
+			 ));
+		if (si_no()=='n') {
+			printf(_(
 "\nPotrai eseguire la validazione la prossima volta che ti colleghi.\n"
 "Nel frattempo puoi visitare la BBS come utente non validato. Ricorda tuttavia"
 "\n"
 "che la validazione va eseguita entro 48 ore dalla prima connessione.\n"
-                         ));
-        } else if (auto_validazione()) {
-		return LOGIN_APPENA_VALIDATO;
-        }
-	return LOGIN_NONVAL;
+				 ));
+		} else if (auto_validazione()) {
+			return LOGIN_APPENA_VALIDATO;
+		}
+		return LOGIN_NONVAL;
+	}
+
+	return LOGIN_VALIDATO;
 }
 
 
@@ -602,7 +600,7 @@ void user_config(int type)
 "\nutilizzando digitando i tasti <b>.eu</b>\n")
                           );
 		save_userconfig(true);
-}
+	}
 	setcolor(C_DEFAULT);
 
 	cml_printf(

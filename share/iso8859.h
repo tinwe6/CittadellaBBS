@@ -127,4 +127,13 @@
 /* char is signed long on some platforms, we first cast it to unsigned char */
 #define is_isoch(c) (((unsigned char)(c) >= Key_NOBREAK_SPACE) && ((unsigned char)(c) <= Key_y_DIAERESIS))
 
+#define is_letter(c) ((c >= 'A') && (c <= 'Z') || (c >= 'a') && (c <= 'z') \
+                      || (((unsigned char)(c) >= Key_A_GRAVE)           \
+                          && ((unsigned char)(c) <= Key_O_DIAERESIS ))  \
+                      || (((unsigned char)(c) >= Key_O_SLASH)           \
+                          && ((unsigned char)(c) <= Key_o_DIAERESIS))   \
+                      || (((unsigned char)(c) >= Key_o_SLASH)           \
+                          && ((unsigned char)(c) <= Key_y_DIAERESIS))   \
+                      )
+
 #endif /* iso8859.h */
