@@ -124,7 +124,7 @@ void finger(void)
 	memset(&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
 	address.sin_port = htons(porta);
-	memcpy(&sa.sin_addr, hp->h_addr_list[0], hp->h_length);
+	memcpy(&address.sin_addr, hp->h_addr_list[0], hp->h_length);
 
 	/* Connessione */
 
