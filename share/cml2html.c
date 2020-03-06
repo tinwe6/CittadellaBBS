@@ -13,9 +13,6 @@
 * File : cml2html.c                                                         *
 *        Cittadella Markup Language (CML) to HTML translator.               *
 ****************************************************************************/
-#ifdef LINUX
-#define _GNU_SOURCE
-#endif
 
 #include <stdarg.h>
 #include <ctype.h>
@@ -142,7 +139,7 @@ char * cml2html_max(const char *str, int *totlen, int maxlen, int *color,
                                 if (tag == 0) {
                                         tags[0] = 0;
                                         tptr = tags;
-                                        
+
                                         if ((CC_FG(*color) != CC_FG(oldcol))
                                             || (CC_BG(*color)!=CC_BG(oldcol))) {
                                                 tptr = htmlstr_close_tags(tptr, oldcol);
@@ -226,7 +223,7 @@ char * cml2html_max(const char *str, int *totlen, int maxlen, int *color,
 		}
 	}
 	out[pos] = '\0';
-	
+
 	if (totlen != NULL)
 		*totlen = len;
 	return out;
@@ -510,7 +507,7 @@ static int cml_parse_tag(const char **str, int *color, Metadata_List *mdlist)
 				*str = p;
 				return 0;
 			}
-		        curr_state = TAG_START;	
+		        curr_state = TAG_START;
 			break;
 		}
 	}

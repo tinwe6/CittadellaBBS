@@ -65,7 +65,7 @@ int metti_in_coda_bin(struct coda_testo *coda, char *buf, size_t len)
 /* Prende una riga di testo dalla coda e la mette in dest (max n caratteri,
  * compreso lo '\0' di terminazione.
  * Restituisce il numero di bytes inseriti in dest.                        */
-int prendi_da_coda(struct coda_testo *coda, char *dest, size_t n) 
+int prendi_da_coda(struct coda_testo *coda, char *dest, size_t n)
 {
 	struct blocco_testo *tmp;
 
@@ -91,7 +91,7 @@ int prendi_da_coda(struct coda_testo *coda, char *dest, size_t n)
 }
 
 /* Prende da coda e mette nel buffer di partenza */
-int prendi_da_coda_o(struct coda_testo *coda, struct iobuf *buf) 
+int prendi_da_coda_o(struct coda_testo *coda, struct iobuf *buf)
 {
 	struct blocco_testo *tmp;
         size_t tmplen = 0;
@@ -112,12 +112,13 @@ int prendi_da_coda_o(struct coda_testo *coda, struct iobuf *buf)
                 //citta_logf("PRENDO DA CODA %ld/%ld bytes in bin (MS %ld, olen %ld)", tmplen, tmp->len, MAX_STRINGA, buf->olen);
                 memcpy(buf->out + buf->olen, tmp->testo, tmplen);
                 buf->olen += tmplen;
+                if (tmp->len < tmplen) {
+                        /* non dovrebbe capitare mai */
+                        citta_log("SYSERR prendi_da_coda_0.");
+		}
                 tmp->len -= tmplen;
 
-                if (tmp->len < 0) {
-                        citta_log("SYSERR prendi_da_coda_0!!!");
-                        /* non dovrebbe capitare mai */
-                } else if (tmp->len > 0) { /* Rimane roba da trattare */
+                if (tmp->len > 0) { /* Rimane roba da trattare */
                         memmove(tmp->testo, tmp->testo+tmplen, tmp->len);
                         return tmplen;
                 }
@@ -127,12 +128,13 @@ int prendi_da_coda_o(struct coda_testo *coda, struct iobuf *buf)
                 //citta_logf("PRENDO DA CODA %ld/%ld bytes in ascii", tmplen, tmp->len);
                 memcpy(buf->out + buf->olen, tmp->testo, tmplen);
                 buf->olen += tmplen;
+                if (tmp->len < tmplen) {
+                        /* non dovrebbe capitare mai */
+                        citta_log("SYSERR prendi_da_coda_0.");
+		}
                 tmp->len -= tmplen;
                 buf->out[buf->olen] = '\0';
-                if (tmp->len < 0) {
-                        citta_log("SYSERR prendi_da_coda_0!!!");
-                        /* non dovrebbe capitare mai */
-                } else if (tmp->len > 0) { /* Rimane roba da trattare */
+		if (tmp->len > 0) { /* Rimane roba da trattare */
                         memmove(tmp->testo, tmp->testo+tmplen, tmp->len);
                         return tmplen;
                 }
@@ -148,10 +150,10 @@ int prendi_da_coda_o(struct coda_testo *coda, struct iobuf *buf)
 
 
 /* Butta il primo elemento della coda */
-int elimina_da_coda(struct coda_testo *coda) 
+int elimina_da_coda(struct coda_testo *coda)
 {
 	struct blocco_testo *tmp;
-  
+
 	/* La coda e' vuota? */
 	if (coda->partenza == NULL)
 		return 0;

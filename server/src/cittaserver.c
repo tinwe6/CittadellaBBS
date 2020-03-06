@@ -861,9 +861,10 @@ void ciclo_server(int s)
 					if ((tot_idle >= max_min_idle) &&
 					    (punto->idle.warning == 2)) {
 						punto->stato = CON_CHIUSA;
-						sprintf(comm,"%d Idle logout.\n",ITOU);
-						if (scrivi_a_client(punto,comm)<0)
-							chiudi_sessione(punto);
+						sprintf(comm,
+							"%d Idle logout.\n",
+							ITOU);
+						scrivi_a_client(punto,comm);
 						notify_logout(punto, LOID);
 					} else if ((tot_idle>=min_idle_logout)
 						   &&(punto->idle.warning==1)){

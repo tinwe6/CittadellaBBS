@@ -8,7 +8,7 @@
 #############################################################################
 
 # Remove the hash mark below if compiling under Linux
-#OSFLAGS = -DLINUX -std=gnu99
+#OSFLAGS = -DLINUX -std=gnu99 -D_GNU_SOURCE
 
 # Remove the hash mark below if compiling under Mac OS X
 OSFLAGS = -DMACOSX -std=c99
