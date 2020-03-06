@@ -140,7 +140,7 @@ static int getline_wrap(char *str, int max, bool maiuscole, bool special,
 				return GETLINE_ABORT;
 			} else if ((c != Key_BS) && (len < max)) {
                                 if (maiuscole && islower(c) &&
-				    ((len == 0) || (str[len - 1] == ' '))) 
+				    ((len == 0) || (str[len - 1] == ' ')))
 					c = toupper(c);
                                 if (hide)
                                         putchar('*');
@@ -161,18 +161,18 @@ static int getline_wrap(char *str, int max, bool maiuscole, bool special,
 
 /*
  * get_text() : Semplice editor per testi.
- * 
+ *
  * Prende in input dall'utente un testo lungo al piu' 'max_linee' righe su
  * 'max_col' colonne e lo inserisce nella struttura 'txt'. Il testo termina
  * quando si lascia una riga vuota oppure si riempono tutte le righe a
  * disposizione. Se (abort!=1), immettendo su una riga vuota la stringa "ABORT"
  * l'editing viene interrotto. Il testo viene formattato automaticamente
  * mandando a capo le parole che non ci stanno in fondo alla riga.
- * 
+ *
  * ctrl-p : Cancella la parola precedente
  * ctrl-u : Cancella la riga corrente
  * ctrl-x : abort
- * 
+ *
  * Valori di ritorno: -1 : Abort; 0 : Nessun testo; N : Numero righe scritte.
  */
 int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
@@ -239,7 +239,7 @@ int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
 
 	if (pos == 0)
 		return riga;
-	
+
 	if (abortp && !strcmp(str, "ABORT"))
 		return -1;
 
@@ -252,10 +252,10 @@ int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
 
 /*
  * Prende un testo dallo stdinput, lungo 'max'.
- * Il testo viene editato su una singola riga, e se e' piu' lungo dello 
+ * Il testo viene editato su una singola riga, e se e' piu' lungo dello
  * schermo scrolla.
  * Se 'chat' allora visualizza interpretando i comandi speciali della chat.
- * 
+ *
  * Tasti speciali:  (Emacs style)
  *                  Ctrl-A  Vai all'inizio della riga
  *                  Ctrl-E  Vai alla fine della riga
@@ -276,11 +276,11 @@ int get_textl_cursor(struct text *txt, int max, int nlines, bool chat)
 
         if ((max == 0) || (nlines == 0))
                 return 0;
-	
+
 	CREATE(str, char, (max+1)*nlines, 0);
 
         len = getline_scroll(">", C_EDIT_PROMPT, str, max*nlines, 0, 0);
-		
+
 	if (len != 0) {
 		/* Formatta il testo */
 		rpos = 0;
@@ -311,11 +311,11 @@ int get_textl_cursor(struct text *txt, int max, int nlines, bool chat)
 			while ( (str1 = txt_get(txt))) {
 				refresh_line(str1);
 				putchar('\n');
-			}			
+			}
 		}
 	} else
 		putchar('\n');
-	
+
 	Free(str);
 	return len;
 }
@@ -475,9 +475,9 @@ int getline_scroll(const char *cmlprompt, int color, char *str, int max,
 
 /*
  * Prende un testo dallo stdinput, lungo 'max'.
- * Il testo viene editato su una singola riga, e se e' piu' lungo dello 
+ * Il testo viene editato su una singola riga, e se e' piu' lungo dello
  * schermo scrolla.
- * 
+ *
  * Tasti speciali:  ctrl-p  Cancella l'ultima parola
  *                  ctrl-u  Cancella tutto il testo
  *                  ctrl-x  Abort
@@ -488,10 +488,10 @@ int get_textl(struct text *txt, size_t max, unsigned int nlines)
 	size_t len = 0;
 	char *str, *rpos;
 	char buf[LBUF], prompt_tmp;
-	
+
         if ((max == 0) || (nlines == 0))
                 return 0;
-	
+
 	prompt_tmp = prompt_curr;
 	prompt_curr = P_EDT;
 
@@ -562,14 +562,14 @@ int get_textl(struct text *txt, size_t max, unsigned int nlines)
 			printf(">%s\n", rpos);
 	} else
 		putchar('\n');
-	
+
 	Free(str);
 	prompt_curr = prompt_tmp;
 	return len;
 }
 
 /*
- * 
+ *
  */
 void edit_file(char *filename)
 {
@@ -618,7 +618,7 @@ void edit_file(char *filename)
  * se e' definita la variabile di environment EDITOR, usa l'editor esterno.
  * Se txt contiene gia' un testo, lo continua (ma allora hold e quote non
  * sono piu' attivi).
- * 
+ *
  * Restituisce (-1) se c'e' stato un abort nell'editor interno.
  */
 int enter_text(struct text *txt, int max_linee, char mode,
@@ -680,7 +680,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
                         execlp(EDITOR, EDITOR, filename, NULL);
                         exit(1);
                 }
-                if (editor_pid > 0) { 
+                if (editor_pid > 0) {
                         i = 0;
                         do {
                                 /* manda segnali keepalive al server */
@@ -724,7 +724,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
 		}
 		free(filename);
         } else { /* Usa l'editor interno. */
-		if (mode) 
+		if (mode)
 			printf(_(
 " * Per utilizzare l'editor esterno devi definire la variabile di\n"
 "   environment EDITOR, e assegnarle il nome del tuo editor,\n"
@@ -776,7 +776,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
 void send_text(struct text *txt)
 {
 	char *str;
-	
+
 	txt_rewind(txt);
 	while ((str = txt_get(txt)) != NULL)
 		serv_putf("TEXT %s", str);
@@ -799,7 +799,7 @@ static void refresh_line_curs(const char *prompt, int promptlen, int color,
                               char *pos, char *curs, int field)
 {
 	int i;
-	
+
 	IGNORE_UNUSED_PARAMETER(promptlen);
 
 	printf("\r%s", prompt);
@@ -810,7 +810,7 @@ static void refresh_line_curs(const char *prompt, int promptlen, int color,
 
 	printf("\r%s", prompt);
 	pull_color();
-	for (i = 0; (i < field) && (pos+i != curs); putchar(pos[i++]));	
+	for (i = 0; (i < field) && (pos+i != curs); putchar(pos[i++]));
 	fflush(stdout);
 }
 
@@ -878,7 +878,7 @@ char * getline_col(int max, bool maiuscole, bool special)
 	if (len != GETLINE_ABORT)
 		out = editor2cml(str, col, &color, len, NULL);
 	else
-		out = strdup("");
+		out = citta_strdup("");
 	if (str) {
 		Free(str);
 		Free(col);
@@ -1163,7 +1163,7 @@ static int getline_col_wrap(int **str0, int **col0, int max,
 			} else if ((isascii(c) && isprint(c) && (c != '|'))
 			    || (is_isoch(c)) || (special && c=='|')) {
 				if (maiuscole && islower(c) &&
-				    ((pos == 0) || (str[pos - 1] == ' '))) 
+				    ((pos == 0) || (str[pos - 1] == ' ')))
 					c = toupper(c);
                                 if (hide)
                                         c = '*';
@@ -1661,7 +1661,7 @@ void getline(char *str, int max, char maiuscole, char special)
                                 str[--len] = '\0';
                         } else if ((c != Key_BS) && (len < max)) {
                                 if (maiuscole && islower(c) &&
-                                    ((len == 0) || (str[len - 1] == ' '))) 
+                                    ((len == 0) || (str[len - 1] == ' ')))
 					c = toupper(c);
                                 if (hide)
                                         putchar('*');
@@ -1758,7 +1758,7 @@ int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
 		pos = wlen;
                 riga++;
         } while (riga < (max_linee - 1));
-	
+
 	printf(">%s", str);
 	do {
 		prompt_txt = str;
@@ -1793,16 +1793,16 @@ int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
 			}
 		}
 	} while ((ch != Key_LF) && (ch != Key_CR));
-	
+
 	prompt_curr = prompt_tmp;
 	printf("\n");
 
 	if (pos == 0)
 		return riga;
-	
+
 	if (abortp && !strcmp(str, "ABORT"))
 		return -1;
-	
+
 	str[pos] = '\n';
 	str[++pos] = '\0';
 	txt_put(txt, str);
@@ -2044,7 +2044,7 @@ char * getline_col(int max, char maiuscole, char special)
 			if ((isascii(c) && isprint(c) && (c != '|'))
 			    || (is_isoch(c)) || (special && c=='|')) {
 				if (maiuscole && islower(c) &&
-				    ((pos == 0) || (str[pos - 1] == ' '))) 
+				    ((pos == 0) || (str[pos - 1] == ' ')))
 					c = toupper(c);
                                 if (hide)
                                         c = '*';

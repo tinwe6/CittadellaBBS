@@ -376,9 +376,9 @@ static void get_homedir(void)
 	struct passwd *pw;
 
 	if ( (tmp = getenv("HOME")))
-		home_dir = strdup(tmp);
+		home_dir = citta_strdup(tmp);
 	else if ( (pw = getpwuid(getuid())))
-		home_dir = strdup(pw->pw_dir);
+		home_dir = citta_strdup(pw->pw_dir);
 	else
 		home_dir = NULL;
 }
@@ -398,19 +398,18 @@ static void get_environment(void)
 #endif
 }
 
-/* TODO dovrebbe usare Strdup() */
 char * interpreta_tilde_dir(const char *buf)
 {
 	char tmp[LBUF];
 
 	if (buf == NULL)
-		return strdup("");
+		return citta_strdup("");
 	if (buf[0] != '~')
-		return strdup(buf);
+		return citta_strdup(buf);
 	if (buf[1] != '/')
-		return strdup("");
+		return citta_strdup("");
 	sprintf(tmp, "%s%s", home_dir, buf+1);
-	return strdup(tmp);
+	return citta_strdup(tmp);
 }
 
 /*

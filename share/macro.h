@@ -87,6 +87,8 @@
 #  define TYPE_FILE_BOOKING   51
 #  define TYPE_NUM            52 /* Questo deve stare in fondo */
 
+extern char * citta_strdup(const char *str);
+
 #ifdef USE_MEM_STAT
 extern void * Calloc(size_t num, unsigned long size, int tipo);
 extern void * Realloc(void *ptr, size_t size);
@@ -124,7 +126,7 @@ static inline void Free(void *ptr)
 
 static inline char * Strdup(const char *ptr)
 {
-	return strdup(ptr);
+	return citta_strdup(ptr);
 }
 
 static inline void Perror(const char *str) {

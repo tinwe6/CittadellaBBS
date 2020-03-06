@@ -4,7 +4,6 @@
 * File : versione.c                                                         *
 *        Funzioni per gestire le versioni del programma.                    *
 ****************************************************************************/
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

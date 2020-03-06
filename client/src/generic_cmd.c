@@ -107,7 +107,7 @@ void list_host(void)
                         tmst = localtime(&ora);
 			/* prendi host/doing */
 			serv_gets(aaa);
-			hst = strdup(aaa+4);
+			hst = citta_strdup(aaa + 4);
                         setcolor(C_WHO_TIME);
                         printf("%02d:%02d ", tmst->tm_hour, tmst->tm_min);
 
@@ -414,7 +414,7 @@ void edit_doing(void)
         if (doing[0] != '\0') {
 		if (DOING)
 			Free(DOING);
-		DOING = strdup(doing);
+		DOING = citta_strdup(doing);
 		serv_putf("EDNG 1|%s", doing);
 		serv_gets(buf);
 		if (buf[0]!='2')
@@ -431,7 +431,7 @@ void clear_doing(void)
 		serv_puts("EDNG 0");
 		serv_gets(buf);
 		Free(DOING);
-		DOING = strdup("");
+		DOING = citta_strdup("");
 		cml_print(_("*** Ok, il tuo doing &egrave; stato cancellato.\n"));
 	} else
 		printf(_("*** Attualmente non hai il doing settato!\n"));
