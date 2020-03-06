@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 
+char *citta_stpcpy(char *dest, const char *src);
 int words_count(const char * str);
 char * strip_spaces(const char * str);
 bool is_valid_full_name(const char * name);

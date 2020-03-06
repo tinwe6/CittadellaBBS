@@ -27,6 +27,7 @@
 #include "msg_flags.h"
 #include "post.h"
 #include "rooms.h"
+#include "string_utils.h"
 #include "utility.h"
 #include "x.h"
 
@@ -96,7 +97,7 @@ int save_post(struct sessione *t, char *arg)
 		txt_rewind(t->text);
 		str = txt_get(t->text);
 		for (ptr = strtxt; str; str = txt_get(t->text), ptr++)
-			ptr = stpcpy(ptr, str);
+			ptr = citta_stpcpy(ptr, str);
 	} else
 		return 0;
 #endif

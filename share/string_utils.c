@@ -11,6 +11,20 @@
 #include "macro.h"
 
 /*
+ * Copies string str to dest, and returns the pointer to the terminating
+ * '\0' in dest.
+ * NOTE: stpcpy() does not conform to ISO C so we wrote our own.
+ */
+char *citta_stpcpy(char *dest, const char *src)
+{
+	while(*src) {
+		*dest++ = *src++;
+	}
+	*dest = 0;
+	return dest;
+}
+
+/*
  * counts the number of words (defined as cluster of characters separated by
  * whitespace) in the string str.
  */
