@@ -11,6 +11,36 @@
 #include "macro.h"
 
 /*
+ * Copies string str to dest, and returns the pointer to the terminating
+ * '\0' in dest.
+ * NOTE: stpcpy() does not conform to ISO C so we wrote our own.
+ */
+char * citta_stpcpy(char *dest, const char *src)
+{
+	while(*src) {
+		*dest++ = *src++;
+	}
+	*dest = 0;
+	return dest;
+}
+
+/*
+ * Duplicates the string str, allocating the memory with CREATE, and
+ * returns the duplicated string.
+ */
+char * citta_strdup (const char *str)
+{
+	char *str2;
+	size_t len;
+
+	len = strlen(str) + 1;
+	CREATE(str2, char, len, TYPE_CHAR);
+	memcpy(str2, str, len);
+
+	return str2;
+}
+
+/*
  * counts the number of words (defined as cluster of characters separated by
  * whitespace) in the string str.
  */
@@ -46,7 +76,7 @@ char * strip_spaces(const char * str)
 {
         char *stripped;
 
-        CREATE(stripped, char, strlen(str) + 1, 0);
+        CREATE(stripped, char, strlen(str) + 1, TYPE_CHAR);
 
         const char *src = str;
         char *dest = stripped;

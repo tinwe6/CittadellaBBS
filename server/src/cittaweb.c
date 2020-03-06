@@ -54,7 +54,7 @@
 #include "versione.h"
 
 #ifdef USE_STRING_TEXT
-# include <argz.h> 
+# include "argz.h"
 #endif
 
 #ifdef USE_CACHE_POST
@@ -131,14 +131,14 @@ int http_nuovo_descr(int s)
 
 	if ( (desc = nuova_conn(s)) < 0)
 		return (-1);
-  
+
 	socket_connessi = socket_attivi = 0;
-	
+
 	for (punto = sessioni_http; punto; punto = punto->next)
 		socket_connessi++;
-  
+
 	/* Controllo sul numero massimo di connessioni supportabili */
-  
+
 	if (socket_connessi >= http_max_num_desc) {
 		sprintf(buf2, "%d Massimo numero di connessioni HTTP raggiunto.\r\n", ERROR);
 		scrivi_a_desc(desc, buf2);
@@ -146,9 +146,9 @@ int http_nuovo_descr(int s)
 		return(0);
 	} else if (desc > http_maxdesc)
 			http_maxdesc = desc;
-	
+
 	/* Poi va creata una nuova struttura sessione per il nuovo arrivato */
-  
+
 	CREATE(nuova_ses, struct http_sess, 1, TYPE_HTTP_SESSIONE);
 
 	/* Vanno prese le info relative al sito di provenienza */
@@ -157,7 +157,7 @@ int http_nuovo_descr(int s)
 	if (getpeername(desc, (struct sockaddr *) &sock, &size) < 0) {
 		Perror("getpeername");
 		*nuova_ses->host = 0;
-	} else if (nameserver_lento || 
+	} else if (nameserver_lento ||
 		   !(da_dove = gethostbyaddr((char *)&sock.sin_addr,
 				       sizeof(sock.sin_addr), AF_INET))) {
 		if (!nameserver_lento)
@@ -176,7 +176,7 @@ int http_nuovo_descr(int s)
 	/* Se e' previsto uno shutdown avverte e chiude la connessione */
 
 	citta_logf("HTTP: Nuova connessione da [%s]", nuova_ses->host);
-  
+
 	/* Inizializziamo la struttura coi dati della nuova sessione */
 
 	nuova_ses->finished = 0;
@@ -197,28 +197,28 @@ int http_nuovo_descr(int s)
 
 
 	sessioni_http = nuova_ses;
-  
+
 	return(0);
 }
 
 /*
-  Chiude i socket e aggiorna la lista delle sessioni http, 
+  Chiude i socket e aggiorna la lista delle sessioni http,
   cancellando la sessione h in input.
 */
 void http_chiudi_socket(struct http_sess *h)
 {
 	struct http_sess *tmp;
-        
+
 	close(h->desc);
 	if (h->desc == http_maxdesc)
 		--http_maxdesc;
-        
+
 	if (h == sessioni_http)
 		sessioni_http = sessioni_http->next;
 	else {
 		for(tmp = sessioni_http; (tmp->next != h) && tmp ;
 		    tmp = tmp->next);
-   
+
 		tmp->next = h->next;
 	}
         /* Pulizia */
@@ -229,7 +229,7 @@ void http_chiudi_socket(struct http_sess *h)
 }
 
 void http_chiusura_cittaweb(int s)
-{ 
+{
 	while(sessioni_http)
 		http_chiudi_socket(sessioni_http);
         close(s);
@@ -252,7 +252,7 @@ int http_elabora_input(struct http_sess *t)
 
         buf = t->iobuf.in;
 	inizio = t->iobuf.ilen;
-        
+
 	/* Legge un po' di roba */
 	if ((questo_giro = read(t->desc, buf+inizio+fino_a,
 				MAX_STRINGA-(inizio+fino_a)-1)) > 0)
@@ -266,16 +266,16 @@ int http_elabora_input(struct http_sess *t)
 		citta_log("SYSERR: Incontrato EOF in lettura su socket.");
 		return(-1);
 	}
-        
+
         buflen = inizio + fino_a;
 	*(buf + buflen) = '\0';
-        
+
 	/* Se l'input non contiene nessun newline esce senza fare nulla */
 	for (i = inizio; !ISNEWL(*(buf + i)); i++)
 		if (!*(buf + i))
 			return(0);
-    
-	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */ 
+
+	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */
 	tmp[0] = '\0';
 	for (i = 0, k = 0; *(buf + i); ) {
 		if (!ISNEWL(*(buf + i)) &&
@@ -298,14 +298,14 @@ int http_elabora_input(struct http_sess *t)
                                 t->idle.min = 0;
                                 t->idle.ore = 0;
 			}
-                        
+
 			if (flag) /* linea troppo lunga. ignora il resto */
 				for ( ; !ISNEWL(*(buf + i)); i++);
-                        
+
 			/* trova la fine della linea */
 			for ( ; ISNEWL(*(buf + i)); i++)
 			        ;
-                        
+
 			/* elimina la linea dal'input buffer */
                         memmove(buf, buf+i, buflen-i+1);
                         buflen -= i;
@@ -314,7 +314,7 @@ int http_elabora_input(struct http_sess *t)
 			i = 0;
 		}
 	}
- 
+
         t->iobuf.ilen = buflen;
 	return 1;
 }
@@ -419,7 +419,7 @@ static void http_send_room_list(struct http_sess *p, int lang)
 	int col = 0;
 
 	for (room = lista_room.first; room; room = room->next) {
-		if (room->data->flags & RF_CITTAWEB) {        
+		if (room->data->flags & RF_CITTAWEB) {
 			strncpy(tmp, room->data->name, ROOMNAMELEN);
 			wprintf(p, CODA_BODY,
 				"<TD><A href=\"%s/%s\">%s</A></TD>\r\n",
@@ -480,7 +480,7 @@ static void http_send_index(struct http_sess *p, char *code, int lang)
 	wprintf(p, CODA_BODY, HTML_INDEX_BODY, HTML_INDEX_TITLE[lang],
 		HTML_INDEX_PREAMBLE[lang]);
 	http_send_lang(p, "index", lang);
-        
+
 	wprintf(p, CODA_BODY, "<P><BR></P><TABLE class=\"rooms\" border=\"0\" cellspacing=\"1\"><COLGROUP><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"31%%\"><COL width=\"7%%\"></COLGROUP><TR>");
 
 	http_send_room_list(p, lang);
@@ -525,7 +525,7 @@ static void http_send_index(struct http_sess *p, char *code, int lang)
                         strcpy(roomlink, lastpost_room);
                         wprintf(p, CODA_BODY, "<SPAN text-align=\"center\"><A href=\"/%s#%ld\"><SPAN class=\"postlink\">%s</SPAN></A></SPAN>",
                                 space2under(roomlink), lastpost_locnum,
-                                HTML_INDEX_READIT[lang]);                       
+                                HTML_INDEX_READIT[lang]);
                 } else
                         wprintf(p, CODA_BODY, "<SPAN class=\"notavail\">%s</SPAN>",
                                 HTML_INDEX_NOTAVAIL[lang]);
@@ -543,7 +543,7 @@ static void http_send_userlist(struct http_sess *p, char *code, int lang)
 	/* TODO: implement lang */
 	IGNORE_UNUSED_PARAMETER(lang);
 
-	strcpy(code, "200 OK");                    
+	strcpy(code, "200 OK");
 	wprintf(p, CODA_BODY, HTML_HEADER);
 
 	http_add_head(p, "Cittadella BBS - Lista Utenti.", HTML_USERLIST_CSS,
@@ -574,7 +574,7 @@ static void http_send_userlist(struct http_sess *p, char *code, int lang)
                         wprintf(p, CODA_BODY, "  <A href=\"http://%s:%d/profile?%s\">profile</A>\r\n", HTTP_HOST, HTTP_PORT, punto->dati->nome);
                         */
 		}
-	
+
 	wprintf(p, CODA_BODY, "</PRE>\r\n");
 
 	wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, PORTA_REMOTA);
@@ -590,7 +590,7 @@ static void http_send_bloglist(struct http_sess *p, char *code, int lang)
         const char *last_poster;
         struct dati_ut *ut;
 
-	strcpy(code, "200 OK");                    
+	strcpy(code, "200 OK");
 	wprintf(p, CODA_BODY, HTML_HEADER);
 
 	http_add_head(p, "Cittadella BBS - Blogs.", HTML_BLOGLIST_CSS,
@@ -649,7 +649,7 @@ static void http_send_profile(struct http_sess *p, char *req, char *code,
 		wprintf(p, CODA_BODY, HTML_HEADER);
 		wprintf(p, CODA_BODY, HTML_404);
 	} else {
-		strcpy(code,"200 OK");                    
+		strcpy(code,"200 OK");
 		wprintf(p, CODA_BODY, HTML_HEADER);
 
 		sprintf(buf, "Cittadella BBS - Profile %s", req);
@@ -688,7 +688,7 @@ static void http_send_room(struct http_sess *p, char *req, char *code,
 		wprintf(p, CODA_BODY, HTML_HEADER);
 		wprintf(p, CODA_BODY, HTML_NOT_AVAIL);
 	} else {
-		strcpy(code,"200 OK");                    
+		strcpy(code,"200 OK");
 		wprintf(p, CODA_BODY, HTML_HEADER);
 
 		sprintf(buf, "Cittadella BBS - Room %s>", req);
@@ -990,7 +990,7 @@ static void http_send_post(struct http_sess *t, struct room *room)
                 subject = NULL;
 		msgnum = room->msg->num[i];
 		msgpos = room->msg->pos[i];
-                /* NON USO FM multipli 
+                /* NON USO FM multipli
 		if (room->msg->fmnum)
 		        fmnum = room->msg->fmnum[i];
                 */
@@ -1058,14 +1058,14 @@ static void http_send_post(struct http_sess *t, struct room *room)
 					wprintf(t, CODA_BODY, " Reply : <STRONG>%s</STRONG>, msg #<STRONG>%ld</STRONG> da <STRONG>%s</STRONG>\r\n",
 						subject, reply_num, reply_to);
 				else {
-					wprintf(t, CODA_BODY, 
+					wprintf(t, CODA_BODY,
 						" Reply al Messaggio #<STRONG>%ld</STRONG> da <STRONG>%s</STRONG>\r\n",
 						reply_num, reply_to);
 				}
 				wprintf(t, CODA_BODY, "</SPAN>");
 			} else if (subject[0]) {
 				wprintf(t,CODA_BODY,"<SPAN class=\"subj\">");
-                                wprintf(t, CODA_BODY, " Subject : <STRONG>%s</STRONG>\r\n", 
+                                wprintf(t, CODA_BODY, " Subject : <STRONG>%s</STRONG>\r\n",
 					subject);
 				wprintf(t, CODA_BODY, "</SPAN>");
 			}
@@ -1108,13 +1108,13 @@ static void http_send_post(struct http_sess *t, struct room *room)
 static void http_preamble(struct http_sess *q, char *code, int length)
 {
 	/* HTTP 1.1, hopefully RFC2616 */
-        
+
 	long ct;
 	char *tmstr;
-    
+
 	wprintf(q, CODA_HEADER, "HTTP/1.1 %s\r\n", code);
-    
-	ct = time(0);  
+
+	ct = time(0);
 	tmstr = asctime(localtime(&ct));
 	*(tmstr + strlen(tmstr) - 1) = '\0';
 
@@ -1141,7 +1141,7 @@ static void http_add_head(struct http_sess *q, const char *title,
 		SERVER_RELEASE, title);
 	wprintf(q, CODA_BODY,
 		"<BASE href=\"http://%s:%d/\">\r\n", HTTP_HOST, HTTP_PORT);
- 	
+
 	if (style) {
                 wprintf(q, CODA_BODY, HTML_START_CSS);
                 wprintf(q, CODA_BODY, style);
@@ -1259,5 +1259,5 @@ White = "#FFFFFF" Yellow = "#FFFF00"
 Maroon = "#800000" Navy = "#000080"
 Red = "#FF0000" Blue = "#0000FF"
 Purple = "#800080" Teal = "#008080"
-Fuchsia = "#FF00FF" Aqua = "#00FFFF" 
+Fuchsia = "#FF00FF" Aqua = "#00FFFF"
 */

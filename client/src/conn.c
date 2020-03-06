@@ -251,7 +251,6 @@ int conn_server(char *host, int porta)
         int s;
 
         printf(_("Connessione al server.... \n"));
-        bzero(&sa, sizeof(struct sockaddr_in));
 
 	/* printf("gethostbyname\"%s\".\n", host); */
         hp = gethostbyname(host);
@@ -259,11 +258,13 @@ int conn_server(char *host, int porta)
                 perror("gethostbyaddr");
                 exit(1);
         }
+
+	memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
         sa.sin_port   = htons(porta);
-        sa.sin_addr   = *(struct in_addr *)hp->h_addr;
+	memcpy(&sa.sin_addr, hp->h_addr_list[0], hp->h_length);
 
-        if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+        if ((s = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
                 perror("conn_server");
                 exit(1);
         }

@@ -51,7 +51,7 @@
 #include "versione.h"
 
 #ifdef USE_STRING_TEXT
-# include <argz.h> 
+# include "argz.h"
 #endif
 
 #ifdef USE_CACHE_POST
@@ -462,14 +462,14 @@ int imap4_nuovo_descr(int s)
 
 	if ( (desc = nuova_conn(s)) < 0)
 		return (-1);
-  
+
 	socket_connessi = socket_attivi = 0;
-	
+
 	for (punto = sessioni_imap4; punto; punto = punto->prossima)
 		socket_connessi++;
-  
+
 	/* Controllo sul numero massimo di connessioni supportabili */
-  
+
 	if (socket_connessi >= imap4_max_num_desc) {
 		sprintf(buf2, "* BYE Massimo numero di connessioni IMAP4 raggiunto.\r\n");
 		scrivi_a_desc(desc, buf2);
@@ -477,9 +477,9 @@ int imap4_nuovo_descr(int s)
 		return(0);
 	} else if (desc > imap4_maxdesc)
 			imap4_maxdesc = desc;
-	
+
 	/* Poi va creata una nuova struttura sessione per il nuovo arrivato */
-  
+
 	CREATE(nuova_ses, struct sessione, 1, TYPE_SESSIONE);
 
 	/* Vanno prese le info relative al sito di provenienza */
@@ -488,7 +488,7 @@ int imap4_nuovo_descr(int s)
 	if (getpeername(desc, (struct sockaddr *) &sock, &size) < 0) {
 		Perror("getpeername");
 		*nuova_ses->host = 0;
-	} else if (nameserver_lento || 
+	} else if (nameserver_lento ||
 		   !(da_dove = gethostbyaddr((char *)&sock.sin_addr,
 				       sizeof(sock.sin_addr), AF_INET))) {
 		if (!nameserver_lento)
@@ -507,7 +507,7 @@ int imap4_nuovo_descr(int s)
 	/* Se e' previsto uno shutdown avverte e chiude la connessione */
 
 	logf("IMAP4: Nuova connessione da [%s]", nuova_ses->host);
-  
+
 	/* Inizializziamo la struttura coi dati della nuova sessione */
 	nuova_ses->socket_descr = desc;
 	/* nuova_ses->length = 0; */
@@ -529,7 +529,7 @@ int imap4_nuovo_descr(int s)
 	/* Lo appiccichiamo in cima alla lista     */
 	nuova_ses->prossima = sessioni_imap4;
 	sessioni_imap4 = nuova_ses;
-  
+
 	/* Saluta e entra in stato authorization */
 	imap4_printf(nuova_ses, NO_TAG, RESP_OK, NO_STATUS,
 		     "IMAP4 Service for Cittadella/UX Ready.\r\n");
@@ -539,7 +539,7 @@ int imap4_nuovo_descr(int s)
 }
 
 /*
-  Chiude i socket e aggiorna la lista delle sessioni imap4, 
+  Chiude i socket e aggiorna la lista delle sessioni imap4,
   cancellando la sessione h in input.
 */
 void imap4_chiudi_socket(struct sessione *h)
@@ -555,7 +555,7 @@ void imap4_chiudi_socket(struct sessione *h)
 	else {
 		for(tmp = sessioni_imap4; (tmp->prossima != h) && tmp ;
 		    tmp = tmp->prossima);
-   
+
 		tmp->prossima = h->prossima;
 	}
         /* Pulizia */
@@ -570,7 +570,7 @@ void imap4_chiudi_socket(struct sessione *h)
 }
 
 void imap4_chiusura_server(int s)
-{ 
+{
 	while(sessioni_imap4)
 		imap4_chiudi_socket(sessioni_imap4);
         close(s);
@@ -590,7 +590,7 @@ int imap4_elabora_input(struct sessione *t)
 	flag = 0;
 	inizio = strlen(t->in_buf); /* Al posto di questo strlen() mi */
 	/* conviene tenere un puntatore nella struct sessione */
-        
+
 	/* Legge un po' di roba */
 	if ((questo_giro = read(t->socket_descr, t->in_buf+inizio+fino_a,
 				MAX_STRINGA-(inizio+fino_a)-1)) > 0)
@@ -614,7 +614,7 @@ int imap4_elabora_input(struct sessione *t)
 			return(0);
 
 
-	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */ 
+	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */
 	tmp[0] = '\0';
 	for (i = 0, k = 0; *(t->in_buf + i); ) {
 		if (!ISNEWL(*(t->in_buf + i)) &&
@@ -643,7 +643,7 @@ int imap4_elabora_input(struct sessione *t)
 
                         /* trova la fine della linea */
                         for ( ; ISNEWL(*(t->in_buf + i)); i++);
-                        
+
                         /* elimina la linea dal in_buffer */
                         memmove(t->in_buf, t->in_buf+i, buflen-i+1);
                         buflen -= i;
@@ -726,7 +726,7 @@ static void imap4_logout(struct sessione *p)
 	imap4_printf(p, NO_TAG, RESP_BYE, NO_STATUS,
 		     "Cittadella/UX Server terminating connection\r\n");
 	imap4_printf(p, TAG, RESP_OK, NO_STATUS, "LOGOUT Completed\r\n");
-	
+
 	/* Release exclusive-access lock */
 	p->stato = LOGOUT;
 }
@@ -812,7 +812,7 @@ static void imap4_select(struct sessione *p, char *name)
 	}
 	p->stato = SELECT;
 	imap4_printf(p, TAG, RESP_OK, NO_STATUS, "Select completed, now in selected state.\r\n");
-	
+
 }
 
 static void imap4_examine(struct sessione *p, char *name)
@@ -1048,7 +1048,7 @@ static void imap4_maildrop(struct sessione *p)
 	char autore[LBUF], room_name[LBUF], subject[LBUF], dest[LBUF];
         char date[LBUF], header[LBUF], err, *riga;
 	long flags, ora;
-	
+
 #ifdef USE_STRING_TEXT
 	char *txt;
 	size_t len;
@@ -1176,7 +1176,7 @@ static void imap4_printf(struct sessione *p, const char *format, ...)
 	char *tmp;
 	int size;
 #endif
-	
+
 	CREATE(nuovo, struct blocco_testo, 1, TYPE_BLOCCO_TESTO);
 
 	va_start(ap, format);
@@ -1213,7 +1213,7 @@ static void imap4_vprintf(struct sessione *p, const char *format,
 	char *tmp;
 	int size;
 #endif
-	
+
 	CREATE(nuovo, struct blocco_testo, 1, TYPE_BLOCCO_TESTO);
 
 	va_start(ap, format);

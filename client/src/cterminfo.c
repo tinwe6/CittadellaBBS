@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cterminfo.h"
+#include "string_utils.h"
 
 int cti_ok;    /* Se trovo nelle terminfo tutte le informazioni necessarie
 		* vale 1, altrimenti vale 0 e passo alla modalita' di
@@ -108,7 +109,7 @@ void cti_init(void)
 	if (cursor_to_ll != NULL) {
 		ctistr_ll = cursor_to_ll;
 	} else {
-		ctistr_ll = strdup(tparm(cursor_address, NRIGHE-1, 0));
+		ctistr_ll = citta_strdup(tparm(cursor_address, NRIGHE-1, 0));
 	}
 	key_left = tigetstr("kcub1");
 	cti_ok = 1;
@@ -129,7 +130,7 @@ void cti_test(void)
 	        "cursor_to_ll"};
 	char *buf;
 	int i, ret;
-	
+
 	printf("\n*** Test capacita' video...\n\n");
 	for (i=0; i<3; i++) {
 		ret = tigetnum(numcaps[i]);
@@ -154,7 +155,7 @@ void cti_test(void)
 # if ((16 + 8) < 32)
 	printf("\n32 bits\n");
 # else
-	printf("\n16 bits\n");	
+	printf("\n16 bits\n");
 # endif
 }
 

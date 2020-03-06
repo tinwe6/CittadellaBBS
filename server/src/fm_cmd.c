@@ -16,7 +16,7 @@
 #include "config.h"
 #include <stdio.h>
 #ifdef USE_STRING_TEXT
-#include <argz.h>
+#include "argz.h"
 #endif
 #include "cittaserver.h"
 #include "fm_cmd.h"
@@ -47,7 +47,7 @@ void cmd_fmhd(struct sessione *t, char *buf)
 	struct text *txt;
 	long fmnum;
 	char err, *riga;
-	
+
 	fmnum = extract_long(buf, 0);
 	txt = txt_create();
 	if ((err=fm_headers(fmnum, txt))==0) {
@@ -71,7 +71,7 @@ void cmd_fmcr(struct sessione *t, char *buf)
 	char desc[LBUF];
 	struct text *txt;
 	struct room *r;
-	
+
 	fmlen = extract_long(buf, 0);
 	extract(desc, buf, 1);
 	fmnum = fm_create(fmlen, desc);
@@ -93,7 +93,7 @@ void cmd_fmrm(struct sessione *t, char *buf)
 	long fmnum;
 	struct text *txt;
 	struct room *r;
-	
+
 	/* Controlla che il FM non e' usato da nessuna room (TODO) */
 	fmnum = extract_long(buf, 0);
 	if (fm_delete(fmnum)) {
@@ -116,14 +116,14 @@ void cmd_fmri(struct sessione *t, char *buf)
 {
 	struct fm_list *punto;
 	long fmnum;
-	
+
 	if (lista_fm == NULL) {
 		cprintf(t, "%d Non sono presenti file messaggi.\n", ERROR);
 		return;
 	}
 	fmnum = extract_long(buf, 0);
 	cprintf(t, "%d\n", SEGUE_LISTA);
-	for (punto=lista_fm; punto; punto=punto->next) 
+	for (punto=lista_fm; punto; punto=punto->next)
 		if ((fmnum==0)||((punto->fm).num==fmnum))
 			cprintf(t, "%d %ld|%ld|%ld|%ld|%ld|%ld|%ld|%ld|%ld|%d|%s\n", OK,
 				(punto->fm).num, (punto->fm).size,
@@ -149,7 +149,7 @@ void cmd_fmrp(struct sessione *t, char *buf)
 #endif
 	long fmnum, num, pos;
 	char header[LBUF], err, *riga;
-	
+
 	fmnum = extract_long(buf, 0);
 	num = extract_long(buf, 1);
 	pos = extract_long(buf, 2);
@@ -204,7 +204,7 @@ void cmd_fmxp(struct sessione *t, char *buf)
 	long fmnum, newsize;
 	struct text *txt;
 	struct room *r;
-	
+
 	fmnum = extract_long(buf, 0);
 	newsize = extract_long(buf, 1);
 	if (fm_expand(fmnum, newsize))
@@ -220,4 +220,4 @@ void cmd_fmxp(struct sessione *t, char *buf)
 		cprintf(t, "%d\n", OK);
 	}
 }
-	
+

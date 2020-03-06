@@ -32,7 +32,7 @@
 #include <string.h>
 #include <unistd.h>
 
-/* 
+/*
  * prototipi
  */
 
@@ -48,9 +48,9 @@ int check_magic_number(FILE * fp, char code, char *nome_file);
 char *crea_nome(const char *dir, const char *file, int est);
 
 /*
- * controlla che esista un file, che sia un file 
+ * controlla che esista un file, che sia un file
  * standard e che la dim sia !=0
- * restituisce 
+ * restituisce
  *  0 se il file esiste e non e` vuoto
  *  1 se esiste ma e` vuoto
  * -1 se non esiste
@@ -78,14 +78,14 @@ int esiste(const char *dir, const char *file, int progressivo)
 
    Free(nomefile);
 
-   if(!(stato.st_mode & S_IFREG)) {
+   if(!S_ISREG(stato.st_mode)) {
       citta_logf("SYSLOG: file %s non e` un file regolare", nomefile);
       return -2;
    }
 
    if(stato.st_size != 0)
       return 0;
-    else 
+    else
       return 1;
 }
 
@@ -116,7 +116,7 @@ int backup(const char *file)
 	}
    }
 
-   if(!(stato.st_mode & S_IFREG)) {
+   if(!S_ISREG(stato.st_mode)) {
       citta_logf("SYSLOG: file %s non e` un file regolare", file);
       return -1;
    }
@@ -135,12 +135,12 @@ int backup(const char *file)
    return (0);
 }
 
-/* 
- * Apre un file (a) sotto dir con estensione est 
+/*
+ * Apre un file (a) sotto dir con estensione est
  * (se est e` tra 0 e 99999)
- * lo assegna a fp, fa un backup .bak del vecchio 
+ * lo assegna a fp, fa un backup .bak del vecchio
  * restituisce 0 se e` tutto ok
- * 
+ *
  * 1 se non e` riuscito ad aprire il file
  * -1 se il file contiene caratteri non accettabili (per ora /, . ..)
  * fp dev'essere malloccato da chi chiama
@@ -166,10 +166,10 @@ int append_file(const char *dir, const char *file, const int est, FILE ** fpp)
    return 0;
 }
 
-/* 
- * Apre un file (w) sotto dir con estensione est 
+/*
+ * Apre un file (w) sotto dir con estensione est
  * (se est e` tra 0 e 999)
- * lo assegna a fp, fa un backup .bak del vecchio 
+ * lo assegna a fp, fa un backup .bak del vecchio
  * restituisce 0 se e` tutto ok
  * 1 se non e` riuscito ad aprire il file
  * -1 se il file contiene caratteri non accettabili (per ora /, . ..)
@@ -185,7 +185,7 @@ int save_file(const char *dir, const char *file, const int est, FILE ** fpp)
    };
 
    if(backup(nomefile)){
-           citta_logf("non posso fare il backup di %s",file);   
+           citta_logf("non posso fare il backup di %s",file);
            Free(nomefile);
            return(1);
    }
@@ -201,12 +201,12 @@ int save_file(const char *dir, const char *file, const int est, FILE ** fpp)
    return 0;
 }
 
-/* 
+/*
  * apre un file (in lettura) sotto dir con estensione est (se est>=0), e
- * lo assegna a fp esce con 
- *   0 se tutto va bene, 
- *  -1 se ci sono  problemi (compresi caratteri non accettabili), 
- *   1 se il file è lungo 0 (in questo caso lo chiude). 
+ * lo assegna a fp esce con
+ *   0 se tutto va bene,
+ *  -1 se ci sono  problemi (compresi caratteri non accettabili),
+ *   1 se il file è lungo 0 (in questo caso lo chiude).
  * Se il file non esiste lo crea, e lo tratta come nel caso di file
  * di lunghezza 0
  */
@@ -260,7 +260,7 @@ int load_file(const char *dir, const char *file, const int est, FILE ** fpp)
 }
 
 /*
- * cancella il file con estensione -est (se est>=0) (est<999999) 
+ * cancella il file con estensione -est (se est>=0) (est<999999)
  * -1 se ci sono problemi, 0 se e` tutto ok
  */
 
@@ -319,7 +319,7 @@ int check_magic_number(FILE * fp, char code, char *nome_file)
 }
 
 /*
- * crea e alloca 
+ * crea e alloca
  * nomefile,
  * ="dir/file-est"
  * nel caso est>0 <99999,

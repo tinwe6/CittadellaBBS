@@ -73,7 +73,7 @@ int login(void)
 		nome[0] = '\0';
 		if (USER_PWD && (USER_PWD[0] != '\0')) {
 			Free(USER_PWD);
-			USER_PWD = strdup("");
+			USER_PWD = citta_strdup("");
 		}
 	}
 
@@ -327,7 +327,7 @@ static int login_user(int user_is_validated)
 		strncpy(passwd, USER_PWD, MAXLEN_PASSWORD-1);
 		passwd[MAXLEN_PASSWORD-1] = '\0';
 		Free(USER_PWD);
-		USER_PWD = strdup("");
+		USER_PWD = citta_strdup("");
 		auto_login = true;
 	} else {
 		new_str_m(_("Password: "), passwd, -(MAXLEN_PASSWORD - 1));

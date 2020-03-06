@@ -8,10 +8,10 @@
 #############################################################################
 
 # Remove the hash mark below if compiling under Linux
-#OSFLAGS = -DLINUX
+#OSFLAGS = -DLINUX -std=gnu99
 
 # Remove the hash mark below if compiling under Mac OS X
-#OSFLAGS = -DMACOSX
+OSFLAGS = -DMACOSX -std=c99
 
 # Remove the hash mark below if compiling under Windows with Cygwin:
 #OSFLAGS = -DWINDOWS

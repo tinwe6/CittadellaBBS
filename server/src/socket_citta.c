@@ -43,15 +43,14 @@
 
 int iniz_socket(int porta)
 {
-	int s;
-  	int opt = 1;
 	char nomehost[MAX_NOMEHOST+1];
 	const char *ipstr = "127.0.0.1";
 	struct sockaddr_in sa;
 	struct hostent *hp = NULL;
 	struct in_addr ip;
-  
-	bzero(&sa, sizeof(struct sockaddr_in));
+	int s;
+  	int opt = 1;
+
 	if (gethostname(nomehost, sizeof nomehost) == -1) {
 	        Perror("gethostname");
 	} else {
@@ -74,15 +73,16 @@ int iniz_socket(int porta)
 	}
 	citta_logf("name associated with %s: %s", ipstr, hp->h_name);
 
+	memset(&sa, 0, sizeof(sa));
 	sa.sin_family = hp->h_addrtype;
 	sa.sin_port   = htons(porta);
-  
+
 	if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		Perror("Iniz-socket");
 		exit(1);
 	}
-  
-	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(opt))<0) {
+
+	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,&opt, sizeof(opt)) < 0) {
 		Perror("setsockopt");
 		exit(1);
 	}
@@ -92,9 +92,10 @@ int iniz_socket(int porta)
 		close(s);
 		exit(1);
 	}
-  
-	listen(s,5);
-	return(s);
+
+	listen(s, 5);
+
+	return s;
 }
 
 /*
@@ -108,7 +109,7 @@ int nuovo_descr(int s, char *host)
 	struct sessione *punto;
 	int i;
 	int socket_connessi, socket_attivi;
-	socklen_t size; 
+	socklen_t size;
 	struct sockaddr_in sock;
 	struct hostent *da_dove;
 
@@ -121,7 +122,7 @@ int nuovo_descr(int s, char *host)
 	socket_connessi = socket_attivi = 0;
 	for (punto = lista_sessioni; punto; punto = punto->prossima) {
 		socket_connessi++;
-		if (punto->logged_in) 
+		if (punto->logged_in)
 			socket_attivi++;
 	}
 
@@ -147,7 +148,7 @@ int nuovo_descr(int s, char *host)
 	if (getpeername(desc, (struct sockaddr *) &sock, &size) < 0) {
 		Perror("getpeername");
 		host[0] = '\0';
-	} else if (nameserver_lento || 
+	} else if (nameserver_lento ||
 		   !(da_dove = gethostbyaddr((char *)&sock.sin_addr,
 				  sizeof(sock.sin_addr), AF_INET))) {
 		if (!nameserver_lento)
@@ -180,15 +181,15 @@ int nuova_conn(int s)
 	struct sockaddr_in isa;
 	socklen_t i;
 	int t;
-  
+
 	i = sizeof(isa);
 	getsockname(s, (struct sockaddr *)&isa, &i);
-  
+
 	if ((t = accept(s,(struct sockaddr *)&isa, &i)) < 0) {
 		Perror("accept");
 		return(-1);
 	}
-	nonblock(t); 
+	nonblock(t);
 	return t;
 }
 
@@ -312,7 +313,7 @@ int elabora_input(struct sessione *t)
 	}
 
         buflen = inizio + fino_a;
-        
+
         /* Se la trasmissione e' in binario la sbatte su file */
         if (t->fp) {
                 int size, iii;
@@ -342,7 +343,7 @@ int elabora_input(struct sessione *t)
 			return(0);
                 }
 
-	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */ 
+	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */
 	tmp[0] = '\0';
 	for (i = 0, k = 0; buf[i]; ) {
 		if (!ISNEWL(*(buf + i)) &&
@@ -362,10 +363,10 @@ int elabora_input(struct sessione *t)
 				metti_in_coda(&t->input, tmp, k);
 				tmp[0] = '\0';
 			}
-			
+
 			if (flag) /* linea troppo lunga. ignora il resto */
 				for ( ; !ISNEWL(*(buf + i)); i++);
-			
+
 			/* trova la fine della linea */
 			for ( ; ISNEWL(*(buf + i)); i++)
 			        ;
@@ -417,7 +418,7 @@ static inline void clear_idle(struct sessione *t)
 	t->idle.cicli = 0;
 	t->idle.min = 0;
 	t->idle.ore = 0;
-	t->idle.warning = 0;	
+	t->idle.warning = 0;
 }
 #endif
 /***************************************************************************/

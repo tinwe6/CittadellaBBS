@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -28,7 +29,11 @@
 
 /* This macro allows to silence the -Wunused-parameter compiler
    warning for the parameter 'param.                            */
-#define IGNORE_UNUSED_PARAMETER(param) assert(true || param) 
+#define IGNORE_UNUSED_PARAMETER(param) assert(true || param)
+
+#ifndef isascii
+#  define isascii(c)    (((c) & ~0x7f) == 0)
+#endif
 
 #ifndef  _MEMSTAT_H
 
@@ -67,10 +72,10 @@
 #  define TYPE_PARAMETER      32
 #  define TYPE_POP3_SESSIONE  33
 #  define TYPE_POP3_MSG       34
-#  define TYPE_URNA_DEFNDE    35 
-#  define TYPE_URNA_DATI      36      
-#  define TYPE_URNA_VOTI      37 
-#  define TYPE_URNA_PROP      38 
+#  define TYPE_URNA_DEFNDE    35
+#  define TYPE_URNA_DATI      36
+#  define TYPE_URNA_VOTI      37
+#  define TYPE_URNA_PROP      38
 #  define TYPE_POINTER        39
 #  define TYPE_VOTANTI        40
 #  define TYPE_IMAP4_SESSIONE 41
@@ -85,6 +90,8 @@
 #  define TYPE_VOIDSTAR       50
 #  define TYPE_FILE_BOOKING   51
 #  define TYPE_NUM            52 /* Questo deve stare in fondo */
+
+extern char * citta_strdup(const char *str);
 
 #ifdef USE_MEM_STAT
 extern void * Calloc(size_t num, unsigned long size, int tipo);
@@ -123,7 +130,7 @@ static inline void Free(void *ptr)
 
 static inline char * Strdup(const char *ptr)
 {
-	return strdup(ptr);
+	return citta_strdup(ptr);
 }
 
 static inline void Perror(const char *str) {

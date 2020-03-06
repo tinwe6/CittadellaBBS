@@ -186,7 +186,7 @@ void cfg_read(char *rcfile, bool no_rc)
 				ret = cfg_getline(buf, &bufsize, fp);
 				fine = cfg_parse(buf, bufsize, ret);
 			} while (!fine);
-			
+
 			/* Close configuration file */
 			fclose(fp);
 		}
@@ -213,7 +213,7 @@ void cfg_add_opt(const char *buf)
 	struct cfg_opt *opt;
 
 	CREATE(opt, struct cfg_opt, 1, 0);
-	opt->opt = strdup(buf);
+	opt->opt = citta_strdup(buf);
 	opt->next = NULL;
 	if (cfg_opt_first == NULL) {
 		cfg_opt_first = opt;
@@ -228,10 +228,10 @@ void cfg_add_opt(const char *buf)
 
 static void cfg_init(void)
 {
-	client_cfg.host          = strdup(HOST_DFLT);
+	client_cfg.host          = citta_strdup(HOST_DFLT);
 	client_cfg.port          = PORTA_DFLT;
-	client_cfg.name          = strdup("");
-	client_cfg.password      = strdup("");
+	client_cfg.name          = citta_strdup("");
+	client_cfg.password      = citta_strdup("");
 	client_cfg.no_banner     = false;
 	client_cfg.dump_file     = interpreta_tilde_dir(DUMP_FILE_DFLT);
 	client_cfg.log_file_x    = interpreta_tilde_dir(LOG_FILE_X_DFLT);
@@ -240,26 +240,26 @@ static void cfg_init(void)
 	client_cfg.auto_log_x    = false;
 	client_cfg.auto_log_mail = false;
 	client_cfg.auto_log_chat = false;
-	client_cfg.doing         = strdup("");
+	client_cfg.doing         = citta_strdup("");
 	client_cfg.tmp_dir       = interpreta_tilde_dir(TMPDIR_DFLT);
 	client_cfg.nrighe        = NRIGHE_DFLT;
-	client_cfg.editor        = strdup(EDITOR_DFLT);
+	client_cfg.editor        = citta_strdup(EDITOR_DFLT);
 	client_cfg.autosave_file = interpreta_tilde_dir(AUTOSAVE_FILE);
 	client_cfg.autosave_time = AUTOSAVE_TIME_DFLT;
 	client_cfg.use_colors    = false;
 	client_cfg.max_xlog      = MAX_XLOG_DFLT;
 	client_cfg.tabsize       = TABSIZE_DFLT;
-	client_cfg.shell         = strdup(SHELL_DFLT);
-	client_cfg.compressione  = strdup("");
-	client_cfg.browser       = strdup("");
-	client_cfg.picture       = strdup("");
-	client_cfg.movie         = strdup("");
-	client_cfg.audio         = strdup("");
-	client_cfg.pdfapp        = strdup("");
-	client_cfg.psapp         = strdup("");
-	client_cfg.dviapp        = strdup("");
-	client_cfg.rtfapp        = strdup("");
-	client_cfg.docapp        = strdup("");
+	client_cfg.shell         = citta_strdup(SHELL_DFLT);
+	client_cfg.compressione  = citta_strdup("");
+	client_cfg.browser       = citta_strdup("");
+	client_cfg.picture       = citta_strdup("");
+	client_cfg.movie         = citta_strdup("");
+	client_cfg.audio         = citta_strdup("");
+	client_cfg.pdfapp        = citta_strdup("");
+	client_cfg.psapp         = citta_strdup("");
+	client_cfg.dviapp        = citta_strdup("");
+	client_cfg.rtfapp        = citta_strdup("");
+	client_cfg.docapp        = citta_strdup("");
 	client_cfg.termbrowser   = false;
 	client_cfg.download_dir  = interpreta_tilde_dir(DOWNLOAD_DIR_DFLT);
 }
@@ -366,7 +366,7 @@ static FILE * cfg_open(void)
 
 /*
  * Length of the first token in string buf[].
- * The token ends with a space or 
+ * The token ends with a space or
  */
 static size_t cfg_toklen(const char *buf, size_t buflen)
 {
@@ -381,7 +381,7 @@ static size_t cfg_toklen(const char *buf, size_t buflen)
 	return toklen;
 }
 
-/* 
+/*
  * Evaluates the token in in buf and assigns the value in the array config[]
  * Returns PARSE_OK, or an error code PARSE_.
  */
@@ -422,7 +422,7 @@ static int cfg_parse_line(const char *buf, size_t bufsize)
 						interpreta_tilde_dir(tmp);
 				} else
 					*((char **)config[i].var.s) =
-						strdup(tmp);
+						citta_strdup(tmp);
 #ifdef CFG_VERBOSE
 				printf("TMP %s CONFIG %s\n", tmp, *((char **)config[i].var.s));
 #endif
@@ -452,9 +452,10 @@ static char * cfg_strdup(const char *str)
 	size_t len;
 
 	len = strlen(str);
-	if ((str[0] != '\"') || (str[len-1] != '\"'))
-		return strdup("");
-	tmp = strdup(str+1);
+	if ((str[0] != '\"') || (str[len-1] != '\"')) {
+		return citta_strdup("");
+	}
+	tmp = citta_strdup(str+1);
 	tmp[len-2] = '\0';
 	return tmp;
 }

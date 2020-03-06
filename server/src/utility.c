@@ -25,8 +25,9 @@
 /* #include <arpa/telnet.h> Utilizzate nell'originale per echo ON/OFF */
 /* #include <netinet/in.h>  specifico per telnet.                     */
 #include "cittaserver.h"
-#include "utility.h"
 #include "memstat.h"
+#include "string_utils.h"
+#include "utility.h"
 
 /* Prototipi funzioni in questo file */
 void citta_log(char *str);
@@ -123,7 +124,7 @@ int timeval_subtract(struct timeval *result, struct timeval *x,
 		z.tv_usec += 1000000 * nsec;
 		z.tv_sec -= nsec;
 	}
-     
+
 	/* Compute the time remaining to wait.
 	   `tv_usec' is certainly positive. */
 	result->tv_sec = x->tv_sec - z.tv_sec;
@@ -144,7 +145,7 @@ int timeval_add(struct timeval *result, struct timeval *x,
 		nsec = (x->tv_usec + y->tv_usec) / 1000000;
 	else
 		nsec = 0;
-     
+
 	result->tv_sec = x->tv_sec + y->tv_sec + nsec;
 	result->tv_usec = x->tv_usec + y->tv_usec - 1000000 * nsec;
 
@@ -189,7 +190,7 @@ size_t text2string(struct text *txt, char **strtxt)
 		txt_rewind(txt);
 		str = txt_get(txt);
 		for(ptr = *strtxt; str; str = txt_get(txt), ptr++)
-			ptr = stpcpy(ptr, str);
+			ptr = citta_stpcpy(ptr, str);
 		return len;
 	} else
 		return 0;
@@ -198,7 +199,7 @@ size_t text2string(struct text *txt, char **strtxt)
 void strdate(char *str, long ora)
 {
         struct tm *tmst;
-	
+
 	tmst = localtime(&ora);
 	sprintf(str, "%d %s %d alle %2.2d:%2.2d", tmst->tm_mday,
 		mese[tmst->tm_mon], 1900+tmst->tm_year, tmst->tm_hour,
@@ -209,7 +210,7 @@ void strdate(char *str, long ora)
 char *space2under(char *stringa)
 {
     int i;
-        
+
     for(i = 0; stringa[i] != '\0'; i++)
             if (stringa[i] == ' ') stringa[i] = '_';
 
@@ -220,7 +221,7 @@ char *space2under(char *stringa)
 char *under2space(char *stringa)
 {
     int i;
-        
+
     for(i = 0; stringa[i] != '\0'; i++)
             if (stringa[i] == '_') stringa[i] = ' ';
 
@@ -305,13 +306,13 @@ char * strstrip(const char *src)
 	out = dest;
 
 	status = TEXT;
-	
+
 	while (*p) {
                 switch (status) {
 		case TEXT:
 	                if ( ((*p >= 'a') && (*p <= 'z')) || (*p == ' ') )
 		                *(out++) = *p;
-			else if ( ( (*p) >= 'A') && ( (*p) <= 'Z') ) 
+			else if ( ( (*p) >= 'A') && ( (*p) <= 'Z') )
 		                *(out++) = *p - 'A' + 'a';
 			else if ( *p == '\\')
 			        status = ESCAPE;

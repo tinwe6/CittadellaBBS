@@ -52,7 +52,7 @@ int num_parms(const char *source)
 {
         const char *src;
         int count = 1;
-  
+
 	src = source;
 	while (*src)
 		if (*src++ == '|')
@@ -120,7 +120,7 @@ void extractn(char *dest, const char *source, int parmnum, size_t len)
 
 /*
  * Come extract() ma estrae in una stringa allocata dinamicamente con
- * malloc(), allo stesso modo di strdup().
+ * CREATE(), allo stesso modo di citta_strdup().
  * Il risultato in dest e' sempre una stringa che termina con '\0'.
  */
 char * extracta(const char *source, int parmnum)
@@ -135,11 +135,11 @@ char * extracta(const char *source, int parmnum)
 			parmnum--;
         }
 	if (*src == '\0')
-		return strdup("");
+		return citta_strdup("");
 	end = src;
 	while (*end && (*end!='|'))
 		end++;
-	
+
 	CREATE(dest, char, end-src+1, 0);
 	memcpy(dest, src, end-src);
 	dest[end-src] = '\0';
@@ -153,7 +153,7 @@ char * extracta(const char *source, int parmnum)
 bool extract_bool(const char *source, int parmnum)
 {
         char buf[LBUF];
-  
+
         extract(buf, source, parmnum);
         return (strtol(buf, NULL, 10) != 0);
 }
@@ -164,7 +164,7 @@ bool extract_bool(const char *source, int parmnum)
 int extract_int(const char *source, int parmnum)
 {
         char buf[LBUF];
-  
+
         extract(buf, source, parmnum);
         return(strtol(buf, NULL, 10));
 }
@@ -175,7 +175,7 @@ int extract_int(const char *source, int parmnum)
 long extract_long(const char *source, int parmnum)
 {
         char buf[LBUF];
-  
+
         extract(buf, source, parmnum);
         return(strtol(buf, NULL, 10));
 }
@@ -186,7 +186,7 @@ long extract_long(const char *source, int parmnum)
 unsigned long extract_ulong(const char *source, int parmnum)
 {
         char buf[LBUF];
-  
+
         extract(buf, source, parmnum);
         return(strtoul(buf, NULL, 10));
 }
@@ -238,7 +238,7 @@ static void *strccpy(void *dest, const void *src, int ucharstop, size_t size)
 	const char *s;
 	size_t n;
 	int uc;
-	
+
 	if (size <= 0)
 		return ((void *) NULL);
 	s = (char *) src;
