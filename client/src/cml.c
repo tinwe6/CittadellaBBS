@@ -55,7 +55,8 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
                   Metadata_List *mdlist);
 char * iso2cml(char *str, size_t len);
 
-static char * cml_parse_tag(const char **str, int *color,Metadata_List *mdlist);
+static char * cml_parse_tag(const char **str, int *color,
+			    Metadata_List *mdlist);
 static const char * cml_getnum(unsigned long *num, const char *p);
 static const char * cml_getstr(char *str, const char *p);
 static void cml_parse_mdtag(const char **str, Metadata_List *mdlist);
@@ -487,9 +488,13 @@ int cml2editor(const char *str, int *outstr, int *outcol, int *totlen,
 	return len;
 }
 
+/* TODO eventually it would be good to parse all attachements one single */
+/*      time in this function.                                           */
 static char * cml_parse_tag(const char **str, int *color,
 			    Metadata_List *mdlist)
 {
+	IGNORE_UNUSED_PARAMETER(mdlist);
+
         /* Riconosce i seguenti tag:
            <b> </b> <bg=dig> <fg=dig> <u> </u> <r> </r> <f> </f>
            <link="str"> <user="str"> <room="str">
@@ -504,7 +509,8 @@ static char * cml_parse_tag(const char **str, int *color,
 	register char *o;
 	register int curr_state;
 	char digit, tmp[LBUF], strbuf1[LBUF], strbuf2[LBUF];
-	int md_id, tmpcol;
+	/* int md_id; */
+	int tmpcol;
         unsigned long size, flags, num;
 
 	tmpcol = *color;
@@ -856,7 +862,7 @@ static const char * cml_getstr(char *str, const char *p)
 char * editor2cml(int *str, int *col, int *color, size_t len,
                   Metadata_List *mdlist)
 {
-	int start, i, j, pos, currcol, flag, max, old_at, new_at, md_id;
+	int start, i, pos, currcol, flag, max, old_at, new_at, md_id;
         size_t mdlen;
 	char *out, *tmp, mdstr[LBUF];
 
@@ -877,11 +883,11 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
                         /* Inizio del metadata */
                         mdlen = md_convert2cml(mdlist, md_id, mdstr);
 			assert(max >= pos);
-                        while ((max - pos) < mdlen) {
+                        while ((max - pos) < (long)mdlen) {
                                 max *= 2;
                                 RECREATE(out, char, max + 1);
                         }
-                        for (j = 0; j < mdlen; j++) {
+                        for (size_t j = 0; j < mdlen; j++) {
                                 out[pos++] = mdstr[j];
 			}
                         do {
@@ -954,7 +960,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 			currcol = col[i];
 		}
 		if (str[i] > 127) { /* Extended 8-bit ascii char */
-			for (j = 0; cml_entity_tab[j].code; j++)
+			for (size_t j = 0; cml_entity_tab[j].code; j++)
 				if (str[i] == cml_entity_tab[j].code) {
 					out[pos++] = '&';
 					for (tmp = cml_entity_tab[j].str; *tmp;
@@ -976,7 +982,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 
 char * iso2cml(char *str, size_t len)
 {
-	int i, j, pos, max;
+	int pos, max;
 	char *out, *tmp;
 
 	max = len;
@@ -984,13 +990,13 @@ char * iso2cml(char *str, size_t len)
 	CREATE(out, char, max+1, 0);
 
 	pos = 0;
-	for (i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; i++) {
 		while ((max - pos) < 24) { /* potrebbe non bastare il posto */
 			max *= 2;
 			RECREATE(out, char, max+1);
 		}
 		if (str[i] < 0) { /* Extended 8-bit ascii char */
-			for (j = 0; cml_entity_tab[j].code; j++)
+			for (size_t j = 0; cml_entity_tab[j].code; j++)
 				if ((unsigned char)str[i] ==  cml_entity_tab[j].code) {
 					out[pos++] = '&';
 					for (tmp = cml_entity_tab[j].str; *tmp;
@@ -1076,11 +1082,11 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
 {
 	const char *p;
 	char strbuf1[LBUF], strbuf2[LBUF];
-	int md_id;
-        unsigned long num, size, flags;
+	unsigned long num, size, flags;
 
-	if (**str != '<')
+	if (**str != '<') {
 		return;
+	}
 	p = *str+1;
         if (!strncmp(p, "blog user=\"", 11)) {
                 p += 11;
@@ -1089,32 +1095,36 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                         p += 5;
                         p = cml_getnum(&num,p);
                 }
-                if (*p != '>')
+                if (*p != '>') {
                         return;
-                md_id = md_insert_blogpost(mdlist, strbuf1, num);
+		}
+                md_insert_blogpost(mdlist, strbuf1, num);
                 *str = p;
                 return;
         } else if (!strncmp(p, "file name=\"", 11)) {
                 p += 11;
                 p = cml_getstr(strbuf1, p);
-                if (strncmp(p, " num=", 5))
+                if (strncmp(p, " num=", 5)) {
                         return;
+		}
                 p += 5;
                 p = cml_getnum(&num,p);
 
-                if (strncmp(p, " size=", 6))
+                if (strncmp(p, " size=", 6)) {
                         return;
+		}
                 p += 6;
                 p = cml_getnum(&size,p);
-                if (strncmp(p, " flags=", 7))
+                if (strncmp(p, " flags=", 7)) {
                         return;
+		}
                 p += 7;
                 p = cml_getnum(&flags,p);
 
-                if (*p != '>')
+                if (*p != '>') {
                         return;
-                md_id = md_insert_file(mdlist, strbuf1, NULL, num, size,
-				       flags);
+		}
+                md_insert_file(mdlist, strbuf1, NULL, num, size, flags);
                 *str = p;
                 return;
         } else if (!strncmp(p, "link=\"", 6)) {
@@ -1129,7 +1139,7 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                 if (*p != '>') {
                         return;
 		}
-                md_id = md_insert_link(mdlist, strbuf1, strbuf2);
+                md_insert_link(mdlist, strbuf1, strbuf2);
                 *str = p;
                 return;
         } else if (!strncmp(p, "post room=\"", 11)) {
@@ -1139,25 +1149,28 @@ static void cml_parse_mdtag(const char **str, Metadata_List *mdlist)
                         p += 5;
                         p = cml_getnum(&num,p);
                 }
-                if (*p != '>')
+                if (*p != '>') {
                         return;
-                md_id = md_insert_post(mdlist, strbuf1, num);
+		}
+                md_insert_post(mdlist, strbuf1, num);
                 *str = p;
                 return;
         } else if (!strncmp(p, "room=\"", 6)) {
                 p += 6;
                 p = cml_getstr(strbuf1, p);
-                if (*p != '>')
+                if (*p != '>') {
                         return;
-                md_id = md_insert_room(mdlist, strbuf1);
+		}
+                md_insert_room(mdlist, strbuf1);
                 *str = p;
                 return;
         } else if (!strncmp(p, "user=\"", 6)) {
                 p += 6;
                 p = cml_getstr(strbuf1, p);
-                if (*p != '>')
+                if (*p != '>') {
                         return;
-                md_id = md_insert_user(mdlist, strbuf1);
+		}
+                md_insert_user(mdlist, strbuf1);
                 *str = p;
                 return;
         }
