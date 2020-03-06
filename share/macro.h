@@ -31,6 +31,10 @@
    warning for the parameter 'param.                            */
 #define IGNORE_UNUSED_PARAMETER(param) assert(true || param)
 
+#ifndef isascii
+#  define isascii(c)    (((c) & ~0x7f) == 0)
+#endif
+
 #ifndef  _MEMSTAT_H
 
 #  define TYPE_CHAR            0
