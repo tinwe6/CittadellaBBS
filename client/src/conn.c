@@ -28,6 +28,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
+#include <strings.h>
 #include <pwd.h>
 #include <ctype.h>
 #ifdef HAS_GETOPT_LONG
