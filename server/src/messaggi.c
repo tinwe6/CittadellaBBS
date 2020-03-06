@@ -31,7 +31,7 @@
 #include "x.h"
 
 #ifdef USE_STRING_TEXT
-# include <argz.h>
+# include "argz.h"
 #endif
 
 #ifdef USE_CACHE_POST

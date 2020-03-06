@@ -48,7 +48,7 @@
 #include "versione.h"
 
 #ifdef USE_STRING_TEXT
-# include <argz.h> 
+# include "argz.h"
 #endif
 
 #ifdef USE_CACHE_POST
@@ -148,14 +148,14 @@ int pop3_nuovo_descr(int s)
 
 	if ( (desc = nuova_conn(s)) < 0)
 		return (-1);
-  
+
 	socket_connessi = socket_attivi = 0;
-	
+
 	for (punto = sessioni_pop3; punto; punto = punto->next)
 		socket_connessi++;
-  
+
 	/* Controllo sul numero massimo di connessioni supportabili */
-  
+
 	if (socket_connessi >= pop3_max_num_desc) {
 		sprintf(buf2, "%d Massimo numero di connessioni POP3 raggiunto.\r\n", ERROR);
 		scrivi_a_desc(desc, buf2);
@@ -163,9 +163,9 @@ int pop3_nuovo_descr(int s)
 		return(0);
 	} else if (desc > pop3_maxdesc)
 			pop3_maxdesc = desc;
-	
+
 	/* Poi va creata una nuova struttura sessione per il nuovo arrivato */
-  
+
 	CREATE(nuova_ses, struct pop3_sess, 1, TYPE_POP3_SESSIONE);
 
 	/* Vanno prese le info relative al sito di provenienza */
@@ -174,7 +174,7 @@ int pop3_nuovo_descr(int s)
 	if (getpeername(desc, (struct sockaddr *) &sock, &size) < 0) {
 		Perror("getpeername");
 		*nuova_ses->host = 0;
-	} else if (nameserver_lento || 
+	} else if (nameserver_lento ||
 		   !(da_dove = gethostbyaddr((char *)&sock.sin_addr,
 				       sizeof(sock.sin_addr), AF_INET))) {
 		if (!nameserver_lento)
@@ -193,7 +193,7 @@ int pop3_nuovo_descr(int s)
 	/* Se e' previsto uno shutdown avverte e chiude la connessione */
 
 	citta_logf("POP3: Nuova connessione da [%s]", nuova_ses->host);
-  
+
 	/* Inizializziamo la struttura coi dati della nuova sessione */
 	nuova_ses->desc = desc;
 	nuova_ses->length = 0;
@@ -215,7 +215,7 @@ int pop3_nuovo_descr(int s)
 	/* Lo appiccichiamo in cima alla lista     */
 	nuova_ses->next = sessioni_pop3;
 	sessioni_pop3 = nuova_ses;
-  
+
 	/* Saluta e entra in stato authorization */
 	pop3_printf(nuova_ses, "+OK Cittadella/UX POP3 server ready\r\n");
 	nuova_ses->stato = AUTHORIZATION;
@@ -225,7 +225,7 @@ int pop3_nuovo_descr(int s)
 }
 
 /*
-  Chiude i socket e aggiorna la lista delle sessioni pop3, 
+  Chiude i socket e aggiorna la lista delle sessioni pop3,
   cancellando la sessione h in input.
 */
 void pop3_chiudi_socket(struct pop3_sess *h)
@@ -241,7 +241,7 @@ void pop3_chiudi_socket(struct pop3_sess *h)
 	else {
 		for(tmp = sessioni_pop3; (tmp->next != h) && tmp ;
 		    tmp = tmp->next);
-   
+
 		tmp->next = h->next;
 	}
         /* Pulizia */
@@ -256,7 +256,7 @@ void pop3_chiudi_socket(struct pop3_sess *h)
 }
 
 void pop3_chiusura_server(int s)
-{ 
+{
 	while(sessioni_pop3)
 		pop3_chiudi_socket(sessioni_pop3);
         close(s);
@@ -276,7 +276,7 @@ int pop3_elabora_input(struct pop3_sess *t)
 	flag = 0;
 	inizio = strlen(t->in_buf); /* Al posto di questo strlen() mi */
 	/* conviene tenere un puntatore nella struct sessione */
-        
+
 	/* Legge un po' di roba */
 	if ((questo_giro = read(t->desc, t->in_buf+inizio+fino_a,
 				MAX_STRINGA-(inizio+fino_a)-1)) > 0)
@@ -300,7 +300,7 @@ int pop3_elabora_input(struct pop3_sess *t)
 			return(0);
 
 
-	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */ 
+	/* L'input contiene 1 o piu' newline. Elabora e mette in coda */
 	tmp[0] = '\0';
 	for (i = 0, k = 0; *(t->in_buf + i); ) {
 		if (!ISNEWL(*(t->in_buf + i)) &&
@@ -329,7 +329,7 @@ int pop3_elabora_input(struct pop3_sess *t)
 
                         /* trova la fine della linea */
                         for ( ; ISNEWL(*(t->in_buf + i)); i++);
-                        
+
                         /* elimina la linea dal in_buffer */
                         memmove(t->in_buf, t->in_buf+i, buflen-i+1);
                         buflen -= i;
@@ -458,7 +458,7 @@ static void pop3_quit(struct pop3_sess *p)
 static void pop3_user(struct pop3_sess *p, char *nome)
 {
         struct dati_ut *utente;
-	
+
 	if (p->utente) {
 		p->utente = NULL;
 		pop3_printf(p, "%s\r\n", pop3_err);
@@ -720,7 +720,7 @@ static void pop3_maildrop(struct pop3_sess *p)
 	char autore[LBUF], room_name[LBUF], subject[LBUF], dest[LBUF];
         char date[LBUF], header[LBUF], err, *riga;
 	long flags, ora;
-	
+
 #ifdef USE_STRING_TEXT
 	char *txt;
 	size_t len;
@@ -753,7 +753,7 @@ static void pop3_maildrop(struct pop3_sess *p)
 
 	i = 0;
 	j = 0;
-        
+
         /*
         while((p->mail_list->num[i] < lowest) && (i < room->data->maxmsg))
                 i++;
@@ -844,7 +844,7 @@ static void pop3_printf(struct pop3_sess *p, const char *format, ...)
 #ifdef USE_MEM_STAT
 	char *tmp;
 #endif
-	
+
 	CREATE(nuovo, struct blocco_testo, 1, TYPE_BLOCCO_TESTO);
 
 	va_start(ap, format);

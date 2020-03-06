@@ -18,7 +18,7 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#ifdef MACOSX
+//#ifdef MACOSX_DELETEME
 
 #include "argz.h"
 #include <string.h>
@@ -55,4 +55,4 @@ argz_next (const char *argz, size_t argz_len, const char *entry)
       return NULL;
 }
 
-#endif
+//#endif

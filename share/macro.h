@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
@@ -28,7 +29,7 @@
 
 /* This macro allows to silence the -Wunused-parameter compiler
    warning for the parameter 'param.                            */
-#define IGNORE_UNUSED_PARAMETER(param) assert(true || param) 
+#define IGNORE_UNUSED_PARAMETER(param) assert(true || param)
 
 #ifndef  _MEMSTAT_H
 
@@ -67,10 +68,10 @@
 #  define TYPE_PARAMETER      32
 #  define TYPE_POP3_SESSIONE  33
 #  define TYPE_POP3_MSG       34
-#  define TYPE_URNA_DEFNDE    35 
-#  define TYPE_URNA_DATI      36      
-#  define TYPE_URNA_VOTI      37 
-#  define TYPE_URNA_PROP      38 
+#  define TYPE_URNA_DEFNDE    35
+#  define TYPE_URNA_DATI      36
+#  define TYPE_URNA_VOTI      37
+#  define TYPE_URNA_PROP      38
 #  define TYPE_POINTER        39
 #  define TYPE_VOTANTI        40
 #  define TYPE_IMAP4_SESSIONE 41
