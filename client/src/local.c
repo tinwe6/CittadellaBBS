@@ -47,7 +47,7 @@ void subshell (void)
 {
 	int shell_pid, shell_exit, b, i;
 	char buf[LBUF];
-	
+
 	fflush(stdout);
 	serv_puts("LSSH 1");
 	serv_gets(buf);
@@ -63,7 +63,7 @@ void subshell (void)
 		execlp(SHELL, SHELL, NULL);
 		exit(0);
 	} else {
-		if (shell_pid>0) { 
+		if (shell_pid>0) {
 			i=0;
 			do {
 				/* manda segnali keepalive al server */
@@ -83,11 +83,12 @@ void subshell (void)
 		term_mode();
 		serv_puts("LSSH 0");
 		serv_gets(buf);
-		if (buf[0] != '2') 
+		if (buf[0] != '2')
 			printf(_("*** Problemi con il server.\n"));
 	}
 }
 
+/* TODO Do we still need a finger command? */
 /* Finger a un host */
 void finger(void)
 {
@@ -95,36 +96,36 @@ void finger(void)
 	unsigned short porta = 79;
 	struct sockaddr_in address;
 	struct hostent *hp;
-	char *datainput;
+	char datainput[LBUF];
 	char host[40];
 	char user[MAXLEN_UTNAME];
 
 	new_str_m(_("Nome dell'host : "), host, 39);
 	new_str_m(_("Nome dell'utente : "), user, MAXLEN_UTNAME - 1);
 	printf("\n");
-	
+
 	/* Creazione del socket */
-	
+
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s == -1) {
 		perror("socket()");
 		return;
 	}
-	
+
 	/* Risoluzione dell'ip numerico del server */
-	
+
 	if ((hp = gethostbyname(host)) == NULL) {
 		perror("gethostbyname()");
 		return;
 	}
-	
+
 	/* Inizializzazione della struttura sockaddr_in */
-	
+
 	memset(&address, 0, sizeof(address));
-	memcpy((char *)&address.sin_addr, hp->h_addr, hp->h_length);
 	address.sin_family = AF_INET;
-	address.sin_port = htons((u_short)porta);
-	
+	address.sin_port = htons(porta);
+	memcpy(&sa.sin_addr, hp->h_addr_list[0], hp->h_length);
+
 	/* Connessione */
 
 	if (connect(s, (struct sockaddr *) &address, sizeof(address)) == -1) {
@@ -133,20 +134,19 @@ void finger(void)
 	}
 
 	/* Invio e ricezione dati finger */
-	
+
 	write(s, user, strlen(user));
 	write(s, "\n", 1);
-	
-	datainput = (char *) calloc (80, sizeof (char));
+
 	while (read(s, datainput, 80) != 0) {
 		printf("%s", datainput);
-		bzero(datainput, 80);
+		*datainput = 0;
 	}
-	
+
 	putchar('\n');
-	
+
 	/* Chiusura del socket */
-	
+
 	close(s);
 }
 

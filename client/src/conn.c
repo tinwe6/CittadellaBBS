@@ -28,7 +28,6 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
-#include <strings.h>
 #include <pwd.h>
 #include <ctype.h>
 #ifdef HAS_GETOPT_LONG
@@ -252,7 +251,6 @@ int conn_server(char *host, int porta)
         int s;
 
         printf(_("Connessione al server.... \n"));
-        bzero(&sa, sizeof(struct sockaddr_in));
 
 	/* printf("gethostbyname\"%s\".\n", host); */
         hp = gethostbyname(host);
@@ -261,6 +259,7 @@ int conn_server(char *host, int porta)
                 exit(1);
         }
 
+	memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
         sa.sin_port   = htons(porta);
 	memcpy(&sa.sin_addr, hp->h_addr_list[0], hp->h_length);
