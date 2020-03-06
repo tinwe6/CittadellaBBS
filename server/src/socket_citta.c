@@ -278,7 +278,7 @@ size_t scrivi_a_client_iobuf(struct sessione *t, struct iobuf *buf)
 int scrivi_tutto_a_client(struct sessione *t, struct iobuf *buf)
 {
         while (buf->olen) {
-		scrivi_a_client_iobuf(t, buf)
+		scrivi_a_client_iobuf(t, buf);
         }
         return 0;
 }
