@@ -28,9 +28,12 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
-#define DEFAULT_LISTEN_PORT 4001
 #undef RETRIEVE_REMOTE_INFO
 
+#define DEFAULT_LISTEN_PORT 4001
+static char default_client_path[] = "./bin/remote_cittaclient";
+
+/* maximum number of remote connections allowed */
 #define MAX_CONNECTIONS 20
 
 /* maximum length for the queue of pending connections. */
@@ -55,12 +58,19 @@ typedef enum {
 typedef struct {
     int listen_fd;
     int port;
+    bool send_host;
+    char *auth_key;
     char *logfile; /* if NULL log to stderr */
     log_level loglvl;
     bool do_fork;
-    char **client_argv;
+    char * const *client_argv;
 } daemon_config;
 
+char * const default_client_argv[] = {default_client_path, NULL};
+
+
+/****************************************************************************/
+/* Process command line arguments */
 
 static void print_usage_and_exit(char *arg0, char *arg)
 {
@@ -83,6 +93,8 @@ static daemon_config process_args(int argc, char **argv)
     daemon_config config = {
 	.listen_fd = 0,
 	.port = DEFAULT_LISTEN_PORT,
+	.send_host = true,
+	.auth_key = NULL,
 	.logfile = NULL,
 	.loglvl = LL0,
 	.do_fork = true,
@@ -104,6 +116,11 @@ static daemon_config process_args(int argc, char **argv)
 	    config.do_fork = false;
 	} else if (*argv && (!strcmp(s, "-f") || !strcmp(s, "--log-file"))) {
 	    config.logfile = *argv++;
+	} else if (*argv && (!strcmp(s, "-h") || !strcmp(s, "--dont-send-host"
+							 ))) {
+	    config.send_host = false;
+	} else if (*argv && (!strcmp(s, "-k") || !strcmp(s, "--auth-key"))) {
+	    config.auth_key = *argv++;
 	} else if (*argv && (!strcmp(s, "-l") || !strcmp(s, "--log-lvl"))) {
 	    if (!isdigit(**argv)) {
 		config.loglvl = -1;
@@ -128,10 +145,10 @@ static daemon_config process_args(int argc, char **argv)
 	print_usage_and_exit(prog_name, NULL);
     }
     if (!*argv) {
-	print_usage_and_exit(prog_name, NULL);
+	config.client_argv = default_client_argv;
+    } else {
+	config.client_argv = argv;
     }
-
-    config.client_argv = argv;
 
     return config;
 }
@@ -314,6 +331,9 @@ static int log_transmission(log_level ll, const char *data, ssize_t len,
 
 /*************************************************************/
 
+#define MAX_ARGV_SIZE 32
+#define MAX_HOST_LEN 256
+
 typedef struct {
     char data[256];
     size_t len;
@@ -329,7 +349,7 @@ typedef struct {
     int fd;
     int fd_out;
     bool close_conn;
-    char host[128];
+    char *host;
     char outbuf[256];
     ssize_t outlen;
 } session_data;
@@ -352,35 +372,27 @@ static void register_fd(daemon_data *data, int fd, short events, int index)
 }
 
 static void session_add(daemon_data *data, session_type type, int fd,
-			int fd_out, unsigned long addr)
+			int fd_out, char *host)
 {
     session_data *session = (session_data *)malloc(sizeof(session_data));
     session->type = type;
     session->fd = fd;
     session->fd_out = fd_out;
     session->close_conn = false;
-    session->host[0] = 0;
     session->outbuf[0] = 0;
     session->outlen = 0;
-    if (addr) {
-	snprintf(session->host, sizeof(session->host), "%lu.%lu.%lu.%lu",
-		 (addr >>  0) & 0xff, (addr >>  8) & 0xff,
-		 (addr >> 16) & 0xff, (addr >> 24) & 0xff
-		 );
-    } else {
-	session->host[0] = 0;
-    }
+    session->host = host;
+
     short events = (type == SESS_LISTEN) ? POLLIN : (POLLIN|POLLOUT);
     register_fd(data, fd, events, data->nfds);
     data->sessions[data->nfds] = session;
     data->nfds++;
 }
 
-static void make_pipe(daemon_data *data, int fd1, int fd2,
-		      unsigned long host_addr)
+static void make_pipe(daemon_data *data, int fd1, int fd2, char *host)
 {
-    session_add(data, SESS_PIPE, fd1, fd2, host_addr);
-    session_add(data, SESS_PIPE, fd2, fd1, host_addr);
+    session_add(data, SESS_PIPE, fd1, fd2, host);
+    session_add(data, SESS_PIPE, fd2, fd1, host);
 }
 
 static void session_close(daemon_data *data, int index)
@@ -400,6 +412,9 @@ static void session_close(daemon_data *data, int index)
 		data->fds[j].fd = -1;
 	    }
 	}
+    }
+    if (data->sessions[index]->host) {
+	free(data->sessions[index]->host);
     }
     if (close(data->fds[index].fd) == -1) {
 	log_perror(LL0, "close()");
@@ -624,7 +639,7 @@ int exec_client(int fds, char * const *argv)
  * Returns file descriptor of master side of pty, or -1 if something went
  * wrong.
  */
-int start_client(int fd_client, char * const *argv)
+int start_client(int fd_client, char * const argv[])
 {
     int fdm, fds, rc;
 
@@ -703,6 +718,42 @@ static int get_remote_info(int fd, char *host, size_t host_size)
 }
 #endif
 
+static char * make_host(unsigned long addr)
+{
+    char * host = (char *)malloc(MAX_HOST_LEN);
+
+    if (addr) {
+	snprintf(host, MAX_HOST_LEN - 1, "%lu.%lu.%lu.%lu",
+		 (addr >>  0) & 0xff, (addr >>  8) & 0xff,
+		 (addr >> 16) & 0xff, (addr >> 24) & 0xff
+		 );
+    } else {
+	host[0] = 0;
+    }
+    return host;
+}
+
+static char opt_R[] = "-R";
+static char opt_r[] = "-r";
+/* Adds to the program name and arguments of the remote client given */
+static void make_argv(char *argv[], char *host, daemon_config *config)
+{
+    int n = 0;
+    while (config->client_argv[n]) {
+	argv[n] = config->client_argv[n];
+	++n;
+    }
+    if (config->auth_key) {
+	argv[n++] = opt_r;
+	argv[n++] = config->auth_key;
+    }
+    if (config->send_host) {
+	argv[n++] = opt_R;
+	argv[n++] = host;
+    }
+    argv[n] = NULL;
+}
+
 /* Accept all new incoming connections. For each of them, find info  */
 /* about the remote host, set up a pty and start the remote program, */
 /* and negotiate the telnet connection.                              */
@@ -738,21 +789,26 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	/* NOTE: the new connection inherits the non blocking */
 	/*       status from the listening socket             */
 #if 0
-	 enable_socket_blocking(fd_client, false);
+	enable_socket_blocking(fd_client, false);
 #endif
-	int fd_master = start_client(fd_client, config->client_argv);
+	char *client_argv[MAX_ARGV_SIZE];
+	char *host = make_host(address.sin_addr.s_addr);
+
+	make_argv(client_argv, host, config);
+
+	int fd_master = start_client(fd_client, client_argv);
+
 	if (fd_master == -1) {
 	    log_printf(LL0, "Could not setup new connection (fd=%d).",
 		       fd_client);
 	    close(fd_client);
 	    return;
 	}
-	make_pipe(data, fd_client, fd_master, address.sin_addr.s_addr);
+	make_pipe(data, fd_client, fd_master, host);
 
 	telnet_negotiation(fd_client);
     }
 }
-
 
 /* Receive all incoming data on this socket and move it in the output buffer */
 static void read_data(session_data *s)
