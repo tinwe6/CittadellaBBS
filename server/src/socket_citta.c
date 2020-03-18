@@ -258,9 +258,9 @@ int scrivi_a_client(struct sessione *t, char *testo)
 }
 
 
-size_t scrivi_a_client_iobuf(struct sessione *t, struct iobuf *buf)
+ssize_t scrivi_a_client_iobuf(struct sessione *t, struct iobuf *buf)
 {
-        size_t sent;
+        ssize_t sent;
 
 #if ALLOW_COMPRESSION
         if (t->compressing)

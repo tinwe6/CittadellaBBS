@@ -29,7 +29,7 @@ int elabora_input(struct sessione *t);
 void nonblock(int s);
 
 int scrivi_a_client(struct sessione *t, char *testo);
-size_t scrivi_a_client_iobuf(struct sessione *t, struct iobuf *buf);
+ssize_t scrivi_a_client_iobuf(struct sessione *t, struct iobuf *buf);
 int scrivi_tutto_a_client(struct sessione *t, struct iobuf *buf);
 
 #endif /* socket_citta.h */

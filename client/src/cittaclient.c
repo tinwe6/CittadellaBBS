@@ -957,11 +957,10 @@ static void info_sul_server(void)
         serv_putf("INFO locale|%s", COMPRESSIONE);
 #else
 	/* remote cittaclient */
-        char rhost[LBUF];
-
 # ifdef LOGIN_PORT
         serv_putf("INFO remoto|%s|%s", remote_host, remote_key);
 # else
+        char rhost[LBUF];
         find_remote_host(rhost);
         serv_putf("INFO remoto|%s", rhost);
 # endif
