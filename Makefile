@@ -39,7 +39,7 @@ docdir = doc
 mandir = man
 clientdir = client/src
 serverdir = server/src
-daemondir = in.cittad
+daemondir = server/src
 sharedir = share
 installdir = ../citta
 helpdir = server/lib/help
@@ -55,8 +55,8 @@ cittaclient: libcitta
 cittaserver: libcitta
 	@$(MAKE) -C $(serverdir)
 
-in.cittad:
-#	@$(MAKE) -C $(daemondir)
+cittad:
+	@$(MAKE) -C $(daemondir)
 
 strip:
 	@$(MAKE) -C $(clientdir) strip
@@ -109,12 +109,14 @@ bininstall: aggiorna_help #urna_to_ascii
 	-rm -f $(installdir)/client/bin/remote_cittaclient
 	-cp ./client/bin/cittaclient $(installdir)/client/bin/
 	-cp ./client/bin/remote_cittaclient $(installdir)/client/bin/
-	-chmod a+s $(installdir)/client/bin/remote_cittaclient
+#	-chmod a+s $(installdir)/client/bin/remote_cittaclient
+	-rm -f $(installdir)/server/bin/remote_cittaclient
 	-rm -f $(installdir)/server/bin/cittaserver
-	-rm -f $(installdir)/server/bin/citta_inetd
+	-rm -f $(installdir)/server/bin/cittad
 	-rm -f $(installdir)/server/bin/conv*
+	-cp ./client/bin/remote_cittaclient $(installdir)/server/bin/
 	-cp ./server/bin/cittaserver $(installdir)/server/bin/
-	-cp ./server/bin/citta_inetd $(installdir)/server/bin/
+	-cp ./server/bin/cittad $(installdir)/server/bin/
 	-cp ./server/bin/conv* $(installdir)/server/bin/
 	-cp -f $(mandir)/* $(installdir)/$(mandir)
 	-cp -f $(helpdir)/manuale $(docdir)/dot_commands \

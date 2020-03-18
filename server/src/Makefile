@@ -73,14 +73,14 @@ OBJFILES_CONV = conv_0.3.1.o memstat.o utility.o
 
 OBJFILES_FMADMIN = file_messaggi.o fm_admin.o memstat.o utility.o termioc.o
 
-OBJFILES_INETD = demone.o
+OBJFILES_INETD = cittad.o
 
-all : $(bindir)/cittaserver #$(bindir)/citta_inetd #$(bindir)/conv_0.3.1 #$(bindir)/fm_admin
+all : $(bindir)/cittaserver $(bindir)/cittad #$(bindir)/conv_0.3.1 #$(bindir)/fm_admin
 
 $(bindir)/cittaserver : $(OBJFILES)
 	$(CC) $(CFLAGS) $(OBJFILES) $(LFLAGS) $(LZ) $(EFENCE) -o $@
 
-$(bindir)/citta_inetd : $(OBJFILES_INETD)
+$(bindir)/cittad : $(OBJFILES_INETD)
 	$(CC) $(CFLAGS) $(OBJFILES_INETD) $(EFENCE) -o $@
 
 $(bindir)/conv_0.3.1 : $(OBJFILES_CONV)
@@ -99,6 +99,8 @@ cache_post.o : cache_post.c cache_post.h
 	$(CC) -c $(CFLAGS) cache_post.c
 cestino.o : cestino.c cestino.h
 	$(CC) -c $(CFLAGS) cestino.c
+cittad.o : cittad.c
+	$(CC) -c $(CFLAGS) cittad.c
 cittaweb.o : cittaweb.c cittaweb.h
 	$(CC) -c $(CFLAGS) cittaweb.c
 cmd_al_client.o : cmd_al_client.c cmd_al_client.h
@@ -107,8 +109,6 @@ coda_testo.o : coda_testo.c coda_testo.h
 	$(CC) -c $(CFLAGS) coda_testo.c
 config.o : config.c versione.h
 	$(CC) -c $(CFLAGS) config.c
-demone.o : demone.c
-	$(CC) -c $(CFLAGS) demone.c
 email.o : email.c email.h
 	$(CC) -c $(CFLAGS) email.c
 express.o : express.c express.h
@@ -205,7 +205,8 @@ clean :
 	-rm -f $(OBJFILES) $(OBJFILES_CONV) *~
 
 mrproper : clean mrproperconv cleanconv
-	-rm -f $(bindir)/cittaserver $(bindir)/fm_admin $(bindir)/conv*
+	-rm -f $(bindir)/cittaserver $(bindir)/cittad $(bindir)/fm_admin \
+		$(bindir)/conv*
 
 
 strip :
