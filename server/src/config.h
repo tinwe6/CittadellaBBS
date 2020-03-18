@@ -42,10 +42,12 @@
 /* QUESTA FEATURE E' ANCORA IN SVILUPPO: NON DEFINIRE USE_CLIENT_PORT !!!   */
 /* Lancia un demone che ascolta le connessioni al client remoto.            */
 #undef USE_CLIENT_PORT
-/* Path del telnetd: attenzione, deve avere lo switch -L.                   */
-#define TELNETD "/usr/sbin/telnetd"
+/* Path del telnetd: attenzione, deve avere lo switch -L. (deprecated)      */
+/* #define TELNETD "/usr/sbin/telnetd" */
 /* Path del client remoto                                                   */
-#define REMOTE_CLIENT "../client/bin/remote_cittaclient"
+#define REMOTE_CLIENT "./bin/remote_cittaclient"
+/* Remote client authentication key                                         */
+#define REMOTE_KEY    "SecureKey"
 
 /* Numero massimo di sessioni contemporanee.                                */
 #define MAX_SESSIONI      30

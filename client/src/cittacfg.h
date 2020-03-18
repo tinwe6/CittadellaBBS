@@ -18,7 +18,7 @@
 #ifdef MACOSX
 #define DUMP_FILE_DFLT       "~/Library/Application Support/cittaclient/cittadella.dump"
 #define AUTOSAVE_FILE_DFLT   "~/Library/Application Support/cittaclient/autosave.cml"
-#else
+#else /* endif MACOSX */
 #define DUMP_FILE_DFLT       "~/cittadella.dump"
 #define AUTOSAVE_FILE_DFLT   "~/autosave.cml"
 #endif
@@ -29,7 +29,8 @@
 #define EDITOR_DFLT          "/home/bbs/Cittadella/citta/client/bin/BBSeditor"
 #define SHELL_DFLT           ""
 #define DUMP_FILE_DFLT       ""
-#define AUTOSAVE_FILE_DFLT    ""
+#define AUTOSAVE_FILE_DFLT   ""
+#define LOGIN_PORT           /* Transmit auth key and host name to server */
 #endif
 
 #define PORTA_DFLT           4000

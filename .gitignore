@@ -12,7 +12,7 @@
 # executables
 client/bin/*
 server/bin/cittaserver
-server/bin/citta_inetd
+server/bin/cittad
 
 # old files to eliminate
 server/src/conv_0.1.22.c

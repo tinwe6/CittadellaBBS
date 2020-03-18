@@ -945,7 +945,7 @@ void pulisci_ed_esci(exit_banner show_banner)
 #if DEBUG
         MemstatS();
 #endif
-        _exit(0);
+        exit(0);
 }
 
 static void info_sul_server(void)
@@ -953,11 +953,13 @@ static void info_sul_server(void)
         char rbf[LBUF+10], comp[LBUF], *buf;
 
 #ifdef LOCAL
+	/* local cittaclient  */
         serv_putf("INFO locale|%s", COMPRESSIONE);
 #else
+	/* remote cittaclient */
         char rhost[LBUF];
 
-# ifdef LOGINPORT
+# ifdef LOGIN_PORT
         serv_putf("INFO remoto|%s|%s", remote_host, remote_key);
 # else
         find_remote_host(rhost);
@@ -1013,7 +1015,8 @@ static void info_sul_server(void)
                         printf("Connessione non compressa.\n");
 
         } else {
-                pulisci_ed_esci(SHOW_EXIT_BANNER);
+		printf("%s\n", rbf + 4);
+		pulisci_ed_esci(SHOW_EXIT_BANNER);
         }
 }
 

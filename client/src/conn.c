@@ -104,7 +104,9 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 "  -n         --no-banner   skip the login/logout banners\n"             \
 "  -N         --norc        do not read config file and use default settings\n" \
 "  -p <port>  --port        specify a port (server must be on the same port)\n" \
-"  -u <name>  --username    log in using this user name\n"               \
+"  -r <rkey>  --remote_key  remote client authentication keye\n"	\
+"  -R <host>  --remote_host ip addr of the connection to the remote client\n"\
+"  -u <name>  --username    log in using this user name\n"		 \
 "  -v         --version     output version information and exit\n"       \
 "\n"
 
@@ -122,11 +124,11 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 		{"rcfile",      1, 0, 'F'},
 		{"username",    1, 0, 'u'},
 		{"version",     0, 0, 'v'},
-#ifndef LOCAL
-# ifdef LOGINPORT
+# ifndef LOCAL
+#  ifdef LOGIN_PORT
 		{"remote",      1, 0, 'r'},
 		{"remote_host", 1, 0, 'R'},
-# endif
+#  endif
 # endif
 		{0, 0, 0, 0}
 	};
@@ -140,13 +142,16 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 	*no_rc = false;
 	*rcfile = NULL;
 
-
         while (1) {
 #ifdef HAS_GETOPT_LONG
-		c = getopt_long(argc, argv, "cCdF:Hh:lnNp:u:v", long_options,
+		c = getopt_long(argc, argv, "cCdF:Hh:lnNp:r:R:u:v", long_options,
 				&option_index);
 #else
+#ifdef LOCAL
 		c = getopt(argc, argv, "cCdF:Hh:lnNp:u:v");
+#else
+		c = getopt(argc, argv, "cCdF:Hh:lnNp:r:R:u:v");
+#endif
 #endif /* HAS_GETOPT_LONG */
 		if (c == -1)
 			break;
@@ -219,9 +224,8 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
                                "Cittadella/UX BBS\n", CLIENT_RELEASE);
                         exit(0);
                         break;
-
 #ifndef LOCAL
-# ifdef LOGINPORT
+# ifdef LOGIN_PORT
                 case 'r': /* Remote connection */
                         if (optarg)
                                 strcpy(remote_key, optarg);
