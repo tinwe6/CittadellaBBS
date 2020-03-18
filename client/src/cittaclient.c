@@ -935,7 +935,9 @@ void pulisci_ed_esci(exit_banner show_banner)
                        );
         }
         printf("Bye bye.\n");
-        close(serv_sock);
+        if (close(serv_sock) == -1) {
+	    perror("close() socket\n");
+	}
 
         /* Ripristino terminale e segnali */
 	/* reset_term(); */
@@ -943,7 +945,7 @@ void pulisci_ed_esci(exit_banner show_banner)
 #if DEBUG
         MemstatS();
 #endif
-        exit(0);
+        _exit(0);
 }
 
 static void info_sul_server(void)

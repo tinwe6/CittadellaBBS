@@ -45,7 +45,7 @@ void term_mode(void)
         }
 
         tcgetattr(STDIN_FILENO, &term_attr);
-        term_attr.c_lflag &= ~(ICANON|ECHO); 
+        term_attr.c_lflag &= ~(ICANON|ECHO);
         term_attr.c_cc[VMIN] = 1;
         term_attr.c_cc[VTIME] = 0;
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_attr);

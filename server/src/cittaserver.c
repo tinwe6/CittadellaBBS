@@ -845,8 +845,9 @@ void ciclo_server(int s)
 			if (FD_ISSET(punto->socket_descr, &output_set) &&
 			    (iobuf_olen(&punto->iobuf) > 0 )) {
 				if (scrivi_a_client_iobuf(punto,
-                                                          &punto->iobuf) < 0)
+							  &punto->iobuf)) {
                                         chiudi_sessione(punto);
+				}
                         }
 		}
 

@@ -41,6 +41,9 @@
 #include "utility.h"
 #include "versione.h"
 
+/* maximum length for the queue of pending connections. */
+#define MAX_PENDING 5
+
 int iniz_socket(int porta)
 {
 	char nomehost[MAX_NOMEHOST+1];
@@ -82,7 +85,7 @@ int iniz_socket(int porta)
 		exit(1);
 	}
 
-	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,&opt, sizeof(opt)) < 0) {
+	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
 		Perror("setsockopt");
 		exit(1);
 	}
@@ -93,7 +96,7 @@ int iniz_socket(int porta)
 		exit(1);
 	}
 
-	listen(s, 5);
+	listen(s, MAX_PENDING);
 
 	return s;
 }
@@ -185,7 +188,7 @@ int nuova_conn(int s)
 	i = sizeof(isa);
 	getsockname(s, (struct sockaddr *)&isa, &i);
 
-	if ((t = accept(s,(struct sockaddr *)&isa, &i)) < 0) {
+	if ((t = accept(s, (struct sockaddr *)&isa, &i)) < 0) {
 		Perror("accept");
 		return(-1);
 	}
@@ -226,8 +229,7 @@ int scrivi_a_desc_len(int desc, char *txt, size_t totale)
 	}
 
 	if ((size_t)questo_giro < totale) {
-		memmove(txt, txt+questo_giro, totale-questo_giro);
-                //citta_logf("SADL scritto %ld/%ld", questo_giro, totale);
+		memmove(txt, txt + questo_giro, totale - questo_giro);
         }
 
 	return questo_giro;
@@ -266,8 +268,7 @@ size_t scrivi_a_client_iobuf(struct sessione *t, struct iobuf *buf)
         else
 #endif
                 sent = scrivi_a_desc_len(t->socket_descr, buf->out, buf->olen);
-                //sent = scrivi_a_desc(t->socket_descr, buf->out);
-        //citta_logf("SENT %ld", sent);
+
         if (sent > 0)
                 buf->olen -= sent;
 
