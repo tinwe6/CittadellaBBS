@@ -3,7 +3,6 @@
   TODO
   - in the child processes we use perror() and log_() that are not async safe
   - double-fork the daemon
-  - fix hanging telnet connection happening when disconnecting (telnet side)
   - sometimes (the first) connection fails with "ioctl TIOCSCTTY: Operation
     not permitted"
 */
@@ -349,6 +348,7 @@ typedef struct session_data_t {
     int fd;
     int fd_out;
     bool close_conn;
+    bool is_socket;
     char *host;
     char outbuf[256];
     ssize_t outlen;
@@ -373,13 +373,14 @@ static void register_fd(daemon_data *data, int fd, short events, int index)
 }
 
 static session_data * session_add(daemon_data *data, session_type type, int fd,
-				  int fd_out, char *host)
+				  int fd_out, char *host, bool is_socket)
 {
     session_data *session = (session_data *)malloc(sizeof(session_data));
     session->type = type;
     session->fd = fd;
     session->fd_out = fd_out;
     session->close_conn = false;
+    session->is_socket = is_socket;
     session->outbuf[0] = 0;
     session->outlen = 0;
     session->host = host;
@@ -393,12 +394,62 @@ static session_data * session_add(daemon_data *data, session_type type, int fd,
     return session;
 }
 
-static void make_pipe(daemon_data *data, int fd1, int fd2, char *host)
+/* Creates a pipe between a socket and the master fd of the pty */
+static void make_pipe(daemon_data *data, int socket_fd, int pty_fd, char *host)
 {
-    session_data *s1 = session_add(data, SESS_PIPE, fd1, fd2, host);
-    session_data *s2 = session_add(data, SESS_PIPE, fd2, fd1, host);
+    session_data *s1 = session_add(data, SESS_PIPE, socket_fd, pty_fd, host,
+				   true);
+    session_data *s2 = session_add(data, SESS_PIPE, pty_fd, socket_fd, host,
+				   false);
     s1->other_end = s2;
     s2->other_end = s1;
+}
+
+/* See https://stackoverflow.com/a/12730776 for how to close a socket */
+static int get_and_clear_socket_error(int fd)
+{
+    int err = 1;
+    socklen_t len = sizeof err;
+    if (-1 == getsockopt(fd, SOL_SOCKET, SO_ERROR, (char *)&err, &len)) {
+	log_perror(LL0, "Fatal: getSO_ERROR");
+	exit(EXIT_FAILURE);
+    }
+    if (err) {
+	errno = err;
+    }
+    return err;
+}
+
+void close_fd(int fd)
+{
+    if (close(fd) < 0) {
+	log_perror(LL0, "close()");
+    }
+}
+
+void close_socket(int fd)
+{
+    assert(fd >= 0);
+    get_and_clear_socket_error(fd);
+    /* terminate the 'reliable' delivery */
+    if (shutdown(fd, SHUT_RDWR) < 0) {
+	if (errno != ENOTCONN && errno != EINVAL) {
+	    /* SGI causes EINVAL */
+	    log_perror(LL0, "shutdown()");
+	}
+    }
+    close_fd(fd);
+}
+
+static void session_close_fd(daemon_data *data, int index)
+{
+    assert(data->fds[index].fd >= 0);
+    if (data->sessions[index]->is_socket) {
+	close_socket(data->fds[index].fd);
+    } else {
+	close_fd(data->fds[index].fd);
+    }
+    data->fds[index].fd = -1;
 }
 
 static void session_close(daemon_data *data, int index)
@@ -410,27 +461,21 @@ static void session_close(daemon_data *data, int index)
 	assert(data->needs_cleanup);
 	return;
     }
-    log_printf(LL1, "Eliminating session index %d fd %d\n", index,
-	       data->sessions[index]->fd);
     if (data->sessions[index]->type == SESS_PIPE) {
 	assert(data->sessions[index]->other_end);
 	for (int j = 0; j != data->nfds; ++j) {
 	    if (data->fds[j].fd == data->sessions[index]->fd_out) {
 		assert(data->sessions[j]->fd_out == data->sessions[index]->fd);
 		data->sessions[j]->close_conn = true;
-		if (close(data->fds[j].fd) == -1) {
-		    log_perror(LL0, "close()");
-		}
-		log_printf(LL1, "Eliminating session index %d fd %d (pipe)\n",
+		session_close_fd(data, j);
+		log_printf(LL1, "Closed session index %d fd %d (pipe)\n",
 			   j, data->sessions[j]->fd);
-		data->fds[j].fd = -1;
 	    }
 	}
     }
-    if (close(data->fds[index].fd) == -1) {
-	log_perror(LL0, "close()");
-    }
-    data->fds[index].fd = -1;
+    session_close_fd(data, index);
+    log_printf(LL1, "Closed session index %d fd %d\n", index,
+	       data->sessions[index]->fd);
     data->needs_cleanup = true;
 }
 
@@ -819,7 +864,7 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	if (fd_master == -1) {
 	    log_printf(LL0, "Could not setup new connection (fd=%d).",
 		       fd_client);
-	    close(fd_client);
+	    close_socket(fd_client);
 	    return;
 	}
 	make_pipe(data, fd_client, fd_master, host);
@@ -933,7 +978,7 @@ void cleanup_and_exit(daemon_data *data)
     /* Clean up all of the sockets that are open */
     for (int i = 0; i < data->nfds; i++) {
 	if (data->fds[i].fd >= 0) {
-	    close(data->fds[i].fd);
+	    session_close_fd(data, i);
 	}
     }
 }
@@ -997,8 +1042,6 @@ static int daemon_init(daemon_config *config)
     /* become session leader */
     setsid();
 
-    //chdir("/");
-
 #if 0
 #define MAX_CLOSE_FD 256
     for (int i = 0; i < MAX_CLOSE_FD; i++) {
@@ -1018,7 +1061,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
     int fd_socket = config.listen_fd;
 
     /* set up the initial listening socket */
-    session_add(&data, SESS_LISTEN, fd_socket, -1, 0);
+    session_add(&data, SESS_LISTEN, fd_socket, -1, 0, true);
 
     do {
 #define NS_TO_MS (1000*1000)
