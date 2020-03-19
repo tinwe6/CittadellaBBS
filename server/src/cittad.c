@@ -344,7 +344,7 @@ typedef enum {
     SESS_PIPE,
 } session_type;
 
-typedef struct {
+typedef struct session_data_t {
     session_type type;
     int fd;
     int fd_out;
@@ -352,6 +352,7 @@ typedef struct {
     char *host;
     char outbuf[256];
     ssize_t outlen;
+    struct session_data_t *other_end;
 } session_data;
 
 typedef struct {
@@ -371,8 +372,8 @@ static void register_fd(daemon_data *data, int fd, short events, int index)
     };
 }
 
-static void session_add(daemon_data *data, session_type type, int fd,
-			int fd_out, char *host)
+static session_data * session_add(daemon_data *data, session_type type, int fd,
+				  int fd_out, char *host)
 {
     session_data *session = (session_data *)malloc(sizeof(session_data));
     session->type = type;
@@ -382,39 +383,49 @@ static void session_add(daemon_data *data, session_type type, int fd,
     session->outbuf[0] = 0;
     session->outlen = 0;
     session->host = host;
+    session->other_end = NULL;
 
     short events = (type == SESS_LISTEN) ? POLLIN : (POLLIN|POLLOUT);
     register_fd(data, fd, events, data->nfds);
     data->sessions[data->nfds] = session;
     data->nfds++;
+
+    return session;
 }
 
 static void make_pipe(daemon_data *data, int fd1, int fd2, char *host)
 {
-    session_add(data, SESS_PIPE, fd1, fd2, host);
-    session_add(data, SESS_PIPE, fd2, fd1, host);
+    session_data *s1 = session_add(data, SESS_PIPE, fd1, fd2, host);
+    session_data *s2 = session_add(data, SESS_PIPE, fd2, fd1, host);
+    s1->other_end = s2;
+    s2->other_end = s1;
 }
 
 static void session_close(daemon_data *data, int index)
 {
     assert(data->sessions[index]->close_conn);
 
+    if (data->fds[index].fd == -1) {
+	assert(data->sessions[index]->type == SESS_PIPE);
+	assert(data->needs_cleanup);
+	return;
+    }
     log_printf(LL1, "Eliminating session index %d fd %d\n", index,
 	       data->sessions[index]->fd);
     if (data->sessions[index]->type == SESS_PIPE) {
+	assert(data->sessions[index]->other_end);
 	for (int j = 0; j != data->nfds; ++j) {
 	    if (data->fds[j].fd == data->sessions[index]->fd_out) {
 		assert(data->sessions[j]->fd_out == data->sessions[index]->fd);
 		data->sessions[j]->close_conn = true;
-				close(data->fds[j].fd);
-		log_printf(LL1, "Eliminating session index %d fd %d (pipe)\n", j,
-			   data->sessions[j]->fd);
+		if (close(data->fds[j].fd) == -1) {
+		    log_perror(LL0, "close()");
+		}
+		log_printf(LL1, "Eliminating session index %d fd %d (pipe)\n",
+			   j, data->sessions[j]->fd);
 		data->fds[j].fd = -1;
 	    }
 	}
-    }
-    if (data->sessions[index]->host) {
-	free(data->sessions[index]->host);
     }
     if (close(data->fds[index].fd) == -1) {
 	log_perror(LL0, "close()");
@@ -468,6 +479,13 @@ static void cleanup_sessions(daemon_data *data)
     for (int i = data->nfds - 1; i >= 0; --i) {
 	if (data->fds[i].fd == -1) {
 	    assert(data->sessions[i]->close_conn);
+	    if (data->sessions[i]->host) {
+		free(data->sessions[i]->host);
+		if (data->sessions[i]->other_end) {
+		    data->sessions[i]->other_end->host = NULL;
+		}
+	    }
+
 	    free(data->sessions[i]);
 
 	    data->fds[i].fd = data->fds[data->nfds - 1].fd;
@@ -901,7 +919,7 @@ static void setup_signals(void)
     got_sighup = false;
     got_sigint = false;
 
-#if 0
+#if 1
     signal(SIGCHLD, SIG_IGN);
     //    signal(SIGCHLD, client_exited);
 #endif
