@@ -1,12 +1,3 @@
-
-/*
-  TODO
-  - in the child processes we use perror() and log_() that are not async safe
-  - double-fork the daemon
-  - sometimes (the first) connection fails with "ioctl TIOCSCTTY: Operation
-    not permitted"
-*/
-
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -31,6 +22,8 @@
 
 #define DEFAULT_LISTEN_PORT 4001
 static char default_client_path[] = "./bin/remote_cittaclient";
+static const char too_many_conn_msg[] =
+    "Too many remote users. Try again later...\n";
 
 /* maximum number of remote connections allowed */
 #define MAX_CONNECTIONS 20
@@ -359,6 +352,7 @@ typedef struct {
     struct pollfd fds[MAX_SOCKETS];
     session_data * sessions[MAX_SOCKETS];
     int nfds;
+    int connections_count;
     bool needs_cleanup;
     bool stop_server;
 } daemon_data;
@@ -472,6 +466,7 @@ static void session_close(daemon_data *data, int index)
 			   j, data->sessions[j]->fd);
 	    }
 	}
+	data->connections_count--;
     }
     session_close_fd(data, index);
     log_printf(LL1, "Closed session index %d fd %d\n", index,
@@ -841,6 +836,14 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	    break;
 	}
 
+	if (data->connections_count == MAX_CONNECTIONS) {
+	    write(fd_client, too_many_conn_msg, strlen(too_many_conn_msg));
+	    close_socket(fd_client);
+	    log_addr(LL0, "Too many users: Refused connection from",
+		     address.sin_addr.s_addr);
+	    continue;
+	}
+
 #ifdef RETRIEVE_REMOTE_INFO
 	char host[256];
 	get_remote_info(fd_client, host, sizeof(host));
@@ -868,6 +871,7 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	    return;
 	}
 	make_pipe(data, fd_client, fd_master, host);
+	data->connections_count++;
 
 	telnet_negotiation(fd_client);
     }
