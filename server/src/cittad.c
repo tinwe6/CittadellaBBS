@@ -35,6 +35,8 @@ static const char too_many_conn_msg[] =
 /* two for each connections (telnet socket + master side of pty)   */
 #define MAX_SOCKETS (2*MAX_CONNECTIONS + 1)
 
+#define BUFFER_SIZE 256
+
 /* Log level */
 typedef enum {
     LL0 = 0, /* normal  */
@@ -326,10 +328,12 @@ static int log_transmission(log_level ll, const char *data, ssize_t len,
 #define MAX_ARGV_SIZE 32
 #define MAX_HOST_LEN 256
 
+/*
 typedef struct {
     char data[256];
     size_t len;
 } buffer;
+*/
 
 typedef enum {
     SESS_LISTEN,
@@ -342,8 +346,9 @@ typedef struct session_data_t {
     int fd_out;
     bool close_conn;
     bool is_socket;
+    bool process_CR;
     char *host;
-    char outbuf[256];
+    char outbuf[BUFFER_SIZE];
     ssize_t outlen;
     struct session_data_t *other_end;
 } session_data;
@@ -379,6 +384,7 @@ static session_data * session_add(daemon_data *data, session_type type, int fd,
     session->outlen = 0;
     session->host = host;
     session->other_end = NULL;
+    session->process_CR = false;
 
     short events = (type == SESS_LISTEN) ? POLLIN : (POLLIN|POLLOUT);
     register_fd(data, fd, events, data->nfds);
@@ -397,6 +403,7 @@ static void make_pipe(daemon_data *data, int socket_fd, int pty_fd, char *host)
 				   false);
     s1->other_end = s2;
     s2->other_end = s1;
+    s1->process_CR = true;
 }
 
 /* See https://stackoverflow.com/a/12730776 for how to close a socket */
@@ -489,8 +496,7 @@ static void log_active_sessions(log_level ll, daemon_data *data)
 /*
  * Eliminate the closed sessions from the fds and sessions arrays,
  * and compress the arrays so that no holes are left.
- * Preserves the order of the sessions (we could relax this assumption
- * and perform the operation more efficiently).
+ * NB: does not preserve the order of the sessions.
  */
 static void cleanup_sessions(daemon_data *data)
 {
@@ -499,23 +505,6 @@ static void cleanup_sessions(daemon_data *data)
     }
     log_printf(LL1, "Cleaning up the sessions and fds arrays.\n");
 
-#if 0
-    for (int i = 0; i < data->nfds; i++) {
-	if (data->fds[i].fd == -1) {
-	    assert(data->sessions[i]->close_conn);
-	    free(data->sessions[i]);
-	    for(int j = i; j < data->nfds - 1; j++) {
-		data->fds[j].fd = data->fds[j + 1].fd;
-		data->fds[j].events = data->fds[j + 1].events;
-		data->fds[j].revents = data->fds[j + 1].revents;
-		data->sessions[j] = data->sessions[j + 1];
-	    }
-	    i--;
-	    data->nfds--;
-	    data->sessions[data->nfds] = NULL;
-	}
-    }
-#else
     for (int i = data->nfds - 1; i >= 0; --i) {
 	if (data->fds[i].fd == -1) {
 	    assert(data->sessions[i]->close_conn);
@@ -538,7 +527,6 @@ static void cleanup_sessions(daemon_data *data)
 	    data->sessions[data->nfds] = NULL;
 	}
     }
-#endif
 
     for (int i = 0; i < data->nfds; i++) {
 	assert(data->fds[i].fd == data->sessions[i]->fd);
@@ -845,7 +833,7 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	}
 
 #ifdef RETRIEVE_REMOTE_INFO
-	char host[256];
+	char host[MAX_HOST_LEN];
 	get_remote_info(fd_client, host, sizeof(host));
 	log_printf(LL0, "New connection from [%s] (fd %d)\n", host, fd_client);
 #else
@@ -906,6 +894,63 @@ static void read_data(session_data *s)
     }
 }
 
+/*
+  Quindi questo processing lo devo fare dal demone, nei due sensi. Dovrebbe
+  bastare fare CR+LF -> LF e CR+NUL -> CR per le trasmissioni
+  telnet->remote_client e CR -> CR+NUL e LF -> CR+LF nell'altro verso..
+*/
+#define CR 13
+#define LF 10
+#define NUL 0
+static ssize_t process_data(char *in, ssize_t inlen, char *out)
+{
+    ssize_t written = 0;
+
+    for (ssize_t i = 0; i != inlen; i++) {
+	if ((in[i] == CR) && (i + 1 != inlen)) {
+	    if (in[i + 1] == LF) {
+		/* eat the CR: CR LF -> LF */
+		continue;
+	    } else if (in[i + 1] == NUL) {
+		/* CR NUL -> CR */
+		out[written++] = CR;
+		i++; /* eat the NUL */
+	    }
+	} else {
+	    out[written++] = in[i];
+	}
+    }
+    return written;
+}
+
+static void read_and_process_data(session_data *s)
+{
+    char buf[BUFFER_SIZE];
+
+    while (s->outlen < (ssize_t)sizeof(s->outbuf)) {
+	ssize_t bytes;
+
+	bytes = read(s->fd, buf, sizeof(s->outbuf) - s->outlen);
+	if (bytes == -1) {
+	    if (errno != EWOULDBLOCK) {
+		log_printf(LL0, "read on socket %d failed: %s\n", s->fd,
+			   strerror(errno));
+		s->close_conn = true;
+	    }
+	    break;
+	}
+
+	if (bytes == 0) {
+	    log_printf(LL0, "Connection closed [%s] (fd %d)\n", s->host,
+		       s->fd);
+	    s->close_conn = true;
+	    break;
+	}
+	s->outlen += process_data(buf, bytes, s->outbuf + s->outlen);
+
+	log_transmission(LL2, s->outbuf, bytes, s->fd, s->fd_out, LOG_R);
+    }
+}
 
 /* Write all data in the output buffer to the destination socket */
 void write_data(session_data *s)
@@ -1139,10 +1184,14 @@ static void daemon_loop(daemon_config config, daemon_data data)
 		    log_active_sessions(LL1, &data);
 		} else {
 		    assert(data.sessions[i]->type == SESS_PIPE);
-		    /* an existing connection is readable, transmit the data */
+		    /* an existing connection is readable, get the data */
 		    log_printf(LL2, "Descriptor %d readable\n",
 			       data.fds[i].fd);
-		    read_data(data.sessions[i]);
+		    if (data.sessions[i]->process_CR) {
+			read_and_process_data(data.sessions[i]);
+		    } else {
+			read_data(data.sessions[i]);
+		    }
 		}
 	    }
 	}
