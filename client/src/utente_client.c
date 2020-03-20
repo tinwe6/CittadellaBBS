@@ -877,7 +877,7 @@ void edit_user(void)
         /* Nickname */
         printf(_(" Vuoi modificare il nickname dell'utente? "));
         if (si_no() == 's') {
-                new_str_M(_(" Nuovo nickname"), newnick, MAXLEN_UTNAME - 1);
+                new_str_M(_(" Nuovo nickname: "), newnick, MAXLEN_UTNAME - 1);
                 if (!strncmp(newnick, nick, MAXLEN_UTNAME))
                         cml_printf(_(
 " <b>Ricordati di avvertire l'utente che il suo nick &egrave cambiato!!</b>\n"
