@@ -280,7 +280,7 @@ static int login_new_user (bool is_first_user)
         putchar('\n');
         hit_any_key();
         putchar('\n');
-        registrazione(true);
+	new_registration();
 
         /* Ask for a validation key (unless it's the first user) */
 	if (!is_first_user) {
@@ -407,7 +407,7 @@ static int login_user(int user_is_validated)
                 putchar('\n');
                 hit_any_key();
                 putchar('\n');
-                registrazione(true);
+		new_registration();
 		return LOGIN_NUOVO;
         }
 

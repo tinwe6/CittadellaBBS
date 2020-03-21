@@ -110,53 +110,130 @@ void lista_utenti(void)
         IFNEHAK
                 }
 
+typedef struct {
+	char nome_reale[MAXLEN_RNAME]; /* Nome 'Real-life'             */
+	char via[MAXLEN_VIA];          /* Street address               */
+	char citta[MAXLEN_CITTA];      /* Municipality                 */
+	char stato[MAXLEN_STATO];      /* State or province            */
+	char cap[MAXLEN_CAP];          /* Codice di avviamento postale */
+	char tel[MAXLEN_TEL];          /* Numero di telefono           */
+	char email[MAXLEN_EMAIL];      /* Indirizzo E-mail             */
+	char url[MAXLEN_URL];          /* Home page URL                */
+	int sex;
+} registration_data;
+
+/* Avverte il server che vogliamo editare la registrazione */
+static void enter_registration_state(void)
+{
+	char buf[LBUF];
+
+	serv_puts("BREG");
+	serv_gets(buf); /* this can't fail */
+	assert(buf[0] == '2');
+}
+
+/* Exits the CON_REG state without saving the registration data.        */
+/* Returns false is something went wrong (session not in CON_REG state, */
+/* or user not yet registered and must provvide the data).              */
+static bool abandon_registration(void)
+{
+	char buf[LBUF];
+	serv_putf("RGST 0");
+	serv_gets(buf);
+	return buf[0] == '2';
+}
+
+/* Retrieves the user's registration data from the server. The user session
+ * must be in the CON_REG state, or else the request will fail.             */
+static registration_data get_registration_data(void)
+{
+	registration_data data = {{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, 0};
+	char buf[LBUF];
+
+	serv_puts("GREG");
+	serv_gets(buf);
+	if (buf[0] == '2') {
+		extractn(data.nome_reale, buf+4, 0, MAXLEN_RNAME);
+		extractn(data.via, buf+4, 1, MAXLEN_VIA);
+		extractn(data.citta, buf+4, 2, MAXLEN_CITTA);
+		extractn(data.cap, buf+4, 3, MAXLEN_CAP);
+		extractn(data.stato, buf+4, 4, MAXLEN_STATO);
+		extractn(data.tel, buf+4, 5, MAXLEN_TEL);
+		extractn(data.email, buf+4, 6, MAXLEN_EMAIL);
+		extractn(data.url, buf+4, 7, MAXLEN_URL);
+		data.sex = extract_int(buf+4, 8);
+		sesso = data.sex;
+	} else {
+		printf(_(
+"Errore: Non &egrave; stato possibile recuperare i dati di registrazione.\n"
+			 ));
+	}
+	return data;
+}
+
+/* Spedisce la registrazione al server */
+static void send_registration(registration_data *data)
+{
+	char buf[LBUF];
+
+	serv_putf("RGST 1|%s|%s|%s|%s|%s|%s|%s|%s|%d", data->nome_reale,
+		  data->via, data->citta, data->stato, data->cap, data->tel,
+		  data->email, data->url, data->sex);
+	serv_gets(buf);
+	if (buf[0] == '2') {
+		return;
+	}
+	bool name_invalid = extract_bool(buf+4, 1);
+	bool email_invalid = extract_bool(buf+4, 2);
+	bool email_taken = extract_bool(buf+4, 3);
+	bool user_registered = extract_bool(buf+4, 4);
+
+	if (name_invalid) {
+		cml_printf(_(
+		     "\nIl nome che hai inserito non &egrave; valido.\n\n"
+			     ));
+	}
+	if (email_taken) {
+		cml_printf(_(
+"L'e-mail che hai fornito &egrave; gi%agrave; in uso e non possiamo "
+"accettarlo:\n"
+"Non &egrave; permesso avere pi&ugrave; di un account in questa BBS.\n\n"
+			     ));
+	} else if (email_invalid) {
+		cml_printf(_(
+		     "L'indirizzo e-mail fornito non &egrave; valido.\n"
+			     ));
+	}
+	if (!(name_invalid || email_invalid || email_taken)) {
+		printf(_(
+"\n*** Problema con il server: registrazione non accettata.\n\n"
+			 ));
+	}
+	if (!user_registered) {
+		pulisci_ed_esci(NO_EXIT_BANNER);
+	}
+	hit_any_key();
+}
+
 /*
  * Modifica la registrazione dell'utente. Se nuovo = 1 l'utente e' nuovo
  * e la registrazione viene immessa per la prima volta.
  */
-void registrazione(bool nuovo)
+static void edit_registration_data(registration_data *data)
 {
-        char buf[LBUF];
-        char nome_reale[MAXLEN_RNAME] = ""; /* Nome 'Real-life'             */
-        char via[MAXLEN_VIA] = "";	    /* Street address               */
-        char citta[MAXLEN_CITTA] = "";	    /* Municipality                 */
-        char stato[MAXLEN_STATO] = "";	    /* State or province            */
-        char cap[MAXLEN_CAP] = "";	    /* Codice di avviamento postale */
-        char tel[MAXLEN_TEL] = "";	    /* Numero di telefono           */
-        char email[MAXLEN_EMAIL] = "";	    /* Indirizzo E-mail             */
-        char url[MAXLEN_URL] = "";	    /* Home page URL                */
         int max_tries = 3;   /* max number of tries to enter name and email */
         int tries, c;
-
-        if (!nuovo) {
-                /* Avverte il server che vogliamo editare la registrazione */
-                serv_puts("BREG");
-                serv_gets(buf);
-                /* Chiede al server la registrazione attuale               */
-                serv_puts("GREG");
-                serv_gets(buf);
-                if (buf[0] == '2') {
-                        extractn(nome_reale, buf+4, 0, MAXLEN_RNAME);
-                        extractn(via, buf+4, 1, MAXLEN_VIA);
-                        extractn(citta, buf+4, 2, MAXLEN_CITTA);
-                        extractn(cap, buf+4, 3, MAXLEN_CAP);
-                        extractn(stato, buf+4, 4, MAXLEN_STATO);
-                        extractn(tel, buf+4, 5, MAXLEN_TEL);
-                        extractn(email, buf+4, 6, MAXLEN_EMAIL);
-                        extractn(url, buf+4, 7, MAXLEN_URL);
-                        sesso = extract_int(buf+4, 8);
-                }
-        }
+	bool new_reg = (data->nome_reale[0] == 0) || (data->email[0] == 0);
 
         printf(_("Registrazione (i campi con un asterisco sono obbligatori):\n\n"));
 
         tries = 0;
-        if (nuovo) {
+        if (new_reg) {
                 while (true) {
                         tries++;
-                        new_str_M(_("Nome e Cognome (*): "), nome_reale,
+                        new_str_M(_("Nome e Cognome (*): "), data->nome_reale,
                                       MAXLEN_RNAME-1);
-                        if (is_valid_full_name(nome_reale)) {
+                        if (is_valid_full_name(data->nome_reale)) {
                                 break;
                         } else {
                                 if (tries < max_tries) {
@@ -164,7 +241,7 @@ void registrazione(bool nuovo)
 "\nDevi inserire il tuo nome reale, altrimenti non verrai validato.\n"
 "Se vuoi solo dare un'occhiata entra come 'Ospite'.\n\n"
                                                  ));
-                                        nome_reale[0] = 0;
+                                        data->nome_reale[0] = 0;
                                 } else {
                                         printf(_(
 "\nTorna quando ti ricorderai come scrivere correttamente il tuo nome,\n"
@@ -176,9 +253,9 @@ void registrazione(bool nuovo)
                         }
                 }
         } else {
-                new_str_def_M(_("Nome e Cognome (*)"), nome_reale,
+                new_str_def_M(_("Nome e Cognome (*)"), data->nome_reale,
                               MAXLEN_RNAME - 1);
-                if (!is_valid_full_name(nome_reale)) {
+                if (!is_valid_full_name(data->nome_reale)) {
                         cml_print(_(
 "\nIl nome che hai inserito non &egrave; valido. Devi inserire nome e cognome!"
 "\n\n"
@@ -186,33 +263,36 @@ void registrazione(bool nuovo)
                 }
         }
         printf(_("Sesso: (M/F) "));
-        if (nuovo) {
+        if (new_reg) {
                 printf(": ");
         } else {
-                printf("[%c]: ", sesso ? 'F' : 'M');
+                printf("[%c]: ", data->sex ? 'F' : 'M');
         }
         c = 0;
         while (((c != 'm') && (c != 'M') && (c != 'f') && (c != 'F')
                 && (c != 10) && (c != 13))
-               || (((c == 10) || (c == 13)) && nuovo)) {
+               || (((c == 10) || (c == 13)) && new_reg)) {
                 c = inkey_sc(0);
         }
         if ((c == 'M') || (c == 'm')) {
 		putchar('M');
-                sesso = 0;
+                data->sex = 0;
+		sesso = data->sex;
         } else if ((c == 'F') || (c == 'f')) {
 		putchar('F');
-                sesso = 1;
+                data->sex = 1;
+		sesso = data->sex;
         }
 	putchar('\n');
 
-        new_str_def_M(_("Indirizzo"), via, MAXLEN_VIA - 1);
-        new_str_def_M(_("Citt&agrave;"), citta, MAXLEN_CITTA - 1);
-        new_str_def_m(_("Codice di avviamento postale"), cap, MAXLEN_CAP - 1);
-        new_str_def_M(_("Stato"), stato, MAXLEN_STATO - 1);
-        new_str_def_m(_("Numero di telefono"), tel, MAXLEN_TEL-1);
+        new_str_def_M(_("Indirizzo"), data->via, MAXLEN_VIA - 1);
+        new_str_def_M(_("Citt&agrave;"), data->citta, MAXLEN_CITTA - 1);
+        new_str_def_m(_("Codice di avviamento postale"), data->cap,
+		      MAXLEN_CAP - 1);
+        new_str_def_M(_("Stato"), data->stato, MAXLEN_STATO - 1);
+        new_str_def_m(_("Numero di telefono"), data->tel, MAXLEN_TEL-1);
 
-        if (nuovo) {
+        if (new_reg) {
                 cml_print(_(
 "\n Ora devi fornire il tuo indirizzo e-mail. "
 " Verr&agrave; usato per inviarti\n"
@@ -226,7 +306,7 @@ void registrazione(bool nuovo)
         tries = 0;
 	char new_email[MAXLEN_EMAIL];
         while (true) {
-		strncpy(new_email, email, MAXLEN_EMAIL);
+		strncpy(new_email, data->email, MAXLEN_EMAIL);
                 tries++;
 		if (*new_email) {
 			new_str_def_m(_("Indirizzo e-mail (*)"), new_email,
@@ -247,7 +327,7 @@ void registrazione(bool nuovo)
                                              ));
                                 sleep(1);
                         } else {
-                                if (nuovo) {
+                                if (new_reg) {
                                         printf(_(
 "\nCi dispiace, ma se non inserisci il tuo e-mail non puoi creare un tuo\n"
 "account personale. Puoi comunque visitare la BBS come 'Ospite'.\n"
@@ -264,57 +344,43 @@ void registrazione(bool nuovo)
                         }
                 }
         }
-	strncpy(email, new_email, MAXLEN_EMAIL);
+	strncpy(data->email, new_email, MAXLEN_EMAIL);
 
-        new_str_def_m(_("URL della Home Page"), url, MAXLEN_URL - 1);
+        new_str_def_m(_("URL della Home Page"), data->url, MAXLEN_URL - 1);
+}
 
-        if (!nuovo) {
-                printf(sesso
-                       ? _("Sei sicura di voler mantenere le modifiche? ")
-                       : _("Sei sicuro di voler mantenere le modifiche? ")
-                       );
-                if (si_no() == 'n') {
-                        serv_putf("RGST 0");
-                        serv_gets(buf);
-                        return;
-                }
-        }
-        /* Spedisce la registrazione al server */
-        serv_putf("RGST 1|%s|%s|%s|%s|%s|%s|%s|%s|%d", nome_reale, via, citta,
-                  stato, cap, tel, email, url, sesso);
-        serv_gets(buf);
-        if (buf[0] != '2') {
-                bool name_invalid = extract_bool(buf+4, 1);
-                bool email_invalid = extract_bool(buf+4, 2);
-                bool email_taken = extract_bool(buf+4, 3);
-		bool user_registered = extract_bool(buf+4, 4);
+void new_registration(void)
+{
+	registration_data data = {{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, 0};
 
-                if (name_invalid) {
-                        cml_printf(_(
-"\nIl nome che hai inserito non &egrave; valido.\n\n"
-                                     ));
-                }
-                if (email_taken) {
-                        cml_printf(_(
-"L'e-mail che hai fornito &egrave; gi%agrave; in uso e non possiamo "
-"accettarlo:\n"
-"Non &egrave; permesso avere pi&ugrave; di un account in questa BBS.\n\n"
-                                     ));
-                } else if (email_invalid) {
-                        cml_printf(_(
-"L'indirizzo e-mail fornito non &egrave; valido.\n"
-                                     ));
-                }
-		if (!(name_invalid || email_invalid || email_taken)) {
-			printf(_(
-"\n*** Problema con il server: registrazione non accettata.\n\n"
-				 ));
-		}
-		if (!user_registered) {
-			pulisci_ed_esci(NO_EXIT_BANNER);
-		}
-                hit_any_key();
-        }
+	edit_registration_data(&data);
+	printf(sesso
+	       ? _("Sei sicura di voler mantenere le modifiche? ")
+	       : _("Sei sicuro di voler mantenere le modifiche? ")
+	       );
+	if (si_no() == 's') {
+		send_registration(&data);
+	} else {
+		abandon_registration();
+	}
+}
+
+void modify_registration(void)
+{
+	registration_data data;
+
+	enter_registration_state();
+	data = get_registration_data();
+	edit_registration_data(&data);
+	printf(sesso
+	       ? _("Sei sicura di voler mantenere le modifiche? ")
+	       : _("Sei sicuro di voler mantenere le modifiche? ")
+	       );
+	if (si_no() == 's') {
+		send_registration(&data);
+	} else {
+		abandon_registration();
+	}
 }
 
 /*

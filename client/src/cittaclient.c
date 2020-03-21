@@ -444,7 +444,7 @@ static char ciclo_client(void)
                         lista_utenti();
                         break;
 		 case 7:
-                        registrazione(false);
+			modify_registration();
                         break;
 		 case 8:
                         leggi_sysconfig();

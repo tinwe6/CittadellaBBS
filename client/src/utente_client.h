@@ -20,7 +20,8 @@ extern char *titolo[];
 
 /* prototipi delle funzioni in utente_client.c */
 void lista_utenti(void);
-void registrazione(bool nuovo);
+void new_registration(void);
+void modify_registration(void);
 char profile(char *nome_def);
 void caccia_utente(void);
 void elimina_utente(void);
