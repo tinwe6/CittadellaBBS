@@ -73,8 +73,9 @@ static void print_usage_and_exit(char *arg0, char *arg)
     }
 
     fprintf(stderr,
-"Usage: %s [-d|--debug] [-f|--log-file <filename>] [-l|--log-lvl <level>]\n"
-"        [-p|--port <TCP_port>] -- <client_program_and_args>\n",
+"Usage: %s [-d|--debug] [-f|--log-file <filename>]\n"
+"        [-h|dont-send-host] [-l|--log-lvl <level>] [-p|--port <TCP_port>]"
+"        -- <client_program_and_args>\n",
 	    arg0);
     exit(EXIT_FAILURE);
 }
@@ -865,7 +866,7 @@ static void new_connections(daemon_config *config, daemon_data *data,
     }
 }
 
-/* Receive all incoming data on this socket and move it in the output buffer */
+/* Receive all incoming data from s->fd and moves it to the output buffer */
 static void read_data(session_data *s)
 {
     while (s->outlen < (ssize_t)sizeof(s->outbuf)) {
@@ -894,11 +895,9 @@ static void read_data(session_data *s)
     }
 }
 
-/*
-  Quindi questo processing lo devo fare dal demone, nei due sensi. Dovrebbe
-  bastare fare CR+LF -> LF e CR+NUL -> CR per le trasmissioni
-  telnet->remote_client e CR -> CR+NUL e LF -> CR+LF nell'altro verso..
-*/
+/* Copies the string 'in' to 'out' transforming CR LF in LF and CR NUL in CR,
+ * in case the telnet application used to connect to the daemon is protocol
+ * compliant and send CR LF when the user presses Enter.                     */
 #define CR 13
 #define LF 10
 #define NUL 0
@@ -923,6 +922,8 @@ static ssize_t process_data(char *in, ssize_t inlen, char *out)
     return written;
 }
 
+/* Receive all incoming data from s->fd and processes the CR LF and CR NUL
+ * sequences before moving it to the output buffer.                         */
 static void read_and_process_data(session_data *s)
 {
     char buf[BUFFER_SIZE];
