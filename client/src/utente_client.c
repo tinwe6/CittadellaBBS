@@ -353,15 +353,14 @@ void new_registration(void)
 {
 	registration_data data = {{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, 0};
 
-	edit_registration_data(&data);
-	printf(sesso
-	       ? _("Sei sicura di voler mantenere le modifiche? ")
-	       : _("Sei sicuro di voler mantenere le modifiche? ")
-	       );
-	if (si_no() == 's') {
-		send_registration(&data);
-	} else {
-		abandon_registration();
+	for(;;) {
+		edit_registration_data(&data);
+		printf("\nI dati che hai inserito sono corretti (s/n)? ");
+		if (si_no() == 's') {
+			send_registration(&data);
+			return;
+		}
+		putchar('\n');
 	}
 }
 
@@ -373,8 +372,8 @@ void modify_registration(void)
 	data = get_registration_data();
 	edit_registration_data(&data);
 	printf(sesso
-	       ? _("Sei sicura di voler mantenere le modifiche? ")
-	       : _("Sei sicuro di voler mantenere le modifiche? ")
+	       ? _("Sei sicura di voler mantenere le modifiche (s/n)? ")
+	       : _("Sei sicuro di voler mantenere le modifiche (s/n)? ")
 	       );
 	if (si_no() == 's') {
 		send_registration(&data);
