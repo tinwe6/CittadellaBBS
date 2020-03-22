@@ -69,7 +69,7 @@ int num_parms(const char *source)
  * all'inizio che alla fine della stringa. Se parmnum > numero di parametri
  * in source, restituisce "".
  * In ogni caso la stringa copiata in dest e' sempre di lunghezza inferiore
- * a 256 caratteri, ma nessun altro controllo viene eseguito.
+ * a LBUF = 256 caratteri, ma nessun altro controllo viene eseguito.
  * USARE PERCIO' SEMPRE extractn() quando si estraggono parametri in buffer
  * che possono essere di lunghezza inferiore!!!
  *
@@ -82,7 +82,7 @@ int num_parms(const char *source)
  */
 void extract(char *dest, const char *source, int parmnum)
 {
-	extractn(dest, source, parmnum, 256);
+	extractn(dest, source, parmnum, LBUF);
 }
 
 
