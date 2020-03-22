@@ -19,7 +19,12 @@
 extern char BBS_EDITOR[];
 
 /*Prototipi delle funzioni in remote.c */
+#ifdef LOGIN_PORT
+char * get_hostname(char *ip_addr);
+#else
 void find_remote_host(char *rhost);
+#endif
+
 void msg_dump(struct text *txt, int autolog);
 
 /**************************************************************************/

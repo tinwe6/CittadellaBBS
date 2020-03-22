@@ -24,9 +24,15 @@
 /* Verificare che e' la scelta giusta.                              */
 #include "text.h"
 #include "cittaclient.h"
+#include "cittacfg.h"
 #include "cml.h"
 #include "macro.h"
 #include "remote.h"
+
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #ifdef MACOSX
 #ifndef UTMPLIB
@@ -43,12 +49,28 @@
 /* ping.science.unitn.it */
 char BBS_EDITOR[] = "/home/bbs/Cittadella/citta/client/bin/BBSeditor";
 
-/*Prototipi delle funzioni in questo file */
-void find_remote_host(char *rhost);
-void msg_dump(struct text *txt, int autolog);
-
 /***************************************************************************
 ***************************************************************************/
+#ifdef LOGIN_PORT
+/* Gets the remote hostname associated to the address ipaddr and returns it
+ * as a malloc'ed string. The resulting string is empty if the hostname was
+ * not found. Must be free()'d                                             */
+char * get_hostname(char *ip_addr)
+{
+	struct sockaddr_in addr;
+	char * hostname = (char *)malloc(NI_MAXHOST*sizeof(char));
+	addr.sin_family = AF_INET;
+	inet_pton(AF_INET, ip_addr, &(addr.sin_addr));
+	if (getnameinfo((struct sockaddr *)&addr, sizeof(addr),
+			hostname, NI_MAXHOST, NULL, 0, 0) != 0) {
+		hostname[0] = 0;
+	}
+	printf("Remote host name '%s'\n", hostname);
+	return hostname;
+}
+
+#else /* LOGIN_PORT */
+
 void find_remote_host(char *rhost)
 {
 #ifdef UTMPLIB
@@ -97,7 +119,7 @@ void old_find_remote_host(char *rhost)
         char ttybuf[256];
         int ii;
         char *token;
-  
+
         /* determina il tty associato al client e 'greppa' l'host */
         if (isatty(STDOUT_FILENO)) {
                 ttyn = ttyname(STDOUT_FILENO);
@@ -132,6 +154,8 @@ void old_find_remote_host(char *rhost)
         }
 }
 
+#endif /* LOGIN_PORT */
+
 void msg_dump(struct text *txt, int autolog)
 {
         /* parameters only used by the local counterpart of this function. */
@@ -139,7 +163,7 @@ void msg_dump(struct text *txt, int autolog)
         IGNORE_UNUSED_PARAMETER(autolog);
 
 	cml_print(_(
-	" *** Questa opzione &egrave; disponibile solo con il client locale.\n"
+		    " *** Questa opzione &egrave; disponibile solo con il client locale.\n"
 		    ));
 }
 

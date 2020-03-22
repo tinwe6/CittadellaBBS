@@ -958,7 +958,9 @@ static void info_sul_server(void)
 #else
 	/* remote cittaclient */
 # ifdef LOGIN_PORT
-        serv_putf("INFO remoto|%s|%s", remote_host, remote_key);
+	char *hostname = get_hostname(remote_host);
+        serv_putf("INFO remoto|%s|%s|%s", remote_host, remote_key, hostname);
+	free(hostname);
 # else
         char rhost[LBUF];
         find_remote_host(rhost);

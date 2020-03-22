@@ -14,8 +14,10 @@
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 
 #undef RETRIEVE_REMOTE_INFO
@@ -834,9 +836,10 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	}
 
 #ifdef RETRIEVE_REMOTE_INFO
-	char host[MAX_HOST_LEN];
-	get_remote_info(fd_client, host, sizeof(host));
-	log_printf(LL0, "New connection from [%s] (fd %d)\n", host, fd_client);
+	char hostname[MAX_HOST_LEN];
+	get_remote_info(fd_client, hostname, sizeof(hostname));
+	log_printf(LL0, "New connection from [%s] (fd %d)\n", hostname,
+		   fd_client);
 #else
 	log_addr(LL0, "New connection from", address.sin_addr.s_addr);
 #endif
@@ -1038,7 +1041,6 @@ void cleanup_and_exit(daemon_data *data)
 
 static int daemon_init(daemon_config *config)
 {
-    struct sockaddr_in servaddr;
     int port = config->port;
     int fd = -1, on = 1;
 
@@ -1062,10 +1064,11 @@ static int daemon_init(daemon_config *config)
     enable_socket_blocking(fd, false);
 
     // Get a unique name for the socket
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(port);
+    struct sockaddr_in servaddr = {
+	    .sin_family = AF_INET,
+	    .sin_port = htons(port),
+	    .sin_addr = { htonl(INADDR_ANY) },
+    };
 
     if (bind(fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
 	perror("bind() error");

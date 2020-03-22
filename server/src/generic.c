@@ -169,7 +169,7 @@ void cmd_hwho(struct sessione *t)
  */
 void cmd_info(struct sessione *t, char *cmd)
 {
-	char rhost[LBUF], remote_key[LBUF], compress[LBUF];
+	char rhost[LBUF], remote_key[LBUF], hostname[LBUF], compress[LBUF];
         struct sessione *punto;
         int ut_conn = 0;
 
@@ -179,9 +179,9 @@ void cmd_info(struct sessione *t, char *cmd)
 
         if (cmd[0] == 'r') { /* e' una connessione remota */
                 /* verifico che la connessione e' effettivamente remota */
-                extract(rhost, cmd, 1);
-		extract(remote_key, cmd, 2);
-
+                extractn(rhost, cmd, 1, sizeof(rhost));
+		extractn(remote_key, cmd, 2, sizeof(remote_key));
+		extractn(hostname, cmd, 3, sizeof(hostname));
 		if (strcmp(remote_key, REMOTE_KEY) != 0) {
 			citta_logf(
 				   "SECURE: remote auth failed: [%s], key '%s'"
@@ -191,11 +191,16 @@ void cmd_info(struct sessione *t, char *cmd)
 				ERROR);
                         return;
                 } else {
-			citta_logf("Remote client from [%s]", rhost);
+			citta_logf("Remote client from [%s] %s", rhost,
+				   hostname);
 		}
 
                 dati_server.remote_cl++;
-                strcpy(t->host, rhost);
+		if (hostname[0] != 0) {
+			strncpy(t->host, hostname, strlen(t->host));
+		} else {
+			strncpy(t->host, rhost, strlen(t->host));
+		}
                 compress[0] = 0; /* nessuna compressione in remoto */
         } else if (cmd[0] == 'l') {/* e' una connessione locale */
                 dati_server.local_cl++;
