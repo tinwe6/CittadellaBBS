@@ -196,10 +196,11 @@ void cmd_info(struct sessione *t, char *cmd)
 		}
 
                 dati_server.remote_cl++;
+		citta_logf("t->host %lu", strlen(t->host));
 		if (hostname[0] != 0) {
-			strncpy(t->host, hostname, strlen(t->host));
+			strncpy(t->host, hostname, MAXLEN_HOST);
 		} else {
-			strncpy(t->host, rhost, strlen(t->host));
+			strncpy(t->host, rhost, MAXLEN_HOST);
 		}
                 compress[0] = 0; /* nessuna compressione in remoto */
         } else if (cmd[0] == 'l') {/* e' una connessione locale */

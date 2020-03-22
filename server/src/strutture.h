@@ -37,10 +37,12 @@ struct dati_idle {
 	char warning;
 };
 
+#define MAXLEN_HOST 256
+
 struct sessione {
   int    socket_descr;               /* file descriptor del socket     */
   struct dati_ut *utente;            /* struttura contenuta nel file   */
-  char   host[LBUF];                 /* nome dell'host di provenienza  */
+  char   host[MAXLEN_HOST];          /* nome dell'host di provenienza  */
   long   ora_login;                  /* ora di login                   */
   bool   logged_in;                  /* eseguito il login              */
   int    stato;                      /* stato della connessione        */
@@ -68,7 +70,7 @@ struct sessione {
   int    upload_bookings;            /* Numero prenotazioni per il post*/
 #ifdef USE_FLOORS
   struct floor *floor;               /* Floor corrente                 */
-#endif 
+#endif
   /* Variabili per la gestione dei mail.                               */
   struct msg_list *mail;             /* Lista dei mail                 */
 #ifdef USE_BLOG
@@ -93,7 +95,7 @@ struct sessione {
   /* Variabili per la manipolazione di testi.                          */
   int    riga;                       /* contatore strutt. precedente   */
   struct text *text;                 /* Testo in arrivo da elaborare   */
-  long   text_max;                   /* Lunghezza massima del testo    */ 
+  long   text_max;                   /* Lunghezza massima del testo    */
   int    text_com;                   /* Comando associato al testo     */
 #ifdef USE_STRING_TEXT
   char   *txt;                       /* Array di char per i testi      */
@@ -109,7 +111,7 @@ struct sessione {
   struct iobuf iobuf;                /* Buffer input/output            */
   struct coda_testo input;           /* input da elaborare             */
   struct coda_testo output;          /* output da mandare al client    */
-  struct dati_idle idle;             /* da quanto non si hanno segnali */  
+  struct dati_idle idle;             /* da quanto non si hanno segnali */
   struct sessione *prossima;         /* puntatore sessione successiva  */
 };
 
