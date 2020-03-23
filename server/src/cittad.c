@@ -1181,7 +1181,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 {
     int timeout_ms = 0; //60*1000;
     int fd_socket = config.listen_fd;
-    long ns_per_cycle = CYCLES_PER_SEC*SEC_TO_NS;
+    long ns_per_cycle = SEC_TO_NS / CYCLES_PER_SEC;
 
     /* set up the initial listening socket */
     session_add(&data, SESS_LISTEN, fd_socket, -1, 0, true);
@@ -1201,7 +1201,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 		   fd_socket);
 	int num_ready = poll(data.fds, data.nfds, timeout_ms);
 	if (num_ready == 0) { /* poll timed out */
-	    continue;
+	    goto TIMING;
 	} else if (num_ready == -1) {
 	    if (errno == EINTR) {
 		log_printf(LL1, "poll() incoming signa: stop server.\n");
@@ -1217,7 +1217,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	for (int i = 0; i < num_sockets; ++i) {
 	    assert(data.fds[i].fd != -1);
 	    if (data.fds[i].revents == 0) {
-		continue;
+		goto TIMING;
 	    }
 
 	    short events = POLLIN|POLLOUT|POLLHUP;
@@ -1232,7 +1232,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 
 	    if (data.fds[i].revents & POLLHUP) {
 		if (data.sessions[i]->close_conn) {
-		    continue;
+		    goto TIMING;
 		}
 		log_printf(LL1, "Connection closed [%s] (fd %d) (POLLHUP)\n",
 			   data.sessions[i]->host, data.sessions[i]->fd);
@@ -1242,7 +1242,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 			       data.sessions[i]->outlen, data.sessions[i]->fd);
 		}
 		data.sessions[i]->close_conn = true;
-		continue;
+		goto TIMING;
 	    }
 
 	}
@@ -1295,6 +1295,8 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	    data.stop_server = true;
 	}
 
+    TIMING:
+	{};
 	clock_t t_end_update = clock();
 	long ns_elapsed = (t_end_update - t_start_cycle)*SEC_TO_NS
 	    / CLOCKS_PER_SEC;
@@ -1303,6 +1305,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 		.tv_sec = 0,
 		.tv_nsec = ns_per_cycle - ns_elapsed,
 	    };
+	    //log_printf(LL0, "nap %f ms\n", delta.tv_nsec / (float)MS_TO_NS);
 	    nanosleep(&delta, NULL);
 	} else {
 	    log_printf(LL0, "Cycle %ld too long (%f ms)\n", cycle_number,
