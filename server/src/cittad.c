@@ -331,13 +331,6 @@ static int log_transmission(log_level ll, const char *data, ssize_t len,
 #define MAX_ARGV_SIZE 32
 #define MAX_HOST_LEN 256
 
-/*
-typedef struct {
-    char data[256];
-    size_t len;
-} buffer;
-*/
-
 typedef enum {
     SESS_LISTEN,
     SESS_PIPE,
@@ -540,6 +533,20 @@ static void cleanup_sessions(daemon_data *data)
 }
 
 /*********************************************************************/
+/* Telnet negotiation and string processing */
+
+#define NUL 0
+#define LF  10
+#define CR  13
+#define TN_BINARY_TRANSMISSION 0x00
+#define TN_ECHO                0x01 /* RFC 857 */
+#define TN_SUPPRESS_GO_AHEAD   0x03 /* RFC 858 */
+#define TN_WILL 0xfb
+#define TN_WONT 0xfc
+#define TN_DO   0xfd
+#define TN_DONT 0xfe
+#define TN_IAC  0xff /* telnet 'Interpret As Command' escape character */
+
 /*
  * Negotiate the telnet connection. We take control of echoing and
  * suppress transmission of the telnet go-ahead character in order to
@@ -548,14 +555,6 @@ static void cleanup_sessions(daemon_data *data)
  */
 void telnet_negotiation(int fd)
 {
-#define TN_IAC  0xff
-#define TN_WILL 0xfb
-#define TN_WONT 0xfc
-#define TN_DO   0xfd
-#define TN_DONT 0xfe
-#define TN_BINARY_TRANSMISSION 0x00
-#define TN_ECHO                0x01 /* RFC 857 */
-#define TN_SUPPRESS_GO_AHEAD   0x03 /* RFC 858 */
 
     static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
     static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SUPPRESS_GO_AHEAD};
@@ -592,15 +591,69 @@ void telnet_negotiation(int fd)
 	}
 	write(fd, cmd, 3);
     }
-#undef TN_IAC
-#undef TN_WILL
-#undef TN_WONT
-#undef TN_DO
-#undef TN_DONT
-#undef TN_BINARY_TRANSMISSION
-#undef TN_SUPPRESS_GO_AHEAN
 }
 
+/* Copies the string 'in' to 'out' transforming CR LF in LF and CR NUL in CR,
+ * in case the telnet application used to connect to the daemon is protocol
+ * compliant and send CR LF when the user presses Enter.                     */
+static ssize_t process_data(char *in, ssize_t inlen, char *out)
+{
+    ssize_t written = 0;
+
+    for (ssize_t i = 0; i != inlen; i++) {
+	if ((in[i] == CR) && (i + 1 != inlen)) {
+	    if (in[i + 1] == LF) {
+		/* eat the CR: CR LF -> LF */
+		continue;
+	    } else if (in[i + 1] == NUL) {
+		/* CR NUL -> CR */
+		out[written++] = CR;
+		i++; /* eat the NUL */
+	    }
+	} else if (((unsigned char)in[i] == TN_IAC) && (i + 1 != inlen)) {
+	    if ((unsigned char)in[i + 1] == TN_IAC) {
+		/* IAC IAC is escaped IAC */
+		out[written++] = (char)TN_IAC;
+		i++;
+	    } else {
+		/* ignore the telnet command */
+		i += 2;
+	    }
+	} else {
+	    out[written++] = in[i];
+	}
+    }
+    return written;
+}
+
+/* Copies the string 'in' to 'out' escaping the IAC characters if any */
+static ssize_t escape_iac(char *in, ssize_t inlen, char *out)
+{
+    ssize_t written = 0;
+
+    for (ssize_t i = 0; i != inlen; i++) {
+	if ((unsigned int)in[i] == TN_IAC) {
+	    out[written++] = (char)TN_IAC;
+	}
+	out[written++] = in[i];
+    }
+    return written;
+}
+
+#undef TN_IAC
+#undef TN_DONT
+#undef TN_DO
+#undef TN_WONT
+#undef TN_WILL
+#undef TN_SUPPRESS_GO_AHEAD
+#undef TN_ECHO
+#undef TN_BINARY_TRANSMISSION
+#undef CR
+#undef LF
+#undef NUL
+
+/****************************************************************************/
+/* Sockets */
 
 /*
  * Sets file descriptor 'fd' to be blocking / nonblocking (for 'bocking' true
@@ -898,33 +951,6 @@ static void read_data(session_data *s)
     }
 }
 
-/* Copies the string 'in' to 'out' transforming CR LF in LF and CR NUL in CR,
- * in case the telnet application used to connect to the daemon is protocol
- * compliant and send CR LF when the user presses Enter.                     */
-#define CR 13
-#define LF 10
-#define NUL 0
-static ssize_t process_data(char *in, ssize_t inlen, char *out)
-{
-    ssize_t written = 0;
-
-    for (ssize_t i = 0; i != inlen; i++) {
-	if ((in[i] == CR) && (i + 1 != inlen)) {
-	    if (in[i + 1] == LF) {
-		/* eat the CR: CR LF -> LF */
-		continue;
-	    } else if (in[i + 1] == NUL) {
-		/* CR NUL -> CR */
-		out[written++] = CR;
-		i++; /* eat the NUL */
-	    }
-	} else {
-	    out[written++] = in[i];
-	}
-    }
-    return written;
-}
-
 /* Receive all incoming data from s->fd and processes the CR LF and CR NUL
  * sequences before moving it to the output buffer.                         */
 static void read_and_process_data(session_data *s)
@@ -951,6 +977,35 @@ static void read_and_process_data(session_data *s)
 	    break;
 	}
 	s->outlen += process_data(buf, bytes, s->outbuf + s->outlen);
+
+	log_transmission(LL2, s->outbuf, bytes, s->fd, s->fd_out, LOG_R);
+    }
+}
+
+static void read_and_escape_iac(session_data *s)
+{
+    char buf[BUFFER_SIZE];
+
+    while (s->outlen < (ssize_t)sizeof(s->outbuf)) {
+	ssize_t bytes;
+
+	bytes = read(s->fd, buf, sizeof(s->outbuf) - s->outlen);
+	if (bytes == -1) {
+	    if (errno != EWOULDBLOCK) {
+		log_printf(LL0, "read on socket %d failed: %s\n", s->fd,
+			   strerror(errno));
+		s->close_conn = true;
+	    }
+	    break;
+	}
+
+	if (bytes == 0) {
+	    log_printf(LL0, "Connection closed [%s] (fd %d)\n", s->host,
+		       s->fd);
+	    s->close_conn = true;
+	    break;
+	}
+	s->outlen += escape_iac(buf, bytes, s->outbuf + s->outlen);
 
 	log_transmission(LL2, s->outbuf, bytes, s->fd, s->fd_out, LOG_R);
     }
@@ -1194,6 +1249,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 		    if (data.sessions[i]->process_CR) {
 			read_and_process_data(data.sessions[i]);
 		    } else {
+			//read_and_escape_iac(data.sessions[i]);
 			read_data(data.sessions[i]);
 		    }
 		}
