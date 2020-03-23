@@ -18,9 +18,15 @@
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/socket.h>
 
+#include "utility.h"
+
 #undef RETRIEVE_REMOTE_INFO
+/* Note: clock() measures the processor time, so we must use gettimeofday()
+ *       to take into account the time spent in poll().                      */
+#define USE_TIMEVAL
 
 #define DEFAULT_LISTEN_PORT 4001
 static char default_client_path[] = "./bin/remote_cittaclient";
@@ -1175,6 +1181,38 @@ static int daemon_init(daemon_config *config)
     return config->listen_fd;
 }
 
+/* Subtract the `struct timeval' values X and Y, storing the result in RESULT.
+      Return 1 if the difference is negative, otherwise 0.
+      (from glibc info)
+      */
+int timeval_subtract(struct timeval *result, struct timeval *x,
+		     struct timeval *y)
+{
+    struct timeval z;
+
+    z.tv_sec = y->tv_sec;
+    z.tv_usec = y->tv_usec;
+    /* Perform the carry for the later subtraction by updating Y. */
+    if (x->tv_usec < z.tv_usec) {
+	int nsec = (z.tv_usec - x->tv_usec) / 1000000 + 1;
+	z.tv_usec -= 1000000 * nsec;
+	z.tv_sec += nsec;
+    }
+    if (x->tv_usec - z.tv_usec > 1000000) {
+	int nsec = (x->tv_usec - z.tv_usec) / 1000000;
+	z.tv_usec += 1000000 * nsec;
+	z.tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait.
+       `tv_usec' is certainly positive. */
+    result->tv_sec = x->tv_sec - z.tv_sec;
+    result->tv_usec = x->tv_usec - z.tv_usec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < z.tv_sec;
+}
+
 #define MS_TO_NS  1000000L
 #define SEC_TO_NS 1000000000L
 static void daemon_loop(daemon_config config, daemon_data data)
@@ -1182,17 +1220,19 @@ static void daemon_loop(daemon_config config, daemon_data data)
     int timeout_ms = 0; //60*1000;
     int fd_socket = config.listen_fd;
     long ns_per_cycle = SEC_TO_NS / CYCLES_PER_SEC;
+    log_printf(LL0, "Cycles duration set to %ld ms\n",
+	       ns_per_cycle / MS_TO_NS);
 
     /* set up the initial listening socket */
     session_add(&data, SESS_LISTEN, fd_socket, -1, 0, true);
 
-    clock_t t_start_time = clock();
-    clock_t t_last_cycle = t_start_time;
+    struct timeval t_start_time;
+    gettimeofday(&t_start_time, NULL);
+    struct timeval t_last_cycle = t_start_time;
     uint32_t cycle_number = 0;
     do {
-	clock_t t_start_cycle = clock();
-	//long last_cycle_duration = t_last_cycle - t_start_cycle;
-	//clock_gettime();
+	struct timeval t_start_cycle;
+	gettimeofday(&t_start_cycle, NULL);
 
 	/* collect zombie child if there is one */
 	waitpid(-1, NULL, WNOHANG);
@@ -1217,7 +1257,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	for (int i = 0; i < num_sockets; ++i) {
 	    assert(data.fds[i].fd != -1);
 	    if (data.fds[i].revents == 0) {
-		goto TIMING;
+		continue;
 	    }
 
 	    short events = POLLIN|POLLOUT|POLLHUP;
@@ -1232,7 +1272,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 
 	    if (data.fds[i].revents & POLLHUP) {
 		if (data.sessions[i]->close_conn) {
-		    goto TIMING;
+		    continue;
 		}
 		log_printf(LL1, "Connection closed [%s] (fd %d) (POLLHUP)\n",
 			   data.sessions[i]->host, data.sessions[i]->fd);
@@ -1242,7 +1282,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 			       data.sessions[i]->outlen, data.sessions[i]->fd);
 		}
 		data.sessions[i]->close_conn = true;
-		goto TIMING;
+		continue;
 	    }
 
 	}
@@ -1297,9 +1337,11 @@ static void daemon_loop(daemon_config config, daemon_data data)
 
     TIMING:
 	{};
-	clock_t t_end_update = clock();
-	long ns_elapsed = (t_end_update - t_start_cycle)*SEC_TO_NS
-	    / CLOCKS_PER_SEC;
+	struct timeval t_end_update;
+	gettimeofday(&t_end_update, NULL);
+	struct timeval t_elapsed;
+	timeval_subtract(&t_elapsed, &t_end_update, &t_start_cycle);
+	long ns_elapsed = t_elapsed.tv_usec*1000;
 	if (ns_elapsed < ns_per_cycle) {
 	    struct timespec delta = {
 		.tv_sec = 0,
@@ -1308,11 +1350,12 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	    //log_printf(LL0, "nap %f ms\n", delta.tv_nsec / (float)MS_TO_NS);
 	    nanosleep(&delta, NULL);
 	} else {
-	    log_printf(LL0, "Cycle %ld too long (%f ms)\n", cycle_number,
+	    log_printf(LL0, "Cycle #%ld too long (%f ms)\n", cycle_number,
 		       ns_elapsed / (float)MS_TO_NS);
 	}
-	cycle_number++;
 	t_last_cycle = t_start_cycle;
+
+	cycle_number++;
     } while (!data.stop_server);
 }
 
