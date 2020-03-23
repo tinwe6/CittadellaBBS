@@ -33,6 +33,9 @@ static const char too_many_conn_msg[] =
 /* maximum length for the queue of pending connections. */
 #define MAX_PENDING 5
 
+/* Number of times per seconds that the daemon wakes up and reads/sends data */
+#define CYCLES_PER_SEC 100
+
 /* We must allow for one socket to listen for new connections, and */
 /* two for each connections (telnet socket + master side of pty)   */
 #define MAX_SOCKETS (2*MAX_CONNECTIONS + 1)
@@ -197,6 +200,17 @@ static void stop_log(void)
     fd_log = -1;
 }
 
+static int log_timestamp(void)
+{
+    time_t now;
+    char *timestamp;
+
+    now = time(NULL);
+    timestamp = ctime(&now);
+    *(timestamp + strlen(timestamp) - 1) = '\0';
+    return dprintf(fd_log, "%-19.19s :: ", timestamp);
+}
+
 static int log_printf(log_level ll, const char *format, ...)
 {
     va_list ap;
@@ -206,8 +220,10 @@ static int log_printf(log_level ll, const char *format, ...)
 	return 0;
     }
 
+    size = log_timestamp();
+
     va_start(ap, format);
-    size = vdprintf(fd_log, format, ap);
+    size += vdprintf(fd_log, format, ap);
     va_end(ap);
 
     return size;
@@ -234,11 +250,7 @@ static void log_argv(log_level ll, const char *pre, char * const * argv)
 
 static int log_addr(log_level ll, const char *str, unsigned long addr)
 {
-    if (ll > ll_current) {
-	return 0;
-    }
-
-    int len = dprintf(fd_log, "%s [%lu.%lu.%lu.%lu]\n", str,
+    int len = log_printf(ll, "%s [%lu.%lu.%lu.%lu]\n", str,
 		      (addr >>  0) & 0xff, (addr >>  8) & 0xff,
 		      (addr >> 16) & 0xff, (addr >> 24) & 0xff
 		      );
@@ -1163,19 +1175,25 @@ static int daemon_init(daemon_config *config)
     return config->listen_fd;
 }
 
+#define MS_TO_NS  1000000L
+#define SEC_TO_NS 1000000000L
 static void daemon_loop(daemon_config config, daemon_data data)
 {
-    int timeout_ms = 60*1000;
+    int timeout_ms = 0; //60*1000;
     int fd_socket = config.listen_fd;
+    long ns_per_cycle = CYCLES_PER_SEC*SEC_TO_NS;
 
     /* set up the initial listening socket */
     session_add(&data, SESS_LISTEN, fd_socket, -1, 0, true);
 
+    clock_t t_start_time = clock();
+    clock_t t_last_cycle = t_start_time;
+    uint32_t cycle_number = 0;
     do {
-#define NS_TO_MS (1000*1000)
-	struct timespec delta = {.tv_sec = 0, .tv_nsec = 10*NS_TO_MS};
+	clock_t t_start_cycle = clock();
+	//long last_cycle_duration = t_last_cycle - t_start_cycle;
 	//clock_gettime();
-	nanosleep(&delta, NULL);
+
 	/* collect zombie child if there is one */
 	waitpid(-1, NULL, WNOHANG);
 
@@ -1188,7 +1206,6 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	    if (errno == EINTR) {
 		log_printf(LL1, "poll() incoming signa: stop server.\n");
 		data.stop_server = true;
-		//		continue;
 	    } else {
 		log_perror(LL0, "Fatal - poll()");
 	    }
@@ -1224,17 +1241,13 @@ static void daemon_loop(daemon_config config, daemon_data data)
 		    log_printf(LL1, "%ld bytes yet to be written on %d\n",
 			       data.sessions[i]->outlen, data.sessions[i]->fd);
 		}
-#if 0
-		write(data.fds[i].fd, "\0", 1);
-		write(data.sessions[i]->fd_out, "\0", 1);
-#endif
 		data.sessions[i]->close_conn = true;
 		continue;
 	    }
 
 	}
 
-	/* read */
+	/* read available data */
 	num_sockets = data.nfds;
 	for (int i = 0; i < num_sockets; ++i) {
 	    if (data.fds[i].revents & POLLIN) {
@@ -1256,7 +1269,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	    }
 	}
 
-	/* write */
+	/* write outgoing data */
 	num_sockets = data.nfds;
 	for (int i = 0; i < num_sockets; ++i) {
 	    assert(data.fds[i].fd != -1);
@@ -1266,7 +1279,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	    }
 	}
 
-	/* close */
+	/* close connections */
 	for (int i = 0; i < num_sockets; ++i) {
 	    if (data.sessions[i]->close_conn) {
 		session_close(&data, i);
@@ -1281,6 +1294,22 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	    log_printf(LL0, "Got hup/int signal\n");
 	    data.stop_server = true;
 	}
+
+	clock_t t_end_update = clock();
+	long ns_elapsed = (t_end_update - t_start_cycle)*SEC_TO_NS
+	    / CLOCKS_PER_SEC;
+	if (ns_elapsed < ns_per_cycle) {
+	    struct timespec delta = {
+		.tv_sec = 0,
+		.tv_nsec = ns_per_cycle - ns_elapsed,
+	    };
+	    nanosleep(&delta, NULL);
+	} else {
+	    log_printf(LL0, "Cycle %ld too long (%f ms)\n", cycle_number,
+		       ns_elapsed / (float)MS_TO_NS);
+	}
+	cycle_number++;
+	t_last_cycle = t_start_cycle;
     } while (!data.stop_server);
 }
 
