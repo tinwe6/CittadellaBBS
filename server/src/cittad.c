@@ -42,6 +42,9 @@ static const char too_many_conn_msg[] =
 /* Number of times per seconds that the daemon wakes up and reads/sends data */
 #define CYCLES_PER_SEC 100
 
+/* Telnet negotiation timeout */
+#define TN_TIMEOUT_MS 200
+
 /* We must allow for one socket to listen for new connections, and */
 /* two for each connections (telnet socket + master side of pty)   */
 #define MAX_SOCKETS (2*MAX_CONNECTIONS + 1)
@@ -345,23 +348,36 @@ static int log_transmission(log_level ll, const char *data, ssize_t len,
 }
 
 /*************************************************************/
+/* Session data */
 
 #define MAX_ARGV_SIZE 32
 #define MAX_HOST_LEN 256
 
 typedef enum {
-    SESS_LISTEN,
-    SESS_PIPE,
+    SESS_LISTEN = 1,
+    SESS_TELNET = 2,
+    SESS_PTY    = 4,
+    SESS_PIPE   = (SESS_TELNET|SESS_PTY),
 } session_type;
 
+typedef enum {
+    STATE_WAIT,
+    STATE_LISTEN,
+    STATE_NEGOTIATION,
+    STATE_TELNET,
+    STATE_PTY,
+} session_state;
+
 typedef struct session_data_t {
+    session_state state;
     session_type type;
-    int fd;
-    int fd_out;
-    bool close_conn;
-    bool is_socket;
-    bool process_CR;
-    char *host;
+    int fd;          /* file descriptor associated to the session  */
+    int fd_out;      /* file desc. of the other end of the pipe    */
+    bool close_conn; /* true if the connection must be closed      */
+    bool is_socket;  /* true if connected to an internet socket    */
+    bool process_CR; /* do CR LF -> LF and CR NUL -> CR if true    */
+    suseconds_t tn_timeout_ms; /* Telnet negotiation timeout in ms */
+    char *host;      /* host ip number                             */
     char outbuf[BUFFER_SIZE];
     ssize_t outlen;
     struct session_data_t *other_end;
@@ -389,11 +405,13 @@ static session_data * session_add(daemon_data *data, session_type type, int fd,
 				  int fd_out, char *host, bool is_socket)
 {
     session_data *session = (session_data *)malloc(sizeof(session_data));
+    session->state = STATE_WAIT;
     session->type = type;
     session->fd = fd;
     session->fd_out = fd_out;
     session->close_conn = false;
     session->is_socket = is_socket;
+    session->tn_timeout_ms = 0;
     session->outbuf[0] = 0;
     session->outlen = 0;
     session->host = host;
@@ -408,17 +426,44 @@ static session_data * session_add(daemon_data *data, session_type type, int fd,
     return session;
 }
 
-/* Creates a pipe between a socket and the master fd of the pty */
-static void make_pipe(daemon_data *data, int socket_fd, int pty_fd, char *host)
+/* Creates a pipe between a socket and the master fd of the pty  */
+/* Returns a pointer to the session associated to the socket fd. */
+static session_data * make_telnet(daemon_data *data, int socket_fd, char *host)
 {
-    session_data *s1 = session_add(data, SESS_PIPE, socket_fd, pty_fd, host,
+    session_data *s = session_add(data, SESS_PIPE, socket_fd, -1, host,
 				   true);
-    session_data *s2 = session_add(data, SESS_PIPE, pty_fd, socket_fd, host,
-				   false);
-    s1->other_end = s2;
-    s2->other_end = s1;
-    s1->process_CR = true;
+    s->other_end = NULL;
+    s->process_CR = true;
+
+    return s;
 }
+
+/* Creates a pipe between a socket and the master fd of the pty  */
+/* Returns a pointer to the session associated to the socket fd. */
+static session_data * make_pty(daemon_data *data, int pty_fd,
+			       session_data *s_socket, char *host)
+{
+    session_data *s = session_add(data, SESS_PIPE, pty_fd, s_socket->fd, host,
+				   false);
+    s->other_end = s_socket;
+    s_socket->other_end = s;
+    s_socket->fd_out = pty_fd;
+
+    return s;
+}
+
+#if 0
+/* Creates a pipe between a socket and the master fd of the pty  */
+/* Returns a pointer to the session associated to the socket fd. */
+static session_data * make_pipe(daemon_data *data, int socket_fd, int pty_fd,
+				char *host)
+{
+    session_data *s_socket = make_telnet(data, socket_fd, host);
+    make_pty(data, pty_fd, s_socket, host);
+
+    return s_socket;
+}
+#endif
 
 /* See https://stackoverflow.com/a/12730776 for how to close a socket */
 static int get_and_clear_socket_error(int fd)
@@ -588,9 +633,9 @@ void telnet_negotiation(int fd)
 
     for (;;) {
 	if (poll(pfd, 1, tn_timeout_ms) == 0) {
-		/* poll timed out, we're done */
-		assert(!pfd[0].revents);
-		break;
+	    /* poll timed out, we're done */
+	    assert(!pfd[0].revents);
+	    break;
 	}
 
 	read(fd, &cmd, 3);
@@ -609,6 +654,54 @@ void telnet_negotiation(int fd)
 	}
 	write(fd, cmd, 3);
     }
+}
+
+void start_telnet_negotiations(session_data *session)
+{
+    static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
+    static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SUPPRESS_GO_AHEAD};
+
+    const int tn_timeout_ms = 200;
+
+    /* Negotiate character at a time echoing mode for the telnet connection */
+    write(session->fd, char_mode, 3);
+    write(session->fd, will_echo, 3);
+
+    session->state = STATE_NEGOTIATION;
+    session->tn_timeout_ms = TN_TIMEOUT_MS;
+}
+
+void answer_telnet_commands(session_data *session)
+{
+    struct pollfd pfd[1];
+    uint8_t cmd[3];
+    const int tn_timeout_ms = 200;
+
+    for (;;) {
+	if (poll(pfd, 1, tn_timeout_ms) == 0) {
+	    /* poll timed out, we're done */
+	    assert(!pfd[0].revents);
+	    break;
+	}
+
+	ssize_t bytes = read(session->fd, &cmd, 3);
+
+	/* Ignore the answers to our requests */
+	if (cmd[2] == TN_ECHO || cmd[2] == TN_SUPPRESS_GO_AHEAD) {
+	    continue;
+	}
+
+	/* Reject all other options by answering DON'T */
+	/* to WILL requests and WON'T to DO requests.  */
+	if (cmd[1] == TN_WILL) {
+	    cmd[1] = TN_DONT;
+	} else if (cmd[1] == TN_DO) {
+	    cmd[1] = TN_WONT;
+	}
+	write(session->fd, cmd, 3);
+    }
+
+    session->tn_timeout_ms = TN_TIMEOUT_MS;
 }
 
 /* Copies the string 'in' to 'out' transforming CR LF in LF and CR NUL in CR,
@@ -874,6 +967,50 @@ static void make_argv(char *argv[], char *host, daemon_config *config)
     argv[n] = NULL;
 }
 
+static session_data * start_pty(daemon_config *config, daemon_data *data,
+				session_data *s_socket, char *host)
+{
+    char *client_argv[MAX_ARGV_SIZE];
+
+    make_argv(client_argv, host, config);
+    int fd_master = start_client(s_socket->fd, client_argv);
+
+    if (fd_master == -1) {
+	log_printf(LL0, "Could not setup pty for connection (fd=%d).",
+		   s_socket->fd);
+	s_socket->close_conn = true;
+	return NULL;
+    }
+    session_data *s_master = make_pty(data, fd_master, s_socket, host);
+    return s_master;
+}
+
+static session_data * start_telnet(daemon_data *data, int fd_socket,
+				   unsigned long s_addr)
+{
+#ifdef RETRIEVE_REMOTE_INFO
+    char hostname[MAX_HOST_LEN];
+    get_remote_info(fd_socket, hostname, sizeof(hostname));
+    log_printf(LL0, "New connection from [%s] (fd %d)\n", hostname,
+	       fd_socket);
+#else
+    log_addr(LL0, "New connection from", s_addr);
+#endif
+
+    /* NOTE: the new connection inherits the non blocking */
+    /*       status from the listening socket             */
+#if 0
+    enable_socket_blocking(fd_socket, false);
+#endif
+    char *host = make_host(s_addr);
+    session_data *s_socket = make_telnet(data, fd_socket, host);
+
+    data->connections_count++;
+
+    start_telnet_negotiations(s_socket);
+    return s_socket;
+}
+
 /* Accept all new incoming connections. For each of them, find info  */
 /* about the remote host, set up a pty and start the remote program, */
 /* and negotiate the telnet connection.                              */
@@ -886,9 +1023,9 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	struct sockaddr_in address;
 	socklen_t address_len = sizeof(address);
 
-	int fd_client = accept(data->fds[index].fd,
+	int fd_socket = accept(data->fds[index].fd,
 			       (struct sockaddr *)&address, &address_len);
-	if (fd_client == -1) {
+	if (fd_socket == -1) {
 	    /* If accept fails with EWOULDBLOCK, all new */
 	    /* connections have been accepted.           */
 	    if (errno != EWOULDBLOCK) {
@@ -899,44 +1036,16 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	}
 
 	if (data->connections_count == MAX_CONNECTIONS) {
-	    write(fd_client, too_many_conn_msg, strlen(too_many_conn_msg));
-	    close_socket(fd_client);
+	    write(fd_socket, too_many_conn_msg, strlen(too_many_conn_msg));
+	    close_socket(fd_socket);
 	    log_addr(LL0, "Too many users: Refused connection from",
 		     address.sin_addr.s_addr);
 	    continue;
 	}
 
-#ifdef RETRIEVE_REMOTE_INFO
-	char hostname[MAX_HOST_LEN];
-	get_remote_info(fd_client, hostname, sizeof(hostname));
-	log_printf(LL0, "New connection from [%s] (fd %d)\n", hostname,
-		   fd_client);
-#else
-	log_addr(LL0, "New connection from", address.sin_addr.s_addr);
-#endif
-
-	/* NOTE: the new connection inherits the non blocking */
-	/*       status from the listening socket             */
-#if 0
-	enable_socket_blocking(fd_client, false);
-#endif
-	char *client_argv[MAX_ARGV_SIZE];
-	char *host = make_host(address.sin_addr.s_addr);
-
-	make_argv(client_argv, host, config);
-
-	int fd_master = start_client(fd_client, client_argv);
-
-	if (fd_master == -1) {
-	    log_printf(LL0, "Could not setup new connection (fd=%d).",
-		       fd_client);
-	    close_socket(fd_client);
-	    return;
-	}
-	make_pipe(data, fd_client, fd_master, host);
-	data->connections_count++;
-
-	telnet_negotiation(fd_client);
+        session_data *s_socket = start_telnet(data, fd_socket,
+					      address.sin_addr.s_addr);
+	start_pty(config, data, s_socket, s_socket->host);
     }
 }
 
@@ -1037,6 +1146,7 @@ void write_data(session_data *s)
 	if (sent == -1) {
 	    log_printf(LL0, "write to socket %d failed: %s\n", s->fd_out,
 		       strerror(errno));
+	    assert(false);
 	    s->close_conn = true;
 	    break;
 	}
