@@ -943,11 +943,14 @@ static void new_connections(daemon_config *config, daemon_data *data,
 /* Receive all incoming data from s->fd and moves it to the output buffer */
 static void read_data(session_data *s)
 {
-    while (s->outlen < (ssize_t)sizeof(s->outbuf)) {
+    session_data *dest = s->other_end;
+    assert(dest);
+
+    while (dest->outlen < (ssize_t)sizeof(dest->outbuf)) {
 	ssize_t bytes;
 
-	bytes = read(s->fd, s->outbuf + s->outlen,
-		     sizeof(s->outbuf) - s->outlen);
+	bytes = read(s->fd, dest->outbuf + dest->outlen,
+		     sizeof(dest->outbuf) - dest->outlen);
 	if (bytes == -1) {
 	    if (errno != EWOULDBLOCK) {
 		log_printf(LL0, "read on socket %d failed: %s\n", s->fd,
@@ -963,9 +966,9 @@ static void read_data(session_data *s)
 	    s->close_conn = true;
 	    break;
 	}
-	s->outlen += bytes;
+	dest->outlen += bytes;
 
-	log_transmission(LL2, s->outbuf, bytes, s->fd, s->fd_out, LOG_R);
+	log_transmission(LL2, dest->outbuf, bytes, s->fd, dest->fd, LOG_R);
     }
 }
 
@@ -974,11 +977,13 @@ static void read_data(session_data *s)
 static void read_and_process_data(session_data *s)
 {
     char buf[BUFFER_SIZE];
+    session_data *dest = s->other_end;
+    assert(dest);
 
-    while (s->outlen < (ssize_t)sizeof(s->outbuf)) {
+    while (dest->outlen < (ssize_t)sizeof(dest->outbuf)) {
 	ssize_t bytes;
 
-	bytes = read(s->fd, buf, sizeof(s->outbuf) - s->outlen);
+	bytes = read(s->fd, buf, sizeof(dest->outbuf) - dest->outlen);
 	if (bytes == -1) {
 	    if (errno != EWOULDBLOCK) {
 		log_printf(LL0, "read on socket %d failed: %s\n", s->fd,
@@ -994,20 +999,22 @@ static void read_and_process_data(session_data *s)
 	    s->close_conn = true;
 	    break;
 	}
-	s->outlen += process_data(buf, bytes, s->outbuf + s->outlen);
+	dest->outlen += process_data(buf, bytes, dest->outbuf + dest->outlen);
 
-	log_transmission(LL2, s->outbuf, bytes, s->fd, s->fd_out, LOG_R);
+	log_transmission(LL2, dest->outbuf, bytes, s->fd, dest->fd, LOG_R);
     }
 }
 
 static void read_and_escape_iac(session_data *s)
 {
     char buf[BUFFER_SIZE];
+    session_data *dest = s->other_end;
+    assert(dest);
 
-    while (s->outlen < (ssize_t)sizeof(s->outbuf)) {
+    while (dest->outlen < (ssize_t)sizeof(dest->outbuf)) {
 	ssize_t bytes;
 
-	bytes = read(s->fd, buf, sizeof(s->outbuf) - s->outlen);
+	bytes = read(s->fd, buf, sizeof(dest->outbuf) - dest->outlen);
 	if (bytes == -1) {
 	    if (errno != EWOULDBLOCK) {
 		log_printf(LL0, "read on socket %d failed: %s\n", s->fd,
@@ -1023,9 +1030,9 @@ static void read_and_escape_iac(session_data *s)
 	    s->close_conn = true;
 	    break;
 	}
-	s->outlen += escape_iac(buf, bytes, s->outbuf + s->outlen);
+	dest->outlen += escape_iac(buf, bytes, dest->outbuf + dest->outlen);
 
-	log_transmission(LL2, s->outbuf, bytes, s->fd, s->fd_out, LOG_R);
+	log_transmission(LL2, dest->outbuf, bytes, s->fd, dest->fd, LOG_R);
     }
 }
 
@@ -1033,14 +1040,14 @@ static void read_and_escape_iac(session_data *s)
 void write_data(session_data *s)
 {
     while(s->outlen) {
-	ssize_t sent = write(s->fd_out, s->outbuf, s->outlen);
+	ssize_t sent = write(s->fd, s->outbuf, s->outlen);
 	if (sent == -1) {
-	    log_printf(LL0, "write to socket %d failed: %s\n", s->fd_out,
+	    log_printf(LL0, "write to socket %d failed: %s\n", s->fd,
 		       strerror(errno));
 	    s->close_conn = true;
 	    break;
 	}
-	log_transmission(LL2, s->outbuf, sent, s->fd, s->fd_out, LOG_W);
+	log_transmission(LL2, s->outbuf, sent, s->fd_out, s->fd, LOG_W);
 	if (sent < s->outlen) {
 	    memmove(s->outbuf, s->outbuf + sent, s->outlen - sent);
 	    s->outlen -= sent;
