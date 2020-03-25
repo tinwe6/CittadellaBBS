@@ -32,6 +32,8 @@
 static char default_client_path[] = "./bin/remote_cittaclient";
 static const char too_many_conn_msg[] =
     "Too many remote users. Try again later...\n";
+static const char tn_msg_negotiation_failed[] =
+    "Telnet negotiations failed.\n";
 
 /* maximum number of remote connections allowed */
 #define MAX_CONNECTIONS 20
@@ -294,30 +296,31 @@ static void log_revents(log_level ll, short int revents)
 }
 
 
-static int bytes_to_str(const char *str, size_t len, char *buf, size_t bufsize)
+static int bytes_to_str(const uint8_t *bytes, ssize_t len, char *buf,
+			ssize_t bufsize)
 {
-    int written = 0;
+    ssize_t written = 0;
     const char hexdigit[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 			     'a', 'b', 'c', 'd', 'e', 'f'};
-    for (size_t i = 0; i != len; ++i) {
-	if (isprint(str[i])) {
-	    if ((size_t)written + 1 >= bufsize) {
+    for (ssize_t i = 0; i != len; ++i) {
+	if (isprint(bytes[i])) {
+	    if (written + 1 >= bufsize) {
 		break;
 	    }
-	    buf[written++] = str[i];
+	    buf[written++] = bytes[i];
 	} else {
-	    if ((size_t)written + 6 >= bufsize) {
+	    if (written + 6 >= bufsize) {
 		break;
 	    }
 	    buf[written++] = '{';
 	    buf[written++] = '0';
 	    buf[written++] = 'x';
-	    buf[written++] = hexdigit[((unsigned char)str[i] >> 4) & 0x0f];
-	    buf[written++] = hexdigit[(unsigned char)str[i] & 0x0f];
+	    buf[written++] = hexdigit[(bytes[i] >> 4) & 0x0f];
+	    buf[written++] = hexdigit[bytes[i] & 0x0f];
 	    buf[written++] = '}';
 	}
     }
-    assert((size_t)written < bufsize);
+    assert(written < bufsize);
     buf[written++] = 0;
 
     return written;
@@ -326,7 +329,7 @@ static int bytes_to_str(const char *str, size_t len, char *buf, size_t bufsize)
 typedef enum {
     LOG_R, LOG_W, LOG_RW,
 } log_tran_type;
-static int log_transmission(log_level ll, const char *data, ssize_t len,
+static int log_transmission(log_level ll, const uint8_t *data, ssize_t len,
 			    int from, int to, log_tran_type type)
 {
     char pretty[1024];
@@ -354,13 +357,6 @@ static int log_transmission(log_level ll, const char *data, ssize_t len,
 #define MAX_HOST_LEN 256
 
 typedef enum {
-    SESS_LISTEN = 1,
-    SESS_TELNET = 2,
-    SESS_PTY    = 4,
-    SESS_PIPE   = (SESS_TELNET|SESS_PTY),
-} session_type;
-
-typedef enum {
     STATE_WAIT,
     STATE_LISTEN,
     STATE_NEGOTIATION,
@@ -369,18 +365,17 @@ typedef enum {
 } session_state;
 
 typedef struct session_data_t {
-    session_state state;
-    session_type type;
-    int fd;          /* file descriptor associated to the session  */
-    int fd_out;      /* file desc. of the other end of the pipe    */
-    bool close_conn; /* true if the connection must be closed      */
-    bool is_socket;  /* true if connected to an internet socket    */
-    bool process_CR; /* do CR LF -> LF and CR NUL -> CR if true    */
-    suseconds_t tn_timeout_ms; /* Telnet negotiation timeout in ms */
-    char *host;      /* host ip number                             */
-    char outbuf[BUFFER_SIZE];
-    ssize_t outlen;
-    struct session_data_t *other_end;
+    session_state state; /* State of the connection                    */
+    int fd;              /* file descriptor associated to the session  */
+    int fd_out;          /* file desc. of the other end of the pipe    */
+    bool close_conn;     /* true if the connection must be closed      */
+    bool is_socket;      /* true if connected to an internet socket    */
+    bool is_pipe;        /* is it one end of a bidirectional pipe?     */
+    suseconds_t tn_timeout_ms; /* Telnet negotiation timeout in ms     */
+    char *host;          /* calling host ip number                     */
+    uint8_t outbuf[BUFFER_SIZE]; /* data waiting to be written to fd   */
+    ssize_t outlen;      /* number of bytes to be sent in outbuf       */
+    struct session_data_t *other_end; /* session at other end of pipe  */
 } session_data;
 
 typedef struct {
@@ -401,24 +396,27 @@ static void register_fd(daemon_data *data, int fd, short events, int index)
     };
 }
 
-static session_data * session_add(daemon_data *data, session_type type, int fd,
-				  int fd_out, char *host, bool is_socket)
+static session_data * session_add(daemon_data *data, session_state state,
+				  int fd, int fd_out, char *host,
+				  bool is_socket)
 {
     session_data *session = (session_data *)malloc(sizeof(session_data));
-    session->state = STATE_WAIT;
-    session->type = type;
+    session->state = state;
     session->fd = fd;
     session->fd_out = fd_out;
     session->close_conn = false;
     session->is_socket = is_socket;
+    session->is_pipe = false;
     session->tn_timeout_ms = 0;
     session->outbuf[0] = 0;
     session->outlen = 0;
     session->host = host;
     session->other_end = NULL;
-    session->process_CR = false;
 
-    short events = (type == SESS_LISTEN) ? POLLIN : (POLLIN|POLLOUT);
+    short events = (state == STATE_LISTEN) ? POLLIN : (POLLIN|POLLOUT);
+    if (state == STATE_LISTEN) {
+	session->state = STATE_LISTEN;
+    }
     register_fd(data, fd, events, data->nfds);
     data->sessions[data->nfds] = session;
     data->nfds++;
@@ -430,24 +428,23 @@ static session_data * session_add(daemon_data *data, session_type type, int fd,
 /* Returns a pointer to the session associated to the socket fd. */
 static session_data * make_telnet(daemon_data *data, int socket_fd, char *host)
 {
-    session_data *s = session_add(data, SESS_PIPE, socket_fd, -1, host,
-				   true);
-    s->other_end = NULL;
-    s->process_CR = true;
-
+    session_data *s = session_add(data, STATE_NEGOTIATION, socket_fd, -1,
+				  host, true);
     return s;
 }
 
 /* Creates a pipe between a socket and the master fd of the pty  */
 /* Returns a pointer to the session associated to the socket fd. */
 static session_data * make_pty(daemon_data *data, int pty_fd,
-			       session_data *s_socket, char *host)
+			       session_data *s_socket)
 {
-    session_data *s = session_add(data, SESS_PIPE, pty_fd, s_socket->fd, host,
-				   false);
+    session_data *s = session_add(data, STATE_PTY, pty_fd, s_socket->fd,
+				  s_socket->host, false);
     s->other_end = s_socket;
+    s->is_pipe = true;
     s_socket->other_end = s;
     s_socket->fd_out = pty_fd;
+    s_socket->is_pipe = true;
 
     return s;
 }
@@ -517,11 +514,11 @@ static void session_close(daemon_data *data, int index)
     assert(data->sessions[index]->close_conn);
 
     if (data->fds[index].fd == -1) {
-	assert(data->sessions[index]->type == SESS_PIPE);
+	assert(data->sessions[index]->is_pipe);
 	assert(data->needs_cleanup);
 	return;
     }
-    if (data->sessions[index]->type == SESS_PIPE) {
+    if (data->sessions[index]->is_pipe) {
 	assert(data->sessions[index]->other_end);
 	for (int j = 0; j != data->nfds; ++j) {
 	    if (data->fds[j].fd == data->sessions[index]->fd_out) {
@@ -598,29 +595,75 @@ static void cleanup_sessions(daemon_data *data)
 /*********************************************************************/
 /* Telnet negotiation and string processing */
 
-#define NUL 0
-#define LF  10
-#define CR  13
-#define TN_BINARY_TRANSMISSION 0x00
-#define TN_ECHO                0x01 /* RFC 857 */
-#define TN_SUPPRESS_GO_AHEAD   0x03 /* RFC 858 */
-#define TN_WILL 0xfb
-#define TN_WONT 0xfc
-#define TN_DO   0xfd
-#define TN_DONT 0xfe
-#define TN_IAC  0xff /* telnet 'Interpret As Command' escape character */
+#define TN_CMD_LIST(cmd) \
+cmd(NUL,    0)  cmd(ECHO,   1)  cmd(SGA,    3)  cmd(LF,    10)  cmd(CR,    13)\
+cmd(SE,   240)  cmd(NOP,  241)  cmd(DAMA, 242)  cmd(BRK,  243)  cmd(IP,   244)\
+cmd(AO,   245)  cmd(AYT,  246)  cmd(EC,   247)  cmd(EL,   248)  cmd(GA,   249)\
+cmd(SB,   250)  cmd(WILL, 251)  cmd(WONT, 252)  cmd(DO,   253)  cmd(DONT, 254)\
+cmd(IAC,  255)
+
+#define FOREACH_CMD(cmd)   TN_CMD_LIST(cmd)
+
+#define DEFINE_CONSTANT(name, code) const uint8_t TN_##name = code ;
+FOREACH_CMD(DEFINE_CONSTANT)
+
+typedef struct {
+    unsigned char code;
+    char name[5];
+} tn_cmd;
+
+const tn_cmd tn_cmd_name[] = {
+    //#define TO_STR_(x) #x
+    //#define TO_STR(x) TO_STR_(x)
+#define DEFINE_COMMAND(name, code) {code, #name },
+    FOREACH_CMD(DEFINE_COMMAND)
+#undef DEFINE_COMMAND
+    //#undef TO_STR
+    //    {-1, ""}, /* indicates array end */
+};
+
+static const char * tn_cmd_to_str(uint8_t code)
+{
+    static char str_code[4];
+
+    for(size_t i = 0; i != sizeof(tn_cmd_name); i++) {
+	if (tn_cmd_name[i].code == code) {
+	    return tn_cmd_name[i].name;
+	}
+    }
+    snprintf(str_code, sizeof(str_code), "%d", code);
+
+    return str_code;
+}
+
+static void log_telnet_command(log_level ll, const char *pre,
+			       const uint8_t *cmd, size_t len)
+{
+    if (ll > ll_current) {
+	return;
+    }
+    log_timestamp();
+    dprintf(fd_log, "%s ", pre);
+    for (size_t i = 0; i != len; i++) {
+	dprintf(fd_log, "%s ", tn_cmd_to_str((uint8_t)cmd[i]));
+    }
+    dprintf(fd_log, "\n");
+}
+
 
 /*
  * Negotiate the telnet connection. We take control of echoing and
  * suppress transmission of the telnet go-ahead character in order to
  * have data transmitted one character at a time (and not by lines).
- * (see RFC 854 for telnet protocol specification)
- */
-void telnet_negotiation(int fd)
+ * (see RFC 854 for telnet protocol specification. See also
+ *  ECHO: RFC 857, SGA (suppress go ahead): RFC 858)                  */
+/* NB IAC is the 'Interpret As Command' escape character              */
+#if 0
+static void telnet_negotiation(int fd)
 {
 
     static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
-    static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SUPPRESS_GO_AHEAD};
+    static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SGA };
     struct pollfd pfd[1];
     uint8_t cmd[3];
     const int tn_timeout_ms = 200;
@@ -641,7 +684,7 @@ void telnet_negotiation(int fd)
 	read(fd, &cmd, 3);
 
 	/* Ignore the answers to our requests */
-	if (cmd[2] == TN_ECHO || cmd[2] == TN_SUPPRESS_GO_AHEAD) {
+	if (cmd[2] == TN_ECHO || cmd[2] == TN_SGA) {
 	    continue;
 	}
 
@@ -655,80 +698,136 @@ void telnet_negotiation(int fd)
 	write(fd, cmd, 3);
     }
 }
+#endif
 
-void start_telnet_negotiations(session_data *session)
+/* Appen len bytes at buf to the output buffer of session s (s->outbuf).     */
+/* Returns len on success, -1 if not enough room is available in the buffer. */
+static ssize_t outbuf_append(session_data *s, const uint8_t *buf, ssize_t len)
+{
+
+    if (s->outlen + len <= (ssize_t)sizeof(s->outbuf)) {
+	uint8_t *dest = s->outbuf + s->outlen;
+	for (ssize_t i = 0; i != len; i++) {
+	    *dest++ = *buf++;
+	};
+	s->outlen += len;
+	return len;
+    } else {
+	return -1;
+    }
+}
+
+static void tn_start_negotiations(session_data *session)
 {
     static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
-    static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SUPPRESS_GO_AHEAD};
-
-    const int tn_timeout_ms = 200;
+    static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SGA };
 
     /* Negotiate character at a time echoing mode for the telnet connection */
-    write(session->fd, char_mode, 3);
-    write(session->fd, will_echo, 3);
+    outbuf_append(session, char_mode, sizeof(char_mode));
+    outbuf_append(session, will_echo, sizeof(will_echo));
+    //write(session->fd, char_mode, 3);
+    //write(session->fd, will_echo, 3);
+    log_telnet_command(LL1, "Sent: ", char_mode, 3);
+    log_telnet_command(LL1, "Sent: ", will_echo, 3);
 
-    session->state = STATE_NEGOTIATION;
+    /* refresh the login timeout */
     session->tn_timeout_ms = TN_TIMEOUT_MS;
 }
 
-void answer_telnet_commands(session_data *session)
+/* Reject the option by answering DON'T to WILL requests and WON'T to
+ * DO requests.  */
+static void tn_reject_option(const uint8_t *cmd, session_data *dest)
 {
-    struct pollfd pfd[1];
+    static uint8_t answer[] = {TN_IAC, 0, 0};
+
+    assert(cmd[0] == TN_IAC);
+    if (cmd[1] == TN_WILL) {
+	answer[1] = TN_DONT;
+    } else if (cmd[1] == TN_DO) {
+	answer[1] = TN_WONT;
+    }
+    answer[2] = cmd[2];
+
+    outbuf_append(dest, answer, 3);
+    log_telnet_command(LL1, "Sent: ", answer, 3);
+}
+
+static void tn_answer_commands(session_data *session)
+{
     uint8_t cmd[3];
-    const int tn_timeout_ms = 200;
 
     for (;;) {
-	if (poll(pfd, 1, tn_timeout_ms) == 0) {
-	    /* poll timed out, we're done */
-	    assert(!pfd[0].revents);
+
+	ssize_t bytes = read(session->fd, &cmd, 3);
+	if (bytes == -1) {
 	    break;
 	}
 
-	ssize_t bytes = read(session->fd, &cmd, 3);
+	log_telnet_command(LL1, "Received: ", cmd, 3);
+
+	if (cmd[0] != TN_IAC) {
+	    /* This should not happen */
+	    write(session->fd, tn_msg_negotiation_failed,
+		  sizeof(tn_msg_negotiation_failed));
+	    session->close_conn = true;;
+	}
 
 	/* Ignore the answers to our requests */
-	if (cmd[2] == TN_ECHO || cmd[2] == TN_SUPPRESS_GO_AHEAD) {
+	if (cmd[2] == TN_ECHO || cmd[2] == TN_SGA) {
 	    continue;
 	}
 
-	/* Reject all other options by answering DON'T */
-	/* to WILL requests and WON'T to DO requests.  */
-	if (cmd[1] == TN_WILL) {
-	    cmd[1] = TN_DONT;
-	} else if (cmd[1] == TN_DO) {
-	    cmd[1] = TN_WONT;
-	}
-	write(session->fd, cmd, 3);
+	/* Reject all other options */
+	tn_reject_option(cmd, session);
     }
 
+    /* Refresh the timeout for the negotiations */
     session->tn_timeout_ms = TN_TIMEOUT_MS;
+}
+
+/* Returns true if cmd points to a negoriation command (IAC WILL, IAC WON'T,
+ * IAC DO, or IAC DON'T). In that case the command is a three bytes command,
+ * otherwise it is a two byte command.
+ * NOTE: cmd must point at least to a two bytes string.                      */
+static inline bool is_negotiation_cmd(const uint8_t *cmd)
+{
+    return (cmd[0] == TN_IAC && cmd[1] >= 251 && cmd[1] <= 254);
 }
 
 /* Copies the string 'in' to 'out' transforming CR LF in LF and CR NUL in CR,
  * in case the telnet application used to connect to the daemon is protocol
- * compliant and send CR LF when the user presses Enter.                     */
-static ssize_t process_data(char *in, ssize_t inlen, char *out)
+ * compliant and send CR LF when the user presses Enter. Additionally, rejects
+ * any telnet negotiation request sending the answer back to session 'dest',
+ * unescapes IAC IAC, and ignore any other (2 byte) telnet command.          */
+static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
+			    session_data *dest)
 {
     ssize_t written = 0;
 
     for (ssize_t i = 0; i != inlen; i++) {
-	if ((in[i] == CR) && (i + 1 != inlen)) {
-	    if (in[i + 1] == LF) {
+	if ((in[i] == TN_CR) && (i + 1 != inlen)) {
+	    if (in[i + 1] == TN_LF) {
 		/* eat the CR: CR LF -> LF */
 		continue;
-	    } else if (in[i + 1] == NUL) {
+	    } else if (in[i + 1] == TN_NUL) {
 		/* CR NUL -> CR */
-		out[written++] = CR;
+		out[written++] = TN_CR;
 		i++; /* eat the NUL */
 	    }
-	} else if (((unsigned char)in[i] == TN_IAC) && (i + 1 != inlen)) {
-	    if ((unsigned char)in[i + 1] == TN_IAC) {
+	} else if ((in[i] == TN_IAC) && (i + 1 != inlen)) {
+	    if (in[i + 1] == TN_IAC) {
+		log_telnet_command(LL1, "Received: ", in, 2);
 		/* IAC IAC is escaped IAC */
-		out[written++] = (char)TN_IAC;
-		i++;
-	    } else {
-		/* ignore the telnet command */
+		out[written++] = TN_IAC;
+		i++; /* eat the IAC */
+	    } else if (is_negotiation_cmd(in) && i + 2 != inlen) {
+		log_telnet_command(LL1, "Received: ", in, 3);
+		tn_reject_option(in, dest);
 		i += 2;
+	    } else {
+		log_telnet_command(LL1, "Received: ", in, 2);
+		/* Two bytes command: ignore it */
+		i += 1;
 	    }
 	} else {
 	    out[written++] = in[i];
@@ -738,30 +837,19 @@ static ssize_t process_data(char *in, ssize_t inlen, char *out)
 }
 
 /* Copies the string 'in' to 'out' escaping the IAC characters if any */
-static ssize_t escape_iac(char *in, ssize_t inlen, char *out)
+static ssize_t escape_iac(uint8_t *in, ssize_t inlen, uint8_t *out)
 {
     ssize_t written = 0;
 
     for (ssize_t i = 0; i != inlen; i++) {
-	if ((unsigned int)in[i] == TN_IAC) {
-	    out[written++] = (char)TN_IAC;
+	if (in[i] == TN_IAC) {
+	    log_printf(LL1, "Escaping IAC\n");
+	    out[written++] = TN_IAC;
 	}
 	out[written++] = in[i];
     }
     return written;
 }
-
-#undef TN_IAC
-#undef TN_DONT
-#undef TN_DO
-#undef TN_WONT
-#undef TN_WILL
-#undef TN_SUPPRESS_GO_AHEAD
-#undef TN_ECHO
-#undef TN_BINARY_TRANSMISSION
-#undef CR
-#undef LF
-#undef NUL
 
 /****************************************************************************/
 /* Sockets */
@@ -968,20 +1056,20 @@ static void make_argv(char *argv[], char *host, daemon_config *config)
 }
 
 static session_data * start_pty(daemon_config *config, daemon_data *data,
-				session_data *s_socket, char *host)
+				session_data *s_socket)
 {
     char *client_argv[MAX_ARGV_SIZE];
 
-    make_argv(client_argv, host, config);
+    make_argv(client_argv, s_socket->host, config);
     int fd_master = start_client(s_socket->fd, client_argv);
 
     if (fd_master == -1) {
-	log_printf(LL0, "Could not setup pty for connection (fd=%d).",
+	log_printf(LL0, "Could not setup pty for connection (fd %d).",
 		   s_socket->fd);
 	s_socket->close_conn = true;
 	return NULL;
     }
-    session_data *s_master = make_pty(data, fd_master, s_socket, host);
+    session_data *s_master = make_pty(data, fd_master, s_socket);
     return s_master;
 }
 
@@ -1002,20 +1090,19 @@ static session_data * start_telnet(daemon_data *data, int fd_socket,
 #if 0
     enable_socket_blocking(fd_socket, false);
 #endif
+
     char *host = make_host(s_addr);
     session_data *s_socket = make_telnet(data, fd_socket, host);
-
+    tn_start_negotiations(s_socket);
     data->connections_count++;
 
-    start_telnet_negotiations(s_socket);
     return s_socket;
 }
 
 /* Accept all new incoming connections. For each of them, find info  */
 /* about the remote host, set up a pty and start the remote program, */
 /* and negotiate the telnet connection.                              */
-static void new_connections(daemon_config *config, daemon_data *data,
-			    int index)
+static void new_connections(daemon_data *data, int index)
 {
     log_printf(LL1, "New connection to listening socket.\n");
 
@@ -1043,9 +1130,7 @@ static void new_connections(daemon_config *config, daemon_data *data,
 	    continue;
 	}
 
-        session_data *s_socket = start_telnet(data, fd_socket,
-					      address.sin_addr.s_addr);
-	start_pty(config, data, s_socket, s_socket->host);
+        start_telnet(data, fd_socket, address.sin_addr.s_addr);
     }
 }
 
@@ -1085,7 +1170,7 @@ static void read_data(session_data *s)
  * sequences before moving it to the output buffer.                         */
 static void read_and_process_data(session_data *s)
 {
-    char buf[BUFFER_SIZE];
+    uint8_t buf[BUFFER_SIZE];
     session_data *dest = s->other_end;
     assert(dest);
 
@@ -1108,7 +1193,8 @@ static void read_and_process_data(session_data *s)
 	    s->close_conn = true;
 	    break;
 	}
-	dest->outlen += process_data(buf, bytes, dest->outbuf + dest->outlen);
+	dest->outlen += process_data(buf, bytes, dest->outbuf + dest->outlen,
+				     s);
 
 	log_transmission(LL2, dest->outbuf, bytes, s->fd, dest->fd, LOG_R);
     }
@@ -1116,7 +1202,7 @@ static void read_and_process_data(session_data *s)
 
 static void read_and_escape_iac(session_data *s)
 {
-    char buf[BUFFER_SIZE];
+    uint8_t buf[BUFFER_SIZE];
     session_data *dest = s->other_end;
     assert(dest);
 
@@ -1330,18 +1416,20 @@ int timeval_subtract(struct timeval *result, struct timeval *x,
     return x->tv_sec < z.tv_sec;
 }
 
+#define SEC_TO_MS 1000L
 #define MS_TO_NS  1000000L
 #define SEC_TO_NS 1000000000L
 static void daemon_loop(daemon_config config, daemon_data data)
 {
-    int timeout_ms = 0; //60*1000;
+    int poll_timeout_ms = 0;
     int fd_socket = config.listen_fd;
-    long ns_per_cycle = SEC_TO_NS / CYCLES_PER_SEC;
+    const long ns_per_cycle = SEC_TO_NS / CYCLES_PER_SEC;
+    const long ms_per_cycle = SEC_TO_MS / CYCLES_PER_SEC;
     log_printf(LL0, "Cycles duration set to %ld ms\n",
 	       ns_per_cycle / MS_TO_NS);
 
     /* set up the initial listening socket */
-    session_add(&data, SESS_LISTEN, fd_socket, -1, 0, true);
+    session_add(&data, STATE_LISTEN, fd_socket, -1, 0, true);
 
     struct timeval t_start_time;
     gettimeofday(&t_start_time, NULL);
@@ -1356,7 +1444,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 
 	log_printf(LL3, "Polling (%d sockets, listen_fd %d)\n", data.nfds,
 		   fd_socket);
-	int num_ready = poll(data.fds, data.nfds, timeout_ms);
+	int num_ready = poll(data.fds, data.nfds, poll_timeout_ms);
 	if (num_ready == 0) { /* poll timed out */
 	    goto TIMING;
 	} else if (num_ready == -1) {
@@ -1408,20 +1496,27 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	num_sockets = data.nfds;
 	for (int i = 0; i < num_sockets; ++i) {
 	    if (data.fds[i].revents & POLLIN) {
-		if (data.sessions[i]->type == SESS_LISTEN) {
-		    new_connections(&config, &data, i);
+
+		switch (data.sessions[i]->state) {
+		case STATE_WAIT:
+		    log_printf(LL0, "STATE WAIT sess # %d\n", i);
 		    log_active_sessions(LL1, &data);
-		} else {
-		    assert(data.sessions[i]->type == SESS_PIPE);
-		    /* an existing connection is readable, get the data */
-		    log_printf(LL2, "Descriptor %d readable\n",
-			       data.fds[i].fd);
-		    if (data.sessions[i]->process_CR) {
-			read_and_process_data(data.sessions[i]);
-		    } else {
-			//read_and_escape_iac(data.sessions[i]);
-			read_data(data.sessions[i]);
-		    }
+		    //		    assert(false);
+		    break;
+		case STATE_LISTEN:
+		    new_connections(&data, i);
+		    log_active_sessions(LL1, &data);
+		    break;
+		case STATE_NEGOTIATION:
+		    tn_answer_commands(data.sessions[i]);
+		    break;
+		case STATE_TELNET:
+		    read_and_process_data(data.sessions[i]);
+		    break;
+		case STATE_PTY:
+		    read_and_escape_iac(data.sessions[i]);
+		    //read_data(data.sessions[i]);
+		    break;
 		}
 	    }
 	}
@@ -1431,7 +1526,6 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	for (int i = 0; i < num_sockets; ++i) {
 	    assert(data.fds[i].fd != -1);
 	    if (data.fds[i].revents & POLLOUT) {
-		assert(data.sessions[i]->type == SESS_PIPE);
 		write_data(data.sessions[i]);
 	    }
 	}
@@ -1453,7 +1547,21 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	}
 
     TIMING:
-	{};
+	for (int i = 0; i < data.nfds; ++i) {
+	    if (data.sessions[i]->state == STATE_NEGOTIATION) {
+		data.sessions[i]->tn_timeout_ms -= ms_per_cycle;
+		log_printf(LL2, "cycle %d, telnet negotiation timeout %ldms\n",
+			   cycle_number, data.sessions[i]->tn_timeout_ms);
+		if (data.sessions[i]->tn_timeout_ms <= 0) {
+		    log_printf(LL1,
+			"Sess %d (fd %d): enter state_telnet and start pty\n",
+			       i, data.sessions[i]->fd);
+		    start_pty(&config, &data, data.sessions[i]);
+		    data.sessions[i]->state = STATE_TELNET;
+		}
+	    }
+	}
+
 	struct timeval t_end_update;
 	gettimeofday(&t_end_update, NULL);
 	struct timeval t_elapsed;
@@ -1473,6 +1581,7 @@ static void daemon_loop(daemon_config config, daemon_data data)
 	t_last_cycle = t_start_cycle;
 
 	cycle_number++;
+	//log_printf(LL0, "TICK %d\n", cycle_number);
     } while (!data.stop_server);
 }
 
@@ -1489,7 +1598,7 @@ int main(int argc, char *argv[])
 		   config.port);
 	exit(EXIT_FAILURE);
     }
-    log_printf(LL1, "Listening on port %d with socket fd=%d .\n", config.port,
+    log_printf(LL1, "Listening on port %d with socket fd %d .\n", config.port,
 	       listen_fd);
 
     setup_signals();
