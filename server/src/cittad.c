@@ -21,8 +21,6 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 
-#include "utility.h"
-
 #undef RETRIEVE_REMOTE_INFO
 /* Note: clock() measures the processor time, so we must use gettimeofday()
  *       to take into account the time spent in poll().                      */
@@ -51,7 +49,7 @@ static const char tn_msg_negotiation_failed[] =
 /* two for each connections (telnet socket + master side of pty)   */
 #define MAX_SOCKETS (2*MAX_CONNECTIONS + 1)
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 512
 
 /* Log level */
 typedef enum {
@@ -72,6 +70,7 @@ typedef struct {
     char *auth_key;
     char *logfile; /* if NULL log to stderr */
     log_level loglvl;
+    bool log_telnet;
     bool do_fork;
     char * const *client_argv;
 } daemon_config;
@@ -91,7 +90,7 @@ static void print_usage_and_exit(char *arg0, char *arg)
     fprintf(stderr,
 "Usage: %s [-d|--debug] [-f|--log-file <filename>]\n"
 "        [-h|dont-send-host] [-l|--log-lvl <level>] [-p|--port <TCP_port>]"
-"        -- <client_program_and_args>\n",
+"        [-t|--log-telnet-cmds] -- <client_program_and_args>\n",
 	    arg0);
     exit(EXIT_FAILURE);
 }
@@ -108,6 +107,7 @@ static daemon_config process_args(int argc, char **argv)
 	.auth_key = NULL,
 	.logfile = NULL,
 	.loglvl = LL0,
+	.log_telnet = false,
 	.do_fork = true,
 	.client_argv = NULL,
     };
@@ -141,6 +141,8 @@ static daemon_config process_args(int argc, char **argv)
 	} else if (*argv && (!strcmp(s, "-p") || !strcmp(s, "--port"))) {
 	    /* port to listen at */
 	    config.port = atol(*argv++);
+	} else if (!strcmp(s, "-t") || !strcmp(s, "--log-telnet-cmds")) {
+	    config.log_telnet = true;
 	} else if (!strcmp(s, "--")) {
 	    /* end of daemon opts. further args are client program and args */
 	    break;
@@ -171,10 +173,13 @@ static int fd_log = -1;
 static FILE *fp_log = NULL;
 
 static log_level ll_current = LL0;
+static bool log_telnet = false;
 
 static int init_log(const daemon_config *config)
 {
     assert(fp_log == NULL);
+
+    log_telnet = config->log_telnet;
 
     if (config->logfile) {
 	/* Log to a file */
@@ -364,6 +369,10 @@ typedef enum {
     STATE_PTY,
 } session_state;
 
+typedef enum {
+    DPS_TXT, DPS_IAC, DPS_OPT, DPS_CR,
+} data_parser_state;
+
 typedef struct session_data_t {
     session_state state; /* State of the connection                    */
     int fd;              /* file descriptor associated to the session  */
@@ -373,6 +382,7 @@ typedef struct session_data_t {
     bool is_pipe;        /* is it one end of a bidirectional pipe?     */
     suseconds_t tn_timeout_ms; /* Telnet negotiation timeout in ms     */
     char *host;          /* calling host ip number                     */
+    data_parser_state dp_state; /* state of the data parser            */
     uint8_t outbuf[BUFFER_SIZE]; /* data waiting to be written to fd   */
     ssize_t outlen;      /* number of bytes to be sent in outbuf       */
     struct session_data_t *other_end; /* session at other end of pipe  */
@@ -386,6 +396,20 @@ typedef struct {
     bool needs_cleanup;
     bool stop_server;
 } daemon_data;
+
+static int log_outbuf(log_level ll, session_data *s)
+{
+    char pretty[1024];
+    int n;
+
+    if (ll > ll_current) {
+	return 0;
+    }
+    bytes_to_str(s->outbuf, s->outlen, pretty, sizeof(pretty));
+    n = log_printf(ll, "outbuf (fd %d): '%s' - %zd bytes\n", s->fd, pretty,
+		   s->outlen);
+    return n;
+}
 
 static void register_fd(daemon_data *data, int fd, short events, int index)
 {
@@ -408,6 +432,7 @@ static session_data * session_add(daemon_data *data, session_state state,
     session->is_socket = is_socket;
     session->is_pipe = false;
     session->tn_timeout_ms = 0;
+    session->dp_state = DPS_TXT;
     session->outbuf[0] = 0;
     session->outlen = 0;
     session->host = host;
@@ -604,8 +629,14 @@ cmd(IAC,  255)
 
 #define FOREACH_CMD(cmd)   TN_CMD_LIST(cmd)
 
-#define DEFINE_CONSTANT(name, code) const uint8_t TN_##name = code ;
+//#define DEFINE_CONSTANT(name, code) const uint8_t TN_##name = code ;
+//FOREACH_CMD(DEFINE_CONSTANT)
+
+typedef enum {
+#define DEFINE_CONSTANT(name, code) TN_##name = code ,
 FOREACH_CMD(DEFINE_CONSTANT)
+#undef DEFINE_CONSTANT
+} tn_code;
 
 typedef struct {
     unsigned char code;
@@ -613,14 +644,12 @@ typedef struct {
 } tn_cmd;
 
 const tn_cmd tn_cmd_name[] = {
-    //#define TO_STR_(x) #x
-    //#define TO_STR(x) TO_STR_(x)
 #define DEFINE_COMMAND(name, code) {code, #name },
     FOREACH_CMD(DEFINE_COMMAND)
 #undef DEFINE_COMMAND
-    //#undef TO_STR
-    //    {-1, ""}, /* indicates array end */
 };
+
+#undef FOREACH_CMD
 
 static const char * tn_cmd_to_str(uint8_t code)
 {
@@ -636,18 +665,18 @@ static const char * tn_cmd_to_str(uint8_t code)
     return str_code;
 }
 
-static void log_telnet_command(log_level ll, const char *pre,
-			       const uint8_t *cmd, size_t len)
+static void log_telnet_command(const char *pre, const uint8_t *cmd, size_t len)
 {
-    if (ll > ll_current) {
-	return;
+    if (log_telnet) {
+	log_timestamp();
+	dprintf(fd_log, "%s ", pre);
+	if (cmd) {
+	    for (size_t i = 0; i != len; i++) {
+		dprintf(fd_log, "%s ", tn_cmd_to_str((uint8_t)cmd[i]));
+	    }
+	}
+	dprintf(fd_log, "\n");
     }
-    log_timestamp();
-    dprintf(fd_log, "%s ", pre);
-    for (size_t i = 0; i != len; i++) {
-	dprintf(fd_log, "%s ", tn_cmd_to_str((uint8_t)cmd[i]));
-    }
-    dprintf(fd_log, "\n");
 }
 
 
@@ -705,7 +734,7 @@ static void telnet_negotiation(int fd)
 static ssize_t outbuf_append(session_data *s, const uint8_t *buf, ssize_t len)
 {
 
-    if (s->outlen + len <= (ssize_t)sizeof(s->outbuf)) {
+    if ((size_t)s->outlen + len <= sizeof(s->outbuf)) {
 	uint8_t *dest = s->outbuf + s->outlen;
 	for (ssize_t i = 0; i != len; i++) {
 	    *dest++ = *buf++;
@@ -724,11 +753,9 @@ static void tn_start_negotiations(session_data *session)
 
     /* Negotiate character at a time echoing mode for the telnet connection */
     outbuf_append(session, char_mode, sizeof(char_mode));
+    log_telnet_command("TN sent: ", char_mode, 3);
     outbuf_append(session, will_echo, sizeof(will_echo));
-    //write(session->fd, char_mode, 3);
-    //write(session->fd, will_echo, 3);
-    log_telnet_command(LL1, "Sent: ", char_mode, 3);
-    log_telnet_command(LL1, "Sent: ", will_echo, 3);
+    log_telnet_command("TN sent: ", will_echo, 3);
 
     /* refresh the login timeout */
     session->tn_timeout_ms = TN_TIMEOUT_MS;
@@ -749,7 +776,7 @@ static void tn_reject_option(const uint8_t *cmd, session_data *dest)
     answer[2] = cmd[2];
 
     outbuf_append(dest, answer, 3);
-    log_telnet_command(LL1, "Sent: ", answer, 3);
+    log_telnet_command("TN sent: ", answer, 3);
 }
 
 static void tn_answer_commands(session_data *session)
@@ -763,7 +790,7 @@ static void tn_answer_commands(session_data *session)
 	    break;
 	}
 
-	log_telnet_command(LL1, "Received: ", cmd, 3);
+	log_telnet_command("TN received: ", cmd, 3);
 
 	if (cmd[0] != TN_IAC) {
 	    /* This should not happen */
@@ -785,13 +812,10 @@ static void tn_answer_commands(session_data *session)
     session->tn_timeout_ms = TN_TIMEOUT_MS;
 }
 
-/* Returns true if cmd points to a negoriation command (IAC WILL, IAC WON'T,
- * IAC DO, or IAC DON'T). In that case the command is a three bytes command,
- * otherwise it is a two byte command.
- * NOTE: cmd must point at least to a two bytes string.                      */
-static inline bool is_negotiation_cmd(const uint8_t *cmd)
+/* Returns true if cmd is a negoriation command (WILL, WON'T, DO, or DON'T). */
+static inline bool is_negotiation_cmd(uint8_t cmd)
 {
-    return (cmd[0] == TN_IAC && cmd[1] >= 251 && cmd[1] <= 254);
+    return (cmd >= 251 && cmd <= 254);
 }
 
 /* Copies the string 'in' to 'out' transforming CR LF in LF and CR NUL in CR,
@@ -800,54 +824,120 @@ static inline bool is_negotiation_cmd(const uint8_t *cmd)
  * any telnet negotiation request sending the answer back to session 'dest',
  * unescapes IAC IAC, and ignore any other (2 byte) telnet command.          */
 static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
-			    session_data *dest)
+			    session_data *session)
 {
-    ssize_t written = 0;
-
-    for (ssize_t i = 0; i != inlen; i++) {
-	if ((in[i] == TN_CR) && (i + 1 != inlen)) {
-	    if (in[i + 1] == TN_LF) {
-		/* eat the CR: CR LF -> LF */
-		continue;
-	    } else if (in[i + 1] == TN_NUL) {
-		/* CR NUL -> CR */
-		out[written++] = TN_CR;
-		i++; /* eat the NUL */
-	    }
-	} else if ((in[i] == TN_IAC) && (i + 1 != inlen)) {
-	    if (in[i + 1] == TN_IAC) {
-		log_telnet_command(LL1, "Received: ", in, 2);
+    static uint8_t tn_cmd[] = {TN_IAC, 0, 0};
+    data_parser_state state = session->dp_state;
+    uint8_t *dest = out;
+    const uint8_t *src = in;
+    //while (src != in + inlen) {
+    for (src = in; src != in + inlen; src++) {
+	switch(state) {
+	case DPS_IAC:
+	    if (*src == TN_IAC) {
 		/* IAC IAC is escaped IAC */
-		out[written++] = TN_IAC;
-		i++; /* eat the IAC */
-	    } else if (is_negotiation_cmd(in) && i + 2 != inlen) {
-		log_telnet_command(LL1, "Received: ", in, 3);
-		tn_reject_option(in, dest);
-		i += 2;
+		*dest++ = TN_IAC;
+		state = DPS_TXT;
+	    } else if (is_negotiation_cmd(*src)) {
+		tn_cmd[1] = *src;
+		state = DPS_OPT;
 	    } else {
-		log_telnet_command(LL1, "Received: ", in, 2);
-		/* Two bytes command: ignore it */
-		i += 1;
+		/* Two bytes telnet command: ignore it */
+		tn_cmd[1] = *src;
+		log_telnet_command("TN received: ", tn_cmd, 2);
+		state = DPS_TXT;
 	    }
-	} else {
-	    out[written++] = in[i];
+	    break;
+
+	case DPS_OPT:
+	    /* Negotiation telnet command: reject it */
+	    tn_cmd[2] = *src;
+	    log_telnet_command("TN received: ", tn_cmd, 3);
+	    tn_reject_option(tn_cmd, session);
+	    state = DPS_TXT;
+	    break;
+
+	case DPS_CR:
+	    switch (*src) {
+	    case TN_NUL:
+		/* CR NUL -> CR */
+		*dest++ = TN_CR;
+		break;
+	    case TN_LF:
+		/*  CR LF -> LF */
+		*dest++ = TN_LF;
+		break;
+	    default:
+		assert(false);
+	    }
+	    state = DPS_TXT;
+	    break;
+
+	case DPS_TXT:
+	    switch (*src) {
+	    case TN_IAC:
+		state = DPS_IAC;
+		break;
+	    case TN_CR:
+		state = DPS_CR;
+		break;
+	    default:
+		*dest++ = *src;
+		break;
+	    }
 	}
     }
+    session->dp_state = state;
+    ssize_t written = dest - out;
+    log_printf(LL2, "process data: %ld -> %ld bytes\n", inlen, written);
     return written;
 }
 
 /* Copies the string 'in' to 'out' escaping the IAC characters if any */
 static ssize_t escape_iac(uint8_t *in, ssize_t inlen, uint8_t *out)
 {
-    ssize_t written = 0;
+    uint8_t *dest = out;
+
+    typedef enum {
+	PS_TXT, PS_CR, PS_LF,
+    } parser_state;
+    parser_state state = PS_TXT;
 
     for (ssize_t i = 0; i != inlen; i++) {
-	if (in[i] == TN_IAC) {
-	    log_printf(LL1, "Escaping IAC\n");
-	    out[written++] = TN_IAC;
+	switch(in[i]) {
+	case TN_IAC:
+	    if (state == PS_CR) {
+		*dest++ = TN_CR;
+		*dest++ = TN_NUL;
+	    }
+	    //log_telnet_command("Escaping IAC.", NULL, 0);
+	    *dest++ = TN_IAC;
+	    *dest++ = TN_IAC;
+	    state = PS_TXT;
+	    break;
+	case TN_CR:
+	    if (state != PS_LF) {
+		state = PS_CR;
+	    }
+	    break;
+	case TN_LF:
+	    *dest++ = TN_CR;
+	    *dest++ = TN_LF;
+	    state = PS_LF;
+	    break;
+	default:
+	    if (state == PS_CR) {
+		*dest++ = TN_CR;
+		*dest++ = TN_NUL;
+	    }
+	    *dest++ = in[i];
+	    state = PS_TXT;
+	    break;
 	}
-	out[written++] = in[i];
     }
+
+    ssize_t written = dest - out;
+    log_printf(LL2, "escape_iac: %ld -> %ld bytes\n", inlen, written);
     return written;
 }
 
@@ -1134,13 +1224,14 @@ static void new_connections(daemon_data *data, int index)
     }
 }
 
+#if 0
 /* Receive all incoming data from s->fd and moves it to the output buffer */
 static void read_data(session_data *s)
 {
     session_data *dest = s->other_end;
     assert(dest);
 
-    while (dest->outlen < (ssize_t)sizeof(dest->outbuf)) {
+    while ((size_t)dest->outlen < sizeof(dest->outbuf)) {
 	ssize_t bytes;
 
 	bytes = read(s->fd, dest->outbuf + dest->outlen,
@@ -1165,6 +1256,7 @@ static void read_data(session_data *s)
 	log_transmission(LL2, dest->outbuf, bytes, s->fd, dest->fd, LOG_R);
     }
 }
+#endif
 
 /* Receive all incoming data from s->fd and processes the CR LF and CR NUL
  * sequences before moving it to the output buffer.                         */
@@ -1206,10 +1298,15 @@ static void read_and_escape_iac(session_data *s)
     session_data *dest = s->other_end;
     assert(dest);
 
-    while (dest->outlen < (ssize_t)sizeof(dest->outbuf)) {
+    /* TODO FIX THIS, TOO INEFFICIENT */
+    //    while ((size_t)dest->outlen < sizeof(dest->outbuf)) {
+    while ((size_t)dest->outlen < sizeof(dest->outbuf) / 2) {
+    //while (1 < sizeof(dest->outbuf) - dest->outlen) {
 	ssize_t bytes;
 
-	bytes = read(s->fd, buf, sizeof(dest->outbuf) - dest->outlen);
+	//	bytes = read(s->fd, buf, sizeof(dest->outbuf) - dest->outlen);
+	bytes = read(s->fd, buf, sizeof(dest->outbuf) / 2 - dest->outlen);
+	//	bytes = read(s->fd, buf, (sizeof(dest->outbuf) - dest->outlen) / 2);
 	if (bytes == -1) {
 	    if (errno != EWOULDBLOCK) {
 		log_printf(LL0, "read on socket %d failed: %s\n", s->fd,
@@ -1225,9 +1322,11 @@ static void read_and_escape_iac(session_data *s)
 	    s->close_conn = true;
 	    break;
 	}
+	log_transmission(LL2, buf, bytes, s->fd, dest->fd, LOG_R);
+
 	dest->outlen += escape_iac(buf, bytes, dest->outbuf + dest->outlen);
 
-	log_transmission(LL2, dest->outbuf, bytes, s->fd, dest->fd, LOG_R);
+	log_outbuf(LL2, dest);
     }
 }
 
@@ -1237,6 +1336,7 @@ void write_data(session_data *s)
     while(s->outlen) {
 	ssize_t sent = write(s->fd, s->outbuf, s->outlen);
 	if (sent == -1) {
+	    log_outbuf(LL0, s);
 	    log_printf(LL0, "write to socket %d failed: %s\n", s->fd,
 		       strerror(errno));
 	    assert(false);
