@@ -53,10 +53,11 @@ static const char tn_msg_negotiation_failed[] =
 
 /* Log level */
 typedef enum {
-    LL0 = 0, /* normal  */
-    LL1,     /* verbose */
-    LL2,     /* show transmitted data too */
-    LL3,     /* extreme log flood */
+    LL_ERR = -1,
+    LL0 = 0,     /* normal  */
+    LL1,         /* verbose */
+    LL2,         /* show transmitted data too */
+    LL3,         /* extreme log flood */
     LL_COUNT,
 } log_level;
 
@@ -134,7 +135,7 @@ static daemon_config process_args(int argc, char **argv)
 	    config.auth_key = *argv++;
 	} else if (*argv && (!strcmp(s, "-l") || !strcmp(s, "--log-lvl"))) {
 	    if (!isdigit(**argv)) {
-		config.loglvl = -1;
+		config.loglvl = LL_ERR;
 		break;
 	    }
 	    config.loglvl = atol(*argv++);
@@ -832,6 +833,7 @@ static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
     const uint8_t *src = in;
     //while (src != in + inlen) {
     for (src = in; src != in + inlen; src++) {
+    parser_restart:
 	switch(state) {
 	case DPS_IAC:
 	    if (*src == TN_IAC) {
@@ -868,7 +870,13 @@ static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
 		*dest++ = TN_LF;
 		break;
 	    default:
-		assert(false);
+		/* This violates the telnet specifications, but some telnet
+		   clients send a single CR instead of CR NUL. In that case,
+		   we insert the CR, and we restart processing the current
+		   character in the DPS_TXT state. */
+		*dest++ = TN_CR;
+		state = DPS_TXT;
+		goto parser_restart;
 	    }
 	    state = DPS_TXT;
 	    break;
