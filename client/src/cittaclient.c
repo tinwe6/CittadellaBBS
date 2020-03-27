@@ -976,6 +976,24 @@ static void info_sul_server(void)
                 extractn(serverinfo.nodo, buf, 2, 50);
                 extractn(serverinfo.dove, buf, 3, 50);
                 serverinfo.protocol_vcode   = extract_int(buf, 4);
+
+		/*--8<------------------------------------------------------*/
+		/* compatibility code, eleminate before release             */
+		if (CLIENT_VERSION_CODE > serverinfo.server_vcode) {
+		    printf("Legacy server: entering compatibility mode.\n");
+		    serverinfo.legacy = true;
+		    serverinfo.newclient_vcode  = extract_int(buf, 4);
+		    serverinfo.num_canali_chat  = extract_int(buf, 5);
+		    serverinfo.maxlineebug      = extract_int(buf, 6);
+		    serverinfo.maxlineebx       = extract_int(buf, 7);
+		    serverinfo.maxlineenews     = extract_int(buf, 8);
+		    serverinfo.maxlineepost     = extract_int(buf, 9);
+		    serverinfo.maxlineeprfl     = extract_int(buf, 10);
+		    serverinfo.maxlineeroominfo = extract_int(buf, 11);
+		    serverinfo.flags            = extract_int(buf, 12);
+		    extract(comp, buf, 13);
+		} else{
+		/*--8<------------------------------------------------------*/
                 serverinfo.newclient_vcode  = extract_int(buf, 5);
                 serverinfo.num_canali_chat  = extract_int(buf, 6);
                 serverinfo.maxlineebug      = extract_int(buf, 7);
@@ -986,6 +1004,7 @@ static void info_sul_server(void)
                 serverinfo.maxlineeroominfo = extract_int(buf, 12);
                 serverinfo.flags            = extract_int(buf, 13);
                 extract(comp, buf, 14);
+		}
 
                 printf("\nServer: %s version ", serverinfo.software);
 		version_print(serverinfo.server_vcode);
