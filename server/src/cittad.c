@@ -621,8 +621,20 @@ static void cleanup_sessions(daemon_data *data)
 /*********************************************************************/
 /* Telnet negotiation and string processing */
 
+/*
+   ECHO     : RFC 857
+   SGA      : RFC 858  (Suppress Go Ahead)
+   TERM_TYP : RFC 930  (TERMINAL-TYPE)               (*)
+   NAWS     : RFC 1073 (Negotiate About Window Size) (*) - maybe in the future?
+   TERM_SPD : RFC 1079 (TERMINAL-SPEED)              (*)
+   NEW_ENV  : RFC 1572 (NEW-ENVIRON)                 (*)
+
+   [ (*) sent by PuTTY, ignored ]
+ */
 #define TN_CMD_LIST(cmd) \
 cmd(NUL,    0)  cmd(ECHO,   1)  cmd(SGA,    3)  cmd(LF,    10)  cmd(CR,    13)\
+cmd(TERM_TYP, 24)               cmd(NAWS,  31)  cmd(TERM_SPD,  32)            \
+cmd(NEW_ENV,  39)							      \
 cmd(SE,   240)  cmd(NOP,  241)  cmd(DAMA, 242)  cmd(BRK,  243)  cmd(IP,   244)\
 cmd(AO,   245)  cmd(AYT,  246)  cmd(EC,   247)  cmd(EL,   248)  cmd(GA,   249)\
 cmd(SB,   250)  cmd(WILL, 251)  cmd(WONT, 252)  cmd(DO,   253)  cmd(DONT, 254)\
@@ -641,7 +653,7 @@ FOREACH_CMD(DEFINE_CONSTANT)
 
 typedef struct {
     unsigned char code;
-    char name[5];
+    char name[8];
 } tn_cmd;
 
 const tn_cmd tn_cmd_name[] = {
