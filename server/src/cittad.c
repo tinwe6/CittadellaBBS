@@ -32,6 +32,10 @@ static const char too_many_conn_msg[] =
     "Too many remote users. Try again later...\n";
 static const char tn_msg_negotiation_failed[] =
     "Telnet negotiations failed.\n";
+static const char tn_msg_negotiation_need_echo[] =
+    "Telnet client must support ECHO command.\n";
+static const char tn_msg_negotiation_need_sga[] =
+    "Telnet client must support Suppress Go Ahead command.\n";
 
 /* maximum number of remote connections allowed */
 #define MAX_CONNECTIONS 20
@@ -43,7 +47,7 @@ static const char tn_msg_negotiation_failed[] =
 #define CYCLES_PER_SEC 100
 
 /* Telnet negotiation timeout */
-#define TN_TIMEOUT_MS 200
+#define TN_TIMEOUT_MS 400
 
 /* We must allow for one socket to listen for new connections, and */
 /* two for each connections (telnet socket + master side of pty)   */
@@ -371,6 +375,13 @@ typedef enum {
 } session_state;
 
 typedef enum {
+    TN_STATE_START = 0,
+    TN_STATE_ECHO  = 1,
+    TN_STATE_CMODE = 2,
+    TN_STATE_DONE  = (TN_STATE_ECHO|TN_STATE_CMODE),
+} tn_neg_state;
+
+typedef enum {
     DPS_TXT, DPS_IAC, DPS_OPT, DPS_CR,
 } data_parser_state;
 
@@ -382,6 +393,7 @@ typedef struct session_data_t {
     bool is_socket;      /* true if connected to an internet socket    */
     bool is_pipe;        /* is it one end of a bidirectional pipe?     */
     suseconds_t tn_timeout_ms; /* Telnet negotiation timeout in ms     */
+    tn_neg_state tn_state; /* telnet negotiation state                 */
     char *host;          /* calling host ip number                     */
     data_parser_state dp_state; /* state of the data parser            */
     uint8_t outbuf[BUFFER_SIZE]; /* data waiting to be written to fd   */
@@ -642,9 +654,6 @@ cmd(IAC,  255)
 
 #define FOREACH_CMD(cmd)   TN_CMD_LIST(cmd)
 
-//#define DEFINE_CONSTANT(name, code) const uint8_t TN_##name = code ;
-//FOREACH_CMD(DEFINE_CONSTANT)
-
 typedef enum {
 #define DEFINE_CONSTANT(name, code) TN_##name = code ,
 FOREACH_CMD(DEFINE_CONSTANT)
@@ -764,6 +773,7 @@ static void tn_start_negotiations(session_data *session)
     static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
     static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SGA };
 
+    session->tn_state = TN_STATE_START;
     /* Negotiate character at a time echoing mode for the telnet connection */
     outbuf_append(session, char_mode, sizeof(char_mode));
     log_telnet_command("TN sent: ", char_mode, 3);
@@ -781,6 +791,7 @@ static void tn_reject_option(const uint8_t *cmd, session_data *dest)
     static uint8_t answer[] = {TN_IAC, 0, 0};
 
     assert(cmd[0] == TN_IAC);
+
     if (cmd[1] == TN_WILL) {
 	answer[1] = TN_DONT;
     } else if (cmd[1] == TN_DO) {
@@ -809,11 +820,27 @@ static void tn_answer_commands(session_data *session)
 	    /* This should not happen */
 	    write(session->fd, tn_msg_negotiation_failed,
 		  sizeof(tn_msg_negotiation_failed));
-	    session->close_conn = true;;
+	    session->close_conn = true;
 	}
 
-	/* Ignore the answers to our requests */
-	if (cmd[2] == TN_ECHO || cmd[2] == TN_SGA) {
+	/* Check the answers to our requests */
+	if (cmd[2] == TN_ECHO) {
+	    if (cmd[1] == TN_DO) {
+		session->tn_state |= TN_STATE_ECHO;
+	    } else {
+		write(session->fd, tn_msg_negotiation_need_echo,
+		      sizeof(tn_msg_negotiation_need_echo));
+		session->close_conn = true;
+	    }
+	    continue;
+	} else if (cmd[2] == TN_SGA) {
+	    if (cmd[1] == TN_DO) {
+		session->tn_state |= TN_STATE_CMODE;
+	    } else {
+		write(session->fd, tn_msg_negotiation_need_sga,
+		      sizeof(tn_msg_negotiation_need_sga));
+		session->close_conn = true;
+	    }
 	    continue;
 	}
 
@@ -822,7 +849,12 @@ static void tn_answer_commands(session_data *session)
     }
 
     /* Refresh the timeout for the negotiations */
-    session->tn_timeout_ms = TN_TIMEOUT_MS;
+    if (session->tn_state == TN_STATE_DONE) {
+	session->tn_timeout_ms = TN_TIMEOUT_MS;
+    } else {
+	/* We give some extra time if we still haven't received the answers */
+	session->tn_timeout_ms = 2*TN_TIMEOUT_MS;
+    }
 }
 
 /* Returns true if cmd is a negoriation command (WILL, WON'T, DO, or DON'T). */
@@ -867,7 +899,12 @@ static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
 	    /* Negotiation telnet command: reject it */
 	    tn_cmd[2] = *src;
 	    log_telnet_command("TN received: ", tn_cmd, 3);
-	    tn_reject_option(tn_cmd, session);
+	    /* if the telnet negotiation is completed we just ignore the
+	     */
+	    if (session->tn_state == TN_STATE_DONE
+		|| (tn_cmd[2] != TN_ECHO && tn_cmd[2] != TN_SGA)) {
+		tn_reject_option(tn_cmd, session);
+	    }
 	    state = DPS_TXT;
 	    break;
 
