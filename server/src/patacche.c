@@ -119,8 +119,7 @@ void send_random_banner(struct sessione *t)
 	FILE *fp;
 	int bnum;
 
-	srand(time(0));
-	bnum = (int) ((double)banner_num * rand() / (RAND_MAX+1.0));
+	bnum = random_int(0, banner_num - 1);
 	fp = fopen(BANNER_FILE, "r");
 	if (!fp)
 		return; /* No banner file */

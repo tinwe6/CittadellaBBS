@@ -114,14 +114,15 @@ void send_random_banner(struct sessione *t)
 	FILE *fp;
 	int bnum;
 
-	srand(time(0));
-	bnum = (int) ((double)banner_num * rand() / (RAND_MAX+1.0));
+	bnum = random_int(0, banner_num - 1);
 	fp = fopen(BANNER_FILE, "r");
-	if (!fp)
+	if (!fp) {
 		return; /* No banner file */
+	}
 	fseek(fp, banner_hash[bnum], SEEK_SET);
-	while ((fgets(buf, LBUF, fp) != NULL)&&(strcmp(buf, "%\n")))
+	while ((fgets(buf, LBUF, fp) != NULL)&&(strcmp(buf, "%\n"))) {
 		cprintf(t, "%d   %s", OK, buf);
+	}
 	fclose(fp);
 }
 
@@ -267,8 +268,7 @@ void random_banner(char *str)
 	FILE *fp;
 	int bnum;
 
-	srand(time(0));
-	bnum = (int) ((double)banner_num * rand() / (RAND_MAX+1.0));
+	bnum = random_int(0, banner_num - 1);
 	fp = fopen(BANNER_FILE, "r");
 	if (!fp)
 		return; /* No banner file */

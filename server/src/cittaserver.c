@@ -416,6 +416,9 @@ void avvio_server(int porta)
 
 	lista_sessioni = NULL;
 
+	/* Initialize the random numbers generator */
+	random_init();
+
 	citta_log("Cattura segnali.");
 	setup_segnali();
 

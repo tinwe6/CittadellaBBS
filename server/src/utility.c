@@ -157,19 +157,6 @@ int timeval_add(struct timeval *result, struct timeval *x,
 }
 
 /*
- * Genera una stringa casuale di lunghezza lung
- */
-void gen_rand_string(char *vk, int lung)
-{
-        int i;
-
-        srand(time(0));
-        for (i = 0; i < lung; i++)
-                vk[i] = 97 + (int) (25.0*rand()/(RAND_MAX+1.0));
-        vk[lung] = 0;
-}
-
-/*
  * Traduce una struttura text in un'unica stringa.
  * La memoria necessaria per la stringa viene allocata dinamicamente con
  * malloc() e va liberata con free() quando non serve piu'.
@@ -363,4 +350,100 @@ const char * get_word(char *word, const char *src, size_t * len)
 	*len = end-src;
 	word[*len] = 0;
 	return end;
+}
+
+/****************************************/
+/* Random number and strings generators */
+/****************************************/
+
+/*
+ * Generates a string containing all lowercase letters and/or all uppercase
+ * letters and/or all numbers. There is one copy of each character. It is
+ * used to generate random strings with from a given set of symbols.
+ */
+static int generate_symbols(char *cs, bool upper_alpha, bool lower_alpha,
+			    bool numbers)
+{
+	int index = 0;
+
+	if (upper_alpha) {
+		for(char c = 'A'; c <= 'Z'; c++) {
+			cs[index++] = c;
+		}
+	}
+	if (lower_alpha) {
+		for(char c = 'a'; c <= 'z'; c++) {
+			cs[index++] = c;
+		}
+	}
+	if (numbers) {
+		for(char c = '0'; c <= '9'; c++) {
+			cs[index++] = c;
+		}
+	}
+	cs[index] = 0;
+	return index;
+}
+
+static char symb_azAZ09[64];
+static int count_azAZ09;
+static char symb_AZ[32];
+static int count_AZ;
+
+/*
+ * Seeds the random number generator and creates the strings of symbols
+ * to generate random strings.
+ */
+void random_init(void)
+{
+	srand(time(NULL));
+	count_azAZ09 = generate_symbols(symb_azAZ09, true, true, true);
+	count_AZ = generate_symbols(symb_AZ, true, false, false);
+}
+
+/*
+ * Returns a random integer in the range [min, max] inclusive.
+ * The seed can be initialized with srand().
+ */
+int random_int(int min, int max)
+{
+	int r;
+	int nval = max - min + 1;
+	assert(min <= max);
+	assert(nval <= RAND_MAX);
+
+	/* Eliminate modulo bias by sampling the random numbers only up to the
+	   greatest multiple of nval smaller than RAND_MAX.                  */
+	int upper = (RAND_MAX / nval) * nval;
+
+	do {
+		r = rand();
+	} while (r >= upper);
+
+	return min + r % nval;
+}
+
+/*
+ * Places in 'buf' a random string of 'len' characters chosen randomly among
+ * the 'num_symbols' symbols in the string 'symbols'. (len + 1) bytes should
+ * be allocated in buf to allow for the '\0' ending the string.
+ */
+static void generate_random_string_symb(char *buf, size_t len, char *symbols,
+					size_t num_symbols)
+{
+	size_t i;
+	for (i = 0; i != len; i++) {
+		buf[i] = symbols[random_int(0, num_symbols - 1)];
+	}
+	buf[i] = 0;
+}
+
+void generate_random_string_AZ(char *buf, size_t len)
+{
+	generate_random_string_symb(buf, len, symb_AZ, count_AZ);
+}
+
+void generate_random_string(char *buf, size_t len)
+{
+	generate_random_string_symb(buf, len, symb_azAZ09, count_azAZ09);
 }

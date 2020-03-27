@@ -892,7 +892,7 @@ void cmd_gval(struct sessione *t)
 
         if (t->utente->val_key[0] != 0) {
                 /* genera chiave validazione */
-                gen_rand_string(valkey, VALKEYLEN);
+	        generate_random_string_AZ(valkey, VALKEYLEN);
                 strcpy(t->utente->val_key, valkey);
                 /* questa puo' servire se il mail non arriva: */
                 citta_logf("VALIDATE: Valkey [%s] per [%s].",
@@ -970,7 +970,7 @@ void cmd_pwdu(struct sessione *t, char *buf)
         }
         if (check_password(pwd, t->utente->password)) {
                 /* Genera la nuova password di 8 caratteri */
-                gen_rand_string(newpwd, 8);
+                generate_random_string(newpwd, 8);
                 /* Invia la nuova password all'utente via Email */
 #ifdef MKSTEMP
                 tmpf = Strdup(TEMP_PWDU_TEMPLATE);
