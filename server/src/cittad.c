@@ -47,6 +47,8 @@ static const char tn_msg_negotiation_need_sga[] =
 #define CYCLES_PER_SEC 100
 
 /* Telnet negotiation timeout */
+/* Note, this is the timeout after the telnet client has answered our requests.
+   Before that, the timeout is double that value.                            */
 #define TN_TIMEOUT_MS 400
 
 /* We must allow for one socket to listen for new connections, and */
@@ -781,7 +783,7 @@ static void tn_start_negotiations(session_data *session)
     log_telnet_command("TN sent: ", will_echo, 3);
 
     /* refresh the login timeout */
-    session->tn_timeout_ms = TN_TIMEOUT_MS;
+    session->tn_timeout_ms = 2*TN_TIMEOUT_MS;
 }
 
 /* Reject the option by answering DON'T to WILL requests and WON'T to
@@ -1396,7 +1398,6 @@ void write_data(session_data *s)
 	    log_outbuf(LL0, s);
 	    log_printf(LL0, "write to socket %d failed: %s\n", s->fd,
 		       strerror(errno));
-	    assert(false);
 	    s->close_conn = true;
 	    break;
 	}
