@@ -65,7 +65,6 @@ char * get_hostname(char *ip_addr)
 			hostname, NI_MAXHOST, NULL, 0, 0) != 0) {
 		hostname[0] = 0;
 	}
-	printf("Remote host name '%s'\n", hostname);
 	return hostname;
 }
 
