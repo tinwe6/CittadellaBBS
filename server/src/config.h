@@ -26,28 +26,21 @@
 #define BBS_HOST        "localhost"
 //#define BBS_HOST        "bbs.cittadellabbs.it"
 /* Porta alla quale il server ascolta in attesa di nuove connessioni.       */
-#define PORTA_DFLT      4000
+#define SERVER_PORT    4000
 /* Porta alla quale si trova il client remoto per le connessioni con telnet.
- * Se e' definita USE_CLIENT_PORT (vedi sotto) e' il client stesso che
+ * Se e' definita USE_REMOTE_PORT (vedi sotto) e' il server stesso che
  * si occupa di lanciare il client remoto, altrimenti va usata una tecnica
  * diversa (inetd o simile).                                                */
-#define PORTA_REMOTA    4001
+#define REMOTE_PORT    4001
 
 /* Configurazione del client remoto.
  * Il client remoto permette agli utenti di collegarsi chiamando con
  * il telnet una porta speciale che permette di usare un client che
- * gira sul server stesso. Per funzionare, e' necessario il programma
- * telnetd, che accetti lo switch -L, ad esempio
- * http://packages.debian.org/stable/source/netkit-telnet                   */
-/* QUESTA FEATURE E' ANCORA IN SVILUPPO: NON DEFINIRE USE_CLIENT_PORT !!!   */
-/* Lancia un demone che ascolta le connessioni al client remoto.            */
-#undef USE_CLIENT_PORT
-/* Path del telnetd: attenzione, deve avere lo switch -L. (deprecated)      */
-/* #define TELNETD "/usr/sbin/telnetd" */
-/* Path del client remoto                                                   */
-#define REMOTE_CLIENT "./bin/remote_cittaclient"
-/* Remote client authentication key                                         */
-#define REMOTE_KEY    "SecureKey"
+ * gira sul server stesso. Se e' definito USE_REMOTE_PORT, il server
+ * lancia un demone che ascolta le connessioni al client remoto.            */
+#define USE_REMOTE_PORT
+/* Length of the remote client autentication key                            */
+#define REMOTE_KEY_LEN  16
 
 /* Numero massimo di sessioni contemporanee.                                */
 #define MAX_SESSIONI      30
@@ -336,6 +329,11 @@
 #define SERVER_DIR        LIBDIR       "/server"
 #define UTENTI_DIR        LIBDIR       "/utenti"
 #define MAIL_DIR          UTENTI_DIR   "/mail"
+
+#ifdef USE_REMOTE_PORT
+#define REMOTE_KEY_PATH   LIBDIR       "/remote_key"
+#define REMOTE_CLIENT     BIN_DIR      "/remote_cittaclient"
+#endif
 
 #ifdef USE_BLOG
 #define BLOG_DIR          UTENTI_DIR   "/blog"

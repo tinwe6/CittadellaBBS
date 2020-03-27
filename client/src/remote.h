@@ -16,10 +16,20 @@
 #ifndef _REMOTE_H
 #define _REMOTE_H   1
 
+#ifdef LOCAL
+#error
+#endif
+
+#include "text.h"
+
 extern char BBS_EDITOR[];
+
+extern char remote_key[LBUF];  /* Chiave per entrare come connessione remota */
+extern char remote_host[LBUF]; /* Host dal quale si collega l'utente         */
 
 /*Prototipi delle funzioni in remote.c */
 #ifdef LOGIN_PORT
+void load_remote_key(char *key, int key_size);
 char * get_hostname(char *ip_addr);
 #else
 void find_remote_host(char *rhost);

@@ -78,8 +78,8 @@ COMMONOBJ = ansicol.o aide.o blog_cmd.o cml.o configurazione.o cterminfo.o \
 LOCALOBJ = cittaclient.o cittacfg.o cmd_da_server.o comandi.o comunicaz.o \
 		conn.o decompress.o local.o
 
-REMOTEOBJ = decompress_fake.o rcittaclient.o rcittacfg.o rcmd_da_server.o rcomandi.o \
-		rcomunicaz.o rconn.o remote.o
+REMOTEOBJ = decompress_fake.o rcittaclient.o rcittacfg.o rcmd_da_server.o \
+            rcomandi.o rcomunicaz.o rconn.o remote.o
 
 DEBUGOBJ = cittaclient.o cittacfg.o dcmd_da_server.o comandi.o comunicaz.o \
 		dconn.o decompress_fake.o local.o
@@ -118,7 +118,7 @@ rcittaclient.o : cittaclient.c cittaclient.h versione.h
 conn.o : conn.c
 	$(CC) -c $(CFLAGS) -DLOCAL conn.c
 dconn.o : conn.c
-	$(CC) -c $(CFLAGS) -DDEBUG conn.c -o dconn.o
+	$(CC) -c $(CFLAGS) -DLOCAL -DDEBUG conn.c -o dconn.o
 rconn.o : conn.c
 	$(CC) -c $(CFLAGS) conn.c -o rconn.o
 cmd_da_server.o :cmd_da_server.c
@@ -126,7 +126,7 @@ cmd_da_server.o :cmd_da_server.c
 rcmd_da_server.o :cmd_da_server.c
 	$(CC) -c $(CFLAGS) cmd_da_server.c -o rcmd_da_server.o
 dcmd_da_server.o :cmd_da_server.c
-	$(CC) -c $(CFLAGS) -DDEBUG cmd_da_server.c -o dcmd_da_server.o
+	$(CC) -c $(CFLAGS) -DLOCAL -DDEBUG cmd_da_server.c -o dcmd_da_server.o
 cittacfg.o : cittacfg.c cittacfg.h
 	$(CC) -c $(CFLAGS) -DLOCAL cittacfg.c
 rcittacfg.o : cittacfg.c cittacfg.h

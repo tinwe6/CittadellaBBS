@@ -47,6 +47,7 @@
 #include "march.h"
 #include "memstat.h"
 #include "post.h"
+#include "remote.h"
 #include "signals.h"
 #include "socket_citta.h"
 #include "string_utils.h"
@@ -199,7 +200,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	porta = PORTA_DFLT;
+	porta = SERVER_PORT;
         logfile = stderr; /* Di default invia i log in stderr */
 	while ((pos < argc) && (*(argv[pos]) == '-')) {
 		switch (*(argv[pos] + 1)) {
@@ -483,6 +484,7 @@ void avvio_server(int porta)
 	banner_load_hash();
 
         /* TODO togliere: solo per debug */
+#if 0
         citta_logf("dati_server.fm_num:    %ld", dati_server.fm_num);
         citta_logf("dati_server.fm_curr:   %ld", dati_server.fm_curr);
         citta_logf("dati_server.fm_basic:  %ld", dati_server.fm_basic);
@@ -490,16 +492,17 @@ void avvio_server(int porta)
         citta_logf("dati_server.fm_normal: %ld", dati_server.fm_normal);
         citta_logf("dati_server.fm_blog:   %ld", dati_server.fm_blog);
         citta_logf("dati_server.blog_nslot:%ld", dati_server.blog_nslot);
-
+#endif
 
         /* Inizializza il server BBS */
 	citta_log("Apertura connessione madre.");
 	conn_madre = iniz_socket(porta);
 
-#ifdef USE_CLIENT_PORT
-	/* Apre la info_port */
-	citta_log("DAEMON Apertura porta client.");
-	client_daemon();
+#ifdef USE_REMOTE_PORT
+	/* Generate the secure key for the remote client identification */
+	init_remote_key();
+	citta_logf("Lancio demone per conn remote a porta %d.", REMOTE_PORT);
+	init_remote_daemon();
 #endif
 
 #ifdef USE_CITTAWEB
@@ -1422,8 +1425,8 @@ void chiusura_server(int s)
 	mem_log(); /* Verifica memory leaks: non dovrebbe rimanere nulla! */
 #endif
 
-#ifdef USE_CLIENT_PORT
-	close_client_daemon();
+#ifdef USE_REMOTE_PORT
+	close_remote_daemon();
 #endif
 }
 

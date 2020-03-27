@@ -63,11 +63,11 @@ OBJFILES = banner.o blog.o cache_post.o cestino.o cittaserver.o cittaweb.o \
 	   cmd_al_client.o coda_testo.o compress.o config.o email.o express.o \
 	   file_messaggi.o fileserver.o find.o floors.o floor_ops.o fm_cmd.o \
 	   generic.o imap4.o interprete.o march.o mail.o messaggi.o memstat.o \
-	   parm.o patacche.o pop3.o post.o rooms.o room_ops.o signals.o \
-	   socket_citta.o sysconfig.o urna-comm.o urna-crea.o urna-file.o \
-	   urna-fine.o urna-rw.o urna-servizi.o urna-vota.o utente.o \
-	   utente_cmd.o utility.o ut_rooms.o webstr.o x.o urna-strutture.o \
-	   urna-posta.o
+	   parm.o patacche.o pop3.o post.o remote.o rooms.o room_ops.o \
+	   signals.o socket_citta.o sysconfig.o urna-comm.o urna-crea.o \
+	   urna-file.o urna-fine.o urna-rw.o urna-servizi.o urna-vota.o \
+	   utente.o utente_cmd.o utility.o ut_rooms.o webstr.o x.o \
+	   urna-strutture.o urna-posta.o
 
 OBJFILES_CONV = conv_0.3.1.o memstat.o utility.o
 
@@ -149,6 +149,8 @@ pop3.o : pop3.c pop3.h
 	$(CC) -c $(CFLAGS) pop3.c
 post.o : post.c post.h
 	$(CC) -c $(CFLAGS) post.c
+remote.o : remote.c remote.h
+	$(CC) -c $(CFLAGS) remote.c
 rooms.o : rooms.c rooms.h room_flags.h
 	$(CC) -c $(CFLAGS) rooms.c
 room_ops.o : room_ops.c room_ops.h rooms.h room_flags.h

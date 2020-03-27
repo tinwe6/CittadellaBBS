@@ -531,7 +531,7 @@ static void http_send_index(struct http_sess *p, char *code, int lang)
                                 HTML_INDEX_NOTAVAIL[lang]);
         }
         wprintf(p, CODA_BODY, "</DIV><DIV>&nbsp;<BR></DIV>\r\n");
-	wprintf(p, CODA_BODY, HTML_TAILINDEX, BBS_HOST, PORTA_REMOTA);
+	wprintf(p, CODA_BODY, HTML_TAILINDEX, BBS_HOST, REMOTE_PORT);
 }
 
 /* Invia la lista degli utenti della BBS */
@@ -577,7 +577,7 @@ static void http_send_userlist(struct http_sess *p, char *code, int lang)
 
 	wprintf(p, CODA_BODY, "</PRE>\r\n");
 
-	wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, PORTA_REMOTA);
+	wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, REMOTE_PORT);
 
 	/* Aggiorna statistiche */
 	dati_server.http_userlist++;
@@ -624,7 +624,7 @@ static void http_send_bloglist(struct http_sess *p, char *code, int lang)
                         tmst->tm_mon+1, 1900+tmst->tm_year, last_poster);
         }
 	wprintf(p, CODA_BODY, "</PRE>\r\n");
-	wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, PORTA_REMOTA);
+	wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, REMOTE_PORT);
 
 	/* Aggiorna statistiche TODO: usare bloglist */
 	dati_server.http_userlist++;
@@ -659,7 +659,7 @@ static void http_send_profile(struct http_sess *p, char *req, char *code,
 		wprintf(p, CODA_BODY, "<PRE>\r\n");
 		wprintf(p, CODA_BODY, "</PRE>\r\n");
 		wprintf(p, CODA_BODY, "<P></TT>\r\n");
-                wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, PORTA_REMOTA);
+                wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, REMOTE_PORT);
 
 		/* Aggiorna statistiche */
 		dati_server.http_profile++;
@@ -705,7 +705,7 @@ static void http_send_room(struct http_sess *p, char *req, char *code,
 		http_send_post(p, room);
 		wprintf(p, CODA_BODY, "</PRE>\r\n");
 
-                wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, PORTA_REMOTA);
+                wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, REMOTE_PORT);
 
 		/* Aggiorna statistiche */
 		dati_server.http_room++;
@@ -760,7 +760,7 @@ static void http_send_blog(struct http_sess *p, char *req, char *code, int lang)
         http_send_post(p, &room);
         wprintf(p, CODA_BODY, "</PRE>\r\n");
 
-        wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, PORTA_REMOTA);
+        wprintf(p, CODA_BODY, HTML_TAIL, BBS_HOST, REMOTE_PORT);
 
         /* Aggiorna statistiche */
         dati_server.http_blog++;

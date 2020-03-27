@@ -15,10 +15,11 @@
 ****************************************************************************/
 #ifndef LOCAL
 
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 /* #include <utmp.h> : Uso utmpx.h invece di utmp.h perche' le info */
 /* dicono che e' equivalente ma standard e quindi piu' portabile.   */
 /* Verificare che e' la scelta giusta.                              */
@@ -49,9 +50,39 @@
 /* ping.science.unitn.it */
 char BBS_EDITOR[] = "/home/bbs/Cittadella/citta/client/bin/BBSeditor";
 
+/* IMPORTANT This def must match the definition in server/src/config.h */
+#define REMOTE_KEY_PATH   "./lib/remote_key"
+
+# ifdef LOGIN_PORT
+char remote_key[LBUF] = {0};  /* Chiave per entrare come connessione remota */
+char remote_host[LBUF] = {0}; /* Host dal quale si collega l'utente         */
+# endif
+
 /***************************************************************************
 ***************************************************************************/
 #ifdef LOGIN_PORT
+
+/* Read the authentication key saved by the server so that the remote client
+   can prove its identity.                                                  */
+void load_remote_key(char *key, int key_size)
+{
+	if (*key) {
+		/* the -k command line option overrides the saved key */
+		return;
+	}
+
+	FILE *fp = fopen(REMOTE_KEY_PATH, "r");
+	if (!fp) {
+		printf("Could not open file %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	if (!fgets(key, key_size - 1, fp)) {
+		printf("Could not load the remote key.\n");
+		exit(EXIT_FAILURE);
+	}
+	fclose(fp);
+}
+
 /* Gets the remote hostname associated to the address ipaddr and returns it
  * as a malloc'ed string. The resulting string is empty if the hostname was
  * not found. Must be free()'d                                             */

@@ -24,6 +24,7 @@
 #include "extract.h"
 #include "file_flags.h"
 #include "memstat.h"
+#include "remote.h"
 #include "rooms.h"
 #include "march.h"
 #include "socket_citta.h"
@@ -182,7 +183,7 @@ void cmd_info(struct sessione *t, char *cmd)
                 extractn(rhost, cmd, 1, sizeof(rhost));
 		extractn(remote_key, cmd, 2, sizeof(remote_key));
 		extractn(hostname, cmd, 3, sizeof(hostname));
-		if (strcmp(remote_key, REMOTE_KEY) != 0) {
+		if (strcmp(remote_key, remote_auth_key) != 0) {
 			citta_logf(
 				   "SECURE: remote auth failed: [%s], key '%s'"
 				   , rhost, remote_key);

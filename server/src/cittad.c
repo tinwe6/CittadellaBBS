@@ -1183,7 +1183,7 @@ static char * make_host(unsigned long addr)
     return host;
 }
 
-static char opt_R[] = "-R";
+static char opt_k[] = "-k";
 static char opt_r[] = "-r";
 /* Adds to the program name and arguments of the remote client given */
 static void make_argv(char *argv[], char *host, daemon_config *config)
@@ -1194,11 +1194,11 @@ static void make_argv(char *argv[], char *host, daemon_config *config)
 	++n;
     }
     if (config->auth_key) {
-	argv[n++] = opt_r;
+	argv[n++] = opt_k;
 	argv[n++] = config->auth_key;
     }
     if (config->send_host) {
-	argv[n++] = opt_R;
+	argv[n++] = opt_r;
 	argv[n++] = host;
     }
     argv[n] = NULL;

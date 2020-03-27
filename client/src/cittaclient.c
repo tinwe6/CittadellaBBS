@@ -185,6 +185,9 @@ int main(int argc, char **argv)
 
 	/* Parse command line options */
         parse_opt(argc, argv, &rcfile, &no_rc);
+#ifdef LOGIN_PORT
+	load_remote_key(remote_key, sizeof(remote_key));
+#endif
 
 	/* Trova la home directory dell'utente */
 	get_homedir();

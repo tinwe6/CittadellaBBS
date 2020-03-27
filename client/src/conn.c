@@ -43,16 +43,12 @@
 #include "signals.h"
 #include "utility.h"
 #include "versione.h"
+#ifndef LOCAL
+#include "remote.h"
+#endif
 
 /* initial stretchy buffer length */
 #define TMPBUF_LEN 256
-
-#ifndef LOCAL
-# ifdef LOGIN_PORT
-char remote_key[LBUF];  /* Chiave per entrare come connessione remota */
-char remote_host[LBUF]; /* Host dal quale si collega l'utente         */
-# endif
-#endif
 
 const char *str_conn_closed = "\rConnection closed by foreign host.\n";
 static struct coda_testo server_in;
@@ -100,12 +96,12 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 "  -F <file>  --rcfile      specify an alternate configuration file\n"   \
 "  -H         --help        display this help and exit\n"                \
 "  -h <host>  --host        specify host name\n"                         \
+"  -k <key>   --remote-key  remote client authentication keye\n"         \
 "  -l         --localhost   connect to localhost\n"                      \
 "  -n         --no-banner   skip the login/logout banners\n"             \
 "  -N         --norc        do not read config file and use default settings\n" \
 "  -p <port>  --port        specify a port (server must be on the same port)\n" \
-"  -r <rkey>  --remote_key  remote client authentication keye\n"	\
-"  -R <host>  --remote_host ip addr of the connection to the remote client\n"\
+"  -r <host>  --remote-host ip addr of the connection to the remote client\n"\
 "  -u <name>  --username    log in using this user name\n"		 \
 "  -v         --version     output version information and exit\n"       \
 "\n"
@@ -126,8 +122,8 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
 		{"version",     0, 0, 'v'},
 # ifndef LOCAL
 #  ifdef LOGIN_PORT
-		{"remote",      1, 0, 'r'},
-		{"remote_host", 1, 0, 'R'},
+		{"remote-key",  1, 0, 'k'},
+		{"remote-host", 1, 0, 'r'},
 #  endif
 # endif
 		{0, 0, 0, 0}
@@ -226,14 +222,16 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc)
                         break;
 #ifndef LOCAL
 # ifdef LOGIN_PORT
-                case 'r': /* Remote connection */
-                        if (optarg)
+                case 'k': /* Remote connection */
+                        if (optarg) {
                                 strcpy(remote_key, optarg);
+			}
                         break;
 
-		 case 'R': /* Remote host */
-                        if (optarg)
+		case 'r': /* Remote host */
+                        if (optarg) {
                                 strcpy(remote_host, optarg);
+			}
                         break;
 # endif
 #endif

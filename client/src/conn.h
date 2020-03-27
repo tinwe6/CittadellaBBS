@@ -19,11 +19,6 @@
 #include "cittaclient.h"
 #include <string.h>
 
-#ifndef LOCAL
-extern char remote_key[];  /* Chiave per entrare come connessione remota */
-extern char remote_host[]; /* Host dal quale si collega l'utente         */
-#endif
-
 /* Valori di ritorno di elabora_input() */
 #define CMD_ESEGUITO 1
 #define CMD_IN_CODA  2

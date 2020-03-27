@@ -16,6 +16,10 @@
 #ifndef _LOCAL_H
 #define _LOCAL_H   1
 
+#ifndef LOCAL
+#error
+#endif
+
 #include "text.h"
 
 /*Prototipi delle funzioni in local.c */
