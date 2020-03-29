@@ -10,8 +10,8 @@
 extern char remote_auth_key[REMOTE_KEY_LEN + 1];
 
 void init_remote_key(void);
-void init_remote_daemon(void);
-void close_remote_daemon(void);
+pid_t init_remote_daemon(void);
+void close_remote_daemon(pid_t pid);
 
 #endif
 

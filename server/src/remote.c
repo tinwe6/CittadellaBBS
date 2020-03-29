@@ -12,8 +12,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
+#include <util.h>
+#include <sys/ioctl.h>
 
 #include "config.h"
+#include "remote.h"
 #include "utility.h"
 
 #ifdef USE_REMOTE_PORT
@@ -43,14 +48,44 @@ void init_remote_key(void)
 	citta_logf("Remote key: %s", remote_auth_key);
 }
 
-void init_remote_daemon(void)
-{
 
+#define CITTAD_PATH "./bin/cittad"
+#define _TO_STR(x) #x
+#define TO_STR(x) _TO_STR(x)
+char * const cittad_argv[] = {
+	CITTAD_PATH,
+	"-p", TO_STR(REMOTE_PORT),
+	"-f", FILE_CITTADLOG,
+	"-t", "-d",
+	"-l", "1",
+	NULL
+};
+#undef TO_STR
+#undef _TO_STR
+
+pid_t init_remote_daemon(void)
+{
+	int master;
+	pid_t pid = forkpty(&master, NULL, NULL, NULL);    // opentty +
+	if (pid == -1) {
+		/* forkpty failed */
+		citta_logf("Remote daemon forkpty() failed: %s",
+			   strerror(errno));
+	} else if (pid == 0) { /* child */
+		execvp(cittad_argv[0], cittad_argv);
+		exit(EXIT_FAILURE);
+	} else { /* parent */
+		citta_logf("cittad daemon pid %d", pid);
+	}
+	return pid;
 }
 
-void close_remote_daemon(void)
+void close_remote_daemon(pid_t pid)
 {
-
+	if (pid != -1) {
+		kill(pid, SIGHUP);
+		citta_logf("Remote port daemon shut down.");
+	}
 }
 
 #endif

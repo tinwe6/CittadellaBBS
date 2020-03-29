@@ -319,6 +319,7 @@
 /* Path directory e file della bbs.                                         */
 #define ROOTDIR           "."
 #define FILE_SYSLOG       ROOTDIR      "/syslog"
+#define FILE_CITTADLOG    ROOTDIR      "/cittadlog"
 #define BANNER_DIR        LIBDIR       "/banners"
 #define FILES_DIR         LIBDIR       "/files"
 #define FILE_MSG_DIR      LIBDIR       "/msgfiles"

@@ -110,6 +110,9 @@ char chiudi = 0;               /* spegni il server                        */
 bool citta_reboot = true;      /* riavvia il server dopo lo shutdown      */
 int reboot_day;                /* Giorno del prossimo reboot.             */
 int conn_madre = 0;            /* file descriptor della connessione madre */
+#ifdef USE_REMOTE_PORT
+pid_t pid_remote_daemon;       /* pid of the cittad remote daemon         */
+#endif
 #ifdef USE_CITTAWEB
 int http_socket = 0;           /* file descriptor connessione cittaweb    */
 #endif
@@ -188,7 +191,6 @@ int main(int argc, char **argv)
 	char *i;
 	unsigned long int core=CORE;
 	struct rlimit rlim;
-
 	pid_t pid;
 
 #ifdef  TESTS
@@ -249,24 +251,24 @@ int main(int argc, char **argv)
 			exit(0);
 		case 'h':
 			fprintf(stderr,
-				"\n"
-				"Cittadella/UX Server %s\n"
-				"\n"
-				"Uso: %s [-a|-d|-n] [# porta]\n"
-				"     %s -b 'messaggio'\n"
-				"     %s [-m|-M] msg.txt\n"
-				"     %s -s\n"
-				"\n"
-				" -a         Accesso limitato ai soli aide (DA FARE)\n"
-				" -b STRING  Invia un broadcast (max 78 char)\n"
-				" -c NUM     Dimensione del core\n"
-				" -d         Debug: log in stderr\n"
-				" -f         Forza l'esecuzione degli script al shutdown/reboot\n"
-				" -M FILE    Invia un email a tutti gli utenti della BBS.\n"
-				" -m FILE    Invia un email agli utenti che ricevono la newsletter.\n"
-				" -n         Accesso limitato agli utenti validati (DA FARE)\n"
-				" -s         Esegui il shutdown del server adesso\n"
-				" \n",
+"\n"
+"Cittadella/UX Server %s\n"
+"\n"
+"Uso: %s [-a|-d|-n] [# porta]\n"
+"     %s -b 'messaggio'\n"
+"     %s [-m|-M] msg.txt\n"
+"     %s -s\n"
+"\n"
+" -a         Accesso limitato ai soli aide (DA FARE)\n"
+" -b STRING  Invia un broadcast (max 78 char)\n"
+" -c NUM     Dimensione del core\n"
+" -d         Debug: log in stderr\n"
+" -f         Forza l'esecuzione degli script al shutdown/reboot\n"
+" -M FILE    Invia un email a tutti gli utenti della BBS.\n"
+" -m FILE    Invia un email agli utenti che ricevono la newsletter.\n"
+" -n         Accesso limitato agli utenti validati (DA FARE)\n"
+" -s         Esegui il shutdown del server adesso\n"
+" \n",
 				SERVER_RELEASE, argv[0], argv[0], argv[0],
                                 argv[0]);
 			exit(0);
@@ -502,7 +504,10 @@ void avvio_server(int porta)
 	/* Generate the secure key for the remote client identification */
 	init_remote_key();
 	citta_logf("Lancio demone per conn remote a porta %d.", REMOTE_PORT);
-	init_remote_daemon();
+	pid_remote_daemon = init_remote_daemon();
+	if (pid_remote_daemon == -1) {
+		citta_logf("ERROR: Could not start remote daemon.");
+	}
 #endif
 
 #ifdef USE_CITTAWEB
@@ -583,6 +588,12 @@ void restart_server(void)
 /* Chiude tutte le connessioni, salva tutti i dati ed elimina lock. */
 void shutdown_server(void)
 {
+	chiusura_sessioni(conn_madre);
+
+#ifdef USE_REMOTE_PORT
+	close_remote_daemon(pid_remote_daemon);
+#endif
+
 	chiusura_server(conn_madre);
 
 #ifdef USE_CITTAWEB
@@ -1423,10 +1434,6 @@ void chiusura_server(int s)
 
 #ifdef USE_MEM_STAT
 	mem_log(); /* Verifica memory leaks: non dovrebbe rimanere nulla! */
-#endif
-
-#ifdef USE_REMOTE_PORT
-	close_remote_daemon();
 #endif
 }
 
