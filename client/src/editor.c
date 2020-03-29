@@ -1928,7 +1928,7 @@ static void Editor_Insert_Link(Editor_Text *t)
         int id, linkcol;
 
         printf("\r%-80s\r", "");
-        strcpy(buf, "http://");
+	buf[0] = 0;
 
         if (getline_scroll("<b>Insert Link:</b> ", COL_HEAD_MD, buf,
                            LBUF-8, 0, 0) > 0) {
