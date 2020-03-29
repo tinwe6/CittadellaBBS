@@ -264,6 +264,7 @@ static void log_argv(log_level ll, const char *pre, char * const * argv)
 	return;
     }
 
+    log_timestamp();
     dprintf(fd_log, "%s ", pre);
     while (*argv) {
 	dprintf(fd_log, "%s ", *argv++);
@@ -875,9 +876,9 @@ static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
 {
     static uint8_t tn_cmd[] = {TN_IAC, 0, 0};
     data_parser_state state = session->dp_state;
+    const uint8_t *src;
+
     uint8_t *dest = out;
-    const uint8_t *src = in;
-    //while (src != in + inlen) {
     for (src = in; src != in + inlen; src++) {
     parser_restart:
 	switch(state) {
@@ -949,6 +950,20 @@ static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
     session->dp_state = state;
     ssize_t written = dest - out;
     log_printf(LL2, "process data: %ld -> %ld bytes\n", inlen, written);
+    switch(state) {
+    case DPS_IAC:
+	    log_printf(LL2, "dp_state: DPS_IAC\n");
+	    break;
+    case DPS_OPT:
+	    log_printf(LL2, "dp_state: DPS_OPT\n");
+	    break;
+    case DPS_CR:
+	    log_printf(LL2, "dp_state: DPS_CR\n");
+	    break;
+    default:
+	    break;
+    };
+
     return written;
 }
 
@@ -1344,8 +1359,8 @@ static void read_and_process_data(session_data *s)
 	    s->close_conn = true;
 	    break;
 	}
-	dest->outlen += process_data(buf, bytes, dest->outbuf + dest->outlen,
-				     s);
+	bytes = process_data(buf, bytes, dest->outbuf + dest->outlen, s);
+	dest->outlen += bytes;
 
 	log_transmission(LL2, dest->outbuf, bytes, s->fd, dest->fd, LOG_R);
     }
