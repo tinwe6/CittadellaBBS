@@ -26,6 +26,7 @@
 #include "cml.h"
 #include "comandi.h"
 #include "conn.h"
+#include "cterminfo.h"
 #include "edit.h"
 #include "editor.h"
 #include "errore.h"

@@ -26,6 +26,7 @@
 #include "cittaclient.h"
 #include "cml.h"
 #include "conn.h"
+#include "cterminfo.h"
 #include "edit.h"
 #include "extract.h"
 #include "sysop.h"

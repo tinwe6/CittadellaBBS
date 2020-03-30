@@ -84,7 +84,7 @@ struct cfg_opt {
 	struct cfg_opt *next;
 };
 
-struct client_cfg client_cfg;
+struct client_cfg_t client_cfg;
 static struct cfg_opt *cfg_opt = NULL, *cfg_opt_first = NULL;
 
 struct config_t config[] = {
@@ -143,7 +143,7 @@ static int cfg_parse_line(const char *buf, size_t toklen);
 static size_t cfg_toklen(const char *buf, size_t buflen);
 #endif
 #ifdef CFG_VERBOSE
-static void cfg_print_client_cfg(const struct client_cfg arg);
+static void cfg_print_client_cfg(const struct client_cfg_t arg);
 #endif
 /*****************************************************************************/
 
@@ -242,7 +242,8 @@ static void cfg_init(void)
 	client_cfg.auto_log_chat = false;
 	client_cfg.doing         = citta_strdup("");
 	client_cfg.tmp_dir       = interpreta_tilde_dir(TMPDIR_DFLT);
-	client_cfg.nrighe        = NRIGHE_DFLT;
+	//client_cfg.nrighe        = NROWS_DFLT;
+
 	client_cfg.editor        = citta_strdup(EDITOR_DFLT);
 	client_cfg.autosave_file = interpreta_tilde_dir(AUTOSAVE_FILE);
 	client_cfg.autosave_time = AUTOSAVE_TIME_DFLT;
@@ -567,7 +568,7 @@ static int cfg_getline(char *buf, size_t *bufsize, FILE *fp)
 #ifdef CFG_VERBOSE
 
 /* Print contents of a cfg_client struct */
-static void cfg_print_client_cfg(const struct client_cfg arg)
+static void cfg_print_client_cfg(const struct client_cfg_t arg)
 {
 	printf("host = '%s'\n", arg.host);
 	printf("port = %d\n", arg.port);

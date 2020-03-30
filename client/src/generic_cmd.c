@@ -23,6 +23,7 @@
 #include "comandi.h"
 #include "configurazione.h"
 #include "cml.h"
+#include "cterminfo.h"
 #include "generic_cmd.h"
 #include "conn.h"
 #include "edit.h"

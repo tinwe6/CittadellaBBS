@@ -47,6 +47,7 @@
 #include "comunicaz.h"
 #include "configurazione.h"
 #include "conn.h"
+#include "cterminfo.h"
 #include "cti.h"
 #include "decompress.h"
 #include "extract.h"

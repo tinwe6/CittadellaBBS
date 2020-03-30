@@ -27,6 +27,7 @@
 #include "comandi.h"
 #include "conn.h"
 #include "configurazione.h"
+#include "cterminfo.h"
 #include "extract.h"
 #include "friends.h"
 #include "room_cmd.h" /* for blog_display_pre[] */

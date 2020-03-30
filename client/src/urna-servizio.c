@@ -27,6 +27,7 @@
 #include "utility.h"
 #include "conn.h"
 #include "cml.h"
+#include "cterminfo.h"
 #include "text.h"
 #include "edit.h"
 #include "inkey.h"
@@ -36,7 +37,7 @@
 #include "parm.h"
 #include "urna-gestione.h"
 #include "urna-servizio.h"
-#include "cittacfg.h"                                                         
+#include "cittacfg.h"
 
 /****************************************************************************/
 
@@ -65,7 +66,7 @@ int print_sondaggio(struct elenco_ref *ref, const char *format, int maxtit);
 
 /*
  * crea l'elenco base delle scelte
- * ovvero da 
+ * ovvero da
  * a -- lettera
  * A -- LETTERA
  */
@@ -290,7 +291,7 @@ void debugga_dati(struct urna_client *u, int n)
  * inserisce in **risposte
  * le voci/proposte
  * calloca *risposte (ma non risposte!)
- * return 
+ * return
  * -1 abort
  *  num risp altrimenti
  */
@@ -330,7 +331,7 @@ int chiedi_scelte(char *risposte[], int min_scelte, int maxlen,
 					  break;
 			  printf(_("\nnon bastano\n"));
 	  } else
-			i++; 
+			i++;
    }
 
    risp = i;
@@ -378,12 +379,12 @@ int chiedi_scelte(char *risposte[], int min_scelte, int maxlen,
          printf(_("\nAggiungi la %s: (^X per cancellarla)\n"), prompt);
 	 else
          printf(_("\nCorreggi la %s: (^X per cancellarla)\n"), prompt);
-		
+
          strcpy(default_resp, risposte[pos]);
 
-         /* 
+         /*
           * non uso new_str_def_m perche'
-          * non ritorna l'Abort 
+          * non ritorna l'Abort
           */
 
          cml_printf(_(" (%c) [%s]: "), c, default_resp);
@@ -486,7 +487,7 @@ void free_elenco_ref(struct elenco_ref *elenco[])
    return;
 }
 
-/* 
+/*
  * prende l'elenco dei sondaggi
  * di tipo "tipo"lo mette nelle strutture elenco
  * ritorno: il numero di referendum trovati
@@ -494,28 +495,28 @@ void free_elenco_ref(struct elenco_ref *elenco[])
  *invia la lista
  *dei referendum
  *ora fa anche le funzioni di SCVL
- * 
- * SLST n|t 
+ *
+ * SLST n|t
  *
  * n=0 manda i ref delle stanze non zappate (--vedi livello)
  * n=1 manda tutti i ref/urne (--vedi livello)
  * n=2 manda i ref votabili delle stanza non zappate, indica se
  *     sono da votare
  * n=4 manda tutti i ref/sond nelle room _NON_ zappate creati
- *     dall'utente. 
+ *     dall'utente.
  *
  * n=12 manda tutti i ref/sondaggi nelle room _NON_ zappate
  *     modificabili dall'utente
  *
- * ----il codice si basa su 2%2=0%2=0   
+ * ----il codice si basa su 2%2=0%2=0
  *
- * Restituisce 
+ * Restituisce
  * numero, tipo, titolo, modo, termine, lettera, stanza, zappata,
  * votabile, votato, posticipabile, proponente
  *
  * se n=0,1,4: votabile, votato sono non prevedibili
  * se n=2 o n=4 manda solo i ref nelle  stanze non zappate
- * (ovvero non c'e` modo di sapere se ho votato se non 
+ * (ovvero non c'e` modo di sapere se ho votato se non
  * unzappo la room!)
  *
  * Da aggiungere -- struttura per le lunghezze massime varie
@@ -561,7 +562,7 @@ int get_elenco_ref(struct elenco_ref *elenco[], char tipo)
    return n_rs;
 }
 
-/* 
+/*
  * Sceglie un referendum tra quelli di elenco_voti
  * torna la posizione in elenco_ref,
  * -1 se non sono stati scelti
@@ -572,8 +573,8 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
   char prompt[81];
   char str[4]="";
   int num, i=0;
-	
-   
+
+
   if(n_rs == 0) {
     return -1;
   }
@@ -589,7 +590,7 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
     }
   }
 
-  strncpy(prompt,("\nNumero o lettera della consultazione," 
+  strncpy(prompt,("\nNumero o lettera della consultazione,"
 		  " (invio per un elenco)"), 80);
   new_str_m(prompt, str, 4);
   if(strcmp(str, "") == 0) {
@@ -607,7 +608,7 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
 	strcmp(str, elenco[i]->lettera) != 0) {
     i++;
   }
-  
+
   if(i == n_rs) {
     printf(_("Non esiste (o non lo puoi votare), peccato!\n"));
     return -1;
@@ -632,7 +633,7 @@ int scegli_ref(int n_rs, struct elenco_ref *elenco[], char *richiesta, const cha
  * z zap
  * v puo` votare
  * V ha votato
- * p posticipabile 
+ * p posticipabile
  */
 
 

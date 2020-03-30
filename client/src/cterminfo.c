@@ -20,16 +20,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cterminfo.h"
+#include "cittacfg.h"
 #include "string_utils.h"
 
 int cti_ok;    /* Se trovo nelle terminfo tutte le informazioni necessarie
 		* vale 1, altrimenti vale 0 e passo alla modalita' di
 		* testo semplice, senza indirizzamento di cursore. */
 #ifdef HAVE_CTI
-int NRIGHE;
-int NCOL;
 int cti_bce;   /* Flag background color erase */
 #endif
+
+#define NROWS_DFLT           24
+#define NCOLS_DFLT           80
+
+int term_nrows = NROWS_DFLT;
+int term_ncols = NCOLS_DFLT;
 
 char *ctistr_ll;
 
@@ -161,8 +166,8 @@ void cti_test(void)
 
 void cti_interroga(void)
 {
-	NCOL = tigetnum("cols");
-	NRIGHE = tigetnum("lines");
+	term_ncols = tigetnum("cols");
+	term_nrows = tigetnum("lines");
 	cti_bce = tigetflag("bce");
 }
 

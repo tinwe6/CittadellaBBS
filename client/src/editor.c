@@ -36,6 +36,7 @@ int Editor_Vcurs; /*                  ... e verticale.                  */
 #include <sys/wait.h>
 
 #include "cittaclient.h"
+#include "cittacfg.h" /* for CLIENT_TABSIZE */
 #include "cml.h"
 #include "conn.h"
 #include "cti.h"
@@ -1074,10 +1075,10 @@ static void Editor_Key_Tab(Editor_Text *t)
 	if (t->insert == MODE_ASCII_ART) {
 		do
 			Editor_Key_Right(t);
-		while (((t->curr->pos) % TABSIZE));
+		while (((t->curr->pos) % CLIENT_TABSIZE));
 		return;
 	}
-	if ((t->max - t->curr->pos) < TABSIZE)
+	if ((t->max - t->curr->pos) < CLIENT_TABSIZE)
 		Editor_Key_Enter(t);
 	else {
 		do

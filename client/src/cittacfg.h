@@ -37,7 +37,6 @@
 #define LOG_FILE_X_DFLT      DUMP_FILE_DFLT
 #define LOG_FILE_MAIL_DFLT   DUMP_FILE_DFLT
 #define LOG_FILE_CHAT_DFLT   DUMP_FILE_DFLT
-#define NRIGHE_DFLT          24
 #define AUTOSAVE_TIME_DFLT   (60*5)   /* Autosave in Editor every 5 minutes */
 #define DOWNLOAD_DIR_DFLT    "~/"
 
@@ -59,7 +58,7 @@
 #define USER_NAME            (client_cfg.name)
 #define USER_PWD             (client_cfg.password)
 #define NO_BANNER            (client_cfg.no_banner)
-#define NRIGHE               (client_cfg.nrighe)
+/* #define NRIGHE               (client_cfg.nrighe) */
 #define EDITOR               (client_cfg.editor)
 #define AUTOSAVE_FILE        (client_cfg.autosave_file)
 #define AUTOSAVE_TIME        (client_cfg.autosave_time)
@@ -74,7 +73,7 @@
 #define TMPDIR               (client_cfg.tmp_dir)
 #define USE_COLORS           (client_cfg.use_colors)
 #define MAX_XLOG             (client_cfg.max_xlog)
-#define TABSIZE              (client_cfg.tabsize)
+#define CLIENT_TABSIZE       (client_cfg.tabsize)
 #define SHELL                (client_cfg.shell)
 #define COMPRESSIONE         (client_cfg.compressione)
 #define DEBUG_MODE           (client_cfg.debug)
@@ -90,7 +89,7 @@
 #define DOCAPP               (client_cfg.docapp)
 #define DOWNLOAD_DIR         (client_cfg.download_dir)
 
-struct client_cfg {
+struct client_cfg_t {
 	char *host;
 	unsigned int port;
 	char *name;
@@ -129,7 +128,7 @@ struct client_cfg {
         char *download_dir;
 };
 
-extern struct client_cfg client_cfg;
+extern struct client_cfg_t client_cfg;
 
 /* Prototipi funzioni in cittacfg.c */
 void cfg_read(char *rcfile, bool no_rc);

@@ -26,6 +26,7 @@
 #include "cml.h"
 #include "comandi.h"
 #include "conn.h"
+#include "cterminfo.h"
 #include "edit.h"
 #include "extract.h"
 #include "floor_cmd.h"
@@ -56,7 +57,7 @@ static int floor_print_known(char mode, int riga);
 
 /***************************************************************************/
 /***************************************************************************/
-/* 
+/*
  * Crea un nuovo floor.
  */
 void floor_create(void)
@@ -68,7 +69,7 @@ void floor_create(void)
 	if (strlen(name) == 0)
 		return;
 	fmnum = new_long_def(_("Numero File Messaggi (0: Basic): "), 0);
-	maxmsg = new_long_def(_("Numero massimo di messaggi: "), 
+	maxmsg = new_long_def(_("Numero massimo di messaggi: "),
 			      DFLT_MSG_PER_ROOM);
 	serv_putf("FNEW %s|%ld|%ld", name, fmnum, maxmsg);
 	serv_gets(buf);
@@ -118,7 +119,7 @@ void floor_delete(void)
 
 	printf(sesso ? _("\nSei sicura di voler eliminare questo floor (s/n)? ") : _("\nSei sicuro di voler eliminare questo floor (s/n)? "));
 	if (si_no() == 'n')
-		return;	
+		return;
 	serv_puts("FDEL");
 	serv_gets(buf);
 	if (buf[0] == '2') {
@@ -190,7 +191,7 @@ void floor_list (void)
 				fstr[6] = 'a';
 			if (tmst->tm_year > 99)
 				tmst->tm_year -= 100;
-                        printf("%3ld %-20s  %3ld  %5ld %02d/%02d/%02d %8s %2d/%2d %s\n", 
+                        printf("%3ld %-20s  %3ld  %5ld %02d/%02d/%02d %8s %2d/%2d %s\n",
                                num, nm, numroom, numpost, tmst->tm_mday,
 			       tmst->tm_mon+1, tmst->tm_year, fstr, rlvl,
 			       wlvl, fa);
@@ -225,7 +226,7 @@ void floor_move_room(void)
 void floor_new_fa(void)
 {
 	char nick[MAXLEN_UTNAME], buf[LBUF];
-	
+
 	get_username(_("Nome nuovo Floor Aide per questo floor: "), nick);
 	if (nick[0] == '\0')
 		return;
@@ -247,7 +248,7 @@ void floor_new_fa(void)
 		default:
 			printf(_("\nErrore.\n"));
 			break;
-		}	
+		}
 }
 
 /*
@@ -259,7 +260,7 @@ void floor_info(int det)
 	char buf[LBUF], faide[LBUF], fname[LBUF];
 	int  rlvl, wlvl, riga = 4;
 	long numpost, numroom, ct, mt, pt;
-	
+
 	serv_puts("FINF");
 	serv_gets(buf);
 	if (buf[0] != '2') {
@@ -276,7 +277,7 @@ void floor_info(int det)
 	extract(fname, buf+4, 7);
       	/*flags = extract_long(buf+4, 8);*/
 	numroom = extract_long(buf+4, 9);
-	
+
 	cml_printf(_("\n Floor '<b>%s</b>', creato il "), fname);
 	stampa_datal(ct);
 	cml_printf(_(".\n Floor Aide: <b>%s</b> - "), faide);
@@ -391,7 +392,7 @@ void floor_edit_info(void)
 
 	serv_puts("FIEE");
 	serv_gets(buf);
-	printf("%s\n", &buf[4]);	
+	printf("%s\n", &buf[4]);
 }
 
 /*
@@ -402,7 +403,7 @@ int floor_known_rooms(void)
 	char buf[LBUF], nome[LBUF];
 	long num;
 	int riga = 1;
-	
+
 	serv_puts("FKRA");
         serv_gets(buf);
         if (buf[0] != '2')
@@ -448,12 +449,12 @@ static int floor_print_known(char mode, int riga)
 	char buf[LBUF], rn[LBUF];
 	long n;
 	size_t lung = 0;
-	
+
 	serv_putf("RKRL %d", mode);
         serv_gets(buf);
         if (buf[0] != '2')
 		return riga;
-	if (uflags[4] & UT_KRCOL) 
+	if (uflags[4] & UT_KRCOL)
 		while (serv_gets(buf), strcmp(buf, "000")) {
 			if (lung == 3) {
 				putchar('\n');
@@ -468,7 +469,7 @@ static int floor_print_known(char mode, int riga)
 			n = extract_long(buf+4, 1);
 			printf("%3ld. %-20s", n, rn);
 			lung++;
-		}		
+		}
 	else
 		while (serv_gets(buf), strcmp(buf, "000")) {
 			extract(rn, buf+4, 0);
@@ -498,7 +499,7 @@ static int floor_print_known(char mode, int riga)
 void floor_list_known(char mode)
 {
 	int riga;
-	
+
 	switch (mode) {
 	case 0:
 	case 1:
@@ -606,7 +607,7 @@ void floor_edit(int mode)
 		if (newflags & FF_INVITO) {
 			if(new_si_no_def(_("Invito automatico"),
 					 IS_SET(flags, FF_AUTOINV)))
-				newflags |= FF_AUTOINV;			
+				newflags |= FF_AUTOINV;
 		} else {
 			if (new_si_no_def(_("Guess Room"),
 					  IS_SET(flags, FF_GUESS)))
@@ -624,7 +625,7 @@ void floor_edit(int mode)
 		flags = newflags;
 		if (mode == 1) {
 			printf(_("\nVuoi mantenere le modifiche (s/n)? "));
-			if (si_no()=='n') 
+			if (si_no()=='n')
 				return;
 		}
 		serv_putf("REDT 1|%s|%d|%d|%ld", name, rlvl, wlvl, flags);
@@ -641,10 +642,10 @@ void floor_edit(int mode)
 void floor_zap(void)
 {
 	char buf[LBUF];
-	
+
 	printf(sesso ? _("\nSei sicura di voler dimenticare questa room (s/n)? ") : _("\nSei sicuro di voler dimenticare questa room (s/n)? "));
 	if (si_no() == 'n')
-		return;	
+		return;
 	serv_puts("RZAP");
 	serv_gets(buf);
 	if (buf[0] != '2')
@@ -659,7 +660,7 @@ void floor_zap(void)
 void floor_new_fh(void)
 {
 	char nick[MAXLEN_UTNAME], buf[LBUF];
-	
+
 	get_username(_("Nome room helper per questa room: "), nick);
 	if (nick[0] == '\0')
 		return;
@@ -684,7 +685,7 @@ void floor_new_fh(void)
 		 default:
 			 printf(_("\nErrore.\n"));
 			break;
-		}	
+		}
 }
 
 /*

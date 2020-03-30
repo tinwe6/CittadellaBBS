@@ -21,6 +21,7 @@
 #include "cittacfg.h"
 #include "cml.h"
 #include "conn.h"
+#include "cterminfo.h"
 #include "inkey.h"
 #include "pager.h"
 #include "prompt.h"
@@ -39,13 +40,13 @@ static bool pager_newstr(struct text *txt, char *aaa, bool inc_max,
 /***************************************************************************/
 /*
  * Riceve un testo dal server e lo visualizza con il pager.
- * 
+ *
  * Se txt e' NULL, viene creato un buffer temporaneo per il testo,
  * che viene poi eliminato prima dell'uscita dal pager.
- * 
+ *
  * Se (send == 1) il testo arriva dal server, e percio' controlla i sockets
  * in attesa di nuove righe, altrimenti il testo e' gia' tutto in *txt.
- * 
+ *
  * Se la lunghezza del testo e' nota in anticipo, viene messa fornita in max
  * Start e' il numero di riga dal quale inizia la visualizzazione del testo.
  *

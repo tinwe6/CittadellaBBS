@@ -1149,7 +1149,7 @@ static int getline_col_wrap(int **str0, int **col0, int max,
 				break;
 			}
 			if (c == Key_TAB) {
-				if (max-len < TABSIZE)
+				if (max-len < CLIENT_TABSIZE)
 					c = Key_CR;
 				else {
 					c = ' ';
@@ -1158,7 +1158,7 @@ static int getline_col_wrap(int **str0, int **col0, int max,
 						col[pos++] = curs_col;
 						str[++len] = '\0';
 						putchar(c);
-					} while (((pos+1) % TABSIZE));
+					} while (((pos+1) % CLIENT_TABSIZE));
 				}
 			} else if ((isascii(c) && isprint(c) && (c != '|'))
 			    || (is_isoch(c)) || (special && c=='|')) {
