@@ -16,12 +16,16 @@
 #ifndef _CTI_H
 #define _CTI_H   1
 
+#include <stdbool.h>
+
 /* Prototipi delle funzioni in cterminfo.c */
 void cti_init(void);
 void cti_term_init(void);
 void cti_term_exit(void);
+void cti_get_winsize(void);
+void cti_set_winsize(int rows, int cols);
+bool cti_validate_winsize(void);
 void cti_clear_screen(void);
 void cti_scroll_reg(int start, int end);
-void cti_interroga(void);
 
 #endif /* cterminfo.h */

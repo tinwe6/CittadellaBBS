@@ -1936,7 +1936,7 @@ static void Editor_Insert_Link(Editor_Text *t)
                 printf("\r%-80s\r", "");
                 label[0] = 0;
                 getline_scroll("<b>Etichetta (opzionale):</b> ", COL_HEAD_MD,
-                               label, 78, 0, 0);
+                               label, NCOL - 2, 0, 0);
                 id = md_insert_link(t->mdlist, buf, label);
                 if (label[0] == 0) {
                         strncpy(label, buf, 75);
@@ -2136,7 +2136,7 @@ static void line_refresh(Editor_Line *line, int vpos, int start)
 		putchar(line->str[i]);
 	}
 	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
-	for ( ; i < 79; i++)
+	for ( ; i < NCOL - 1; i++)
 		putchar(' ');
 	setcolor(col);
 	cti_mv(line->pos+1, Editor_Vcurs);
@@ -2152,7 +2152,7 @@ static void clear_line(int vpos)
 
 	cti_mv(0, vpos);
 	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
-	for (i = 0; i < 79; i++)
+	for (i = 0; i < NCOL - 1; i++)
 		putchar(' ');
 }
 
@@ -2429,8 +2429,8 @@ static void refresh_line_curs(int *pos, int *curs)
 
 	putchar('\r');
 	putchar('>');
-	for (i=0; (i < 78) && (pos[i] != 0); putchar(pos[i++]));
-	for ( ; i < 78; i++, putchar(' '));
+	for (i=0; (i < NCOL - 2) && (pos[i] != 0); putchar(pos[i++]));
+	for ( ; i < NCOL - 2; i++, putchar(' '));
 	cti_mv((int)(curs-pos+1), NRIGHE-1);
 	fflush(stdout);
 }
