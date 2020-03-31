@@ -379,13 +379,14 @@ typedef enum {
 
 typedef enum {
     TN_STATE_START = 0,
-    TN_STATE_ECHO  = 1,
-    TN_STATE_CMODE = 2,
+    TN_STATE_ECHO  = 1 << 0,
+    TN_STATE_CMODE = 1 << 1,
+    TN_STATE_NAWS  = 1 << 1,
     TN_STATE_DONE  = (TN_STATE_ECHO|TN_STATE_CMODE),
 } tn_neg_state;
 
 typedef enum {
-    DPS_TXT, DPS_IAC, DPS_OPT, DPS_CR,
+    DPS_TXT, DPS_IAC, DPS_OPT, DPS_SUB, DPS_CR,
 } data_parser_state;
 
 typedef struct session_data_t {
@@ -397,6 +398,11 @@ typedef struct session_data_t {
     bool is_pipe;        /* is it one end of a bidirectional pipe?     */
     suseconds_t tn_timeout_ms; /* Telnet negotiation timeout in ms     */
     tn_neg_state tn_state; /* telnet negotiation state                 */
+    bool tn_naws;        /* true if ongoing NAWS subnegotiation        */
+    uint8_t tn_sub[8];	 /* telnet subnegotiation buffer               */
+    uint8_t tn_sublen;   /* length of subnegotiation string            */
+    int32_t nrows;       /* Number of rows of client terminal          */
+    int32_t ncols;       /* Number of columns of client terminal       */
     char *host;          /* calling host ip number                     */
     data_parser_state dp_state; /* state of the data parser            */
     uint8_t outbuf[BUFFER_SIZE]; /* data waiting to be written to fd   */
@@ -448,6 +454,10 @@ static session_data * session_add(daemon_data *data, session_state state,
     session->is_socket = is_socket;
     session->is_pipe = false;
     session->tn_timeout_ms = 0;
+    session->tn_naws = false;
+    session->tn_sublen = 0;
+    session->nrows = 0;
+    session->ncols = 0;
     session->dp_state = DPS_TXT;
     session->outbuf[0] = 0;
     session->outlen = 0;
@@ -663,6 +673,11 @@ FOREACH_CMD(DEFINE_CONSTANT)
 #undef DEFINE_CONSTANT
 } tn_code;
 
+/* telnet commands we send at start of the connection */
+static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
+static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SGA };
+static uint8_t do_naws[3]   = {TN_IAC, TN_DO,   TN_NAWS};
+
 typedef struct {
     unsigned char code;
     char name[8];
@@ -716,8 +731,6 @@ static void log_telnet_command(const char *pre, const uint8_t *cmd, size_t len)
 static void telnet_negotiation(int fd)
 {
 
-    static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
-    static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SGA };
     struct pollfd pfd[1];
     uint8_t cmd[3];
     const int tn_timeout_ms = 200;
@@ -773,15 +786,14 @@ static ssize_t outbuf_append(session_data *s, const uint8_t *buf, ssize_t len)
 
 static void tn_start_negotiations(session_data *session)
 {
-    static uint8_t will_echo[3] = {TN_IAC, TN_WILL, TN_ECHO};
-    static uint8_t char_mode[3] = {TN_IAC, TN_WILL, TN_SGA };
-
     session->tn_state = TN_STATE_START;
     /* Negotiate character at a time echoing mode for the telnet connection */
     outbuf_append(session, char_mode, sizeof(char_mode));
     log_telnet_command("TN sent: ", char_mode, 3);
     outbuf_append(session, will_echo, sizeof(will_echo));
     log_telnet_command("TN sent: ", will_echo, 3);
+    outbuf_append(session, do_naws, sizeof(will_echo));
+    log_telnet_command("TN sent: ", do_naws, 3);
 
     /* refresh the login timeout */
     session->tn_timeout_ms = 2*TN_TIMEOUT_MS;
@@ -806,13 +818,37 @@ static void tn_reject_option(const uint8_t *cmd, session_data *dest)
     log_telnet_command("TN sent: ", answer, 3);
 }
 
+static void set_winsize(session_data *session, uint8_t *data)
+{
+    session->ncols = (data[0] << 8) + data[1];
+    session->nrows = (data[2] << 8) + data[3];
+    log_printf(LL1, "NAWS: terminal size %dx%d\n", session->ncols,
+	       session->nrows);
+}
+
 static void tn_answer_commands(session_data *session)
 {
-    uint8_t cmd[3];
+    uint8_t cmd[6];
+    ssize_t bytes;
 
     for (;;) {
 
-	ssize_t bytes = read(session->fd, &cmd, 3);
+	if (session->tn_naws) {
+	    bytes = read(session->fd, &cmd, 6);
+	    if (bytes == -1) {
+		break;
+	    }
+	    log_telnet_command("TN received: ", cmd, 6);
+	    if (cmd[4] == TN_IAC && cmd[5] == TN_SE) {
+		set_winsize(session, cmd);
+	    } else {
+		log_printf(LL1, "Error in NAWS subnegotiation\n");
+	    }
+	    session->tn_naws = false;
+	    continue;
+	}
+
+	bytes = read(session->fd, &cmd, 3);
 	if (bytes == -1) {
 	    break;
 	}
@@ -845,6 +881,14 @@ static void tn_answer_commands(session_data *session)
 		session->close_conn = true;
 	    }
 	    continue;
+	} else if (cmd[2] == TN_NAWS) {
+	    if (cmd[1] == TN_WILL) {
+		session->tn_state |= TN_STATE_NAWS;
+	    } else if (cmd[1] == TN_SB) {
+		/* start subnegotiation */
+		session->tn_naws = true;
+	    }
+	    continue;
 	}
 
 	/* Reject all other options */
@@ -857,6 +901,17 @@ static void tn_answer_commands(session_data *session)
     } else {
 	/* We give some extra time if we still haven't received the answers */
 	session->tn_timeout_ms = 2*TN_TIMEOUT_MS;
+    }
+}
+
+static void process_subnegotiation(session_data *session)
+{
+
+    if (session->tn_sub[0] == TN_NAWS) {
+	set_winsize(session, session->tn_sub + 1);
+    } else {
+	log_telnet_command("Unknown subnegotiation: ", session->tn_sub,
+			   session->tn_sublen);
     }
 }
 
@@ -887,13 +942,16 @@ static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
 		/* IAC IAC is escaped IAC */
 		*dest++ = TN_IAC;
 		state = DPS_TXT;
+	    } else if (*src == TN_SB) {
+		session->tn_sublen = 0;
+		state = DPS_SUB;
 	    } else if (is_negotiation_cmd(*src)) {
 		tn_cmd[1] = *src;
 		state = DPS_OPT;
 	    } else {
 		/* Two bytes telnet command: ignore it */
 		tn_cmd[1] = *src;
-		log_telnet_command("TN received: ", tn_cmd, 2);
+		log_telnet_command("TN (IAC) received: ", tn_cmd, 2);
 		state = DPS_TXT;
 	    }
 	    break;
@@ -901,14 +959,29 @@ static ssize_t process_data(const uint8_t *in, ssize_t inlen, uint8_t *out,
 	case DPS_OPT:
 	    /* Negotiation telnet command: reject it */
 	    tn_cmd[2] = *src;
-	    log_telnet_command("TN received: ", tn_cmd, 3);
+	    log_telnet_command("TN (OPT) received: ", tn_cmd, 3);
 	    /* if the telnet negotiation is completed we just ignore the
+
 	     */
 	    if (session->tn_state == TN_STATE_DONE
 		|| (tn_cmd[2] != TN_ECHO && tn_cmd[2] != TN_SGA)) {
 		tn_reject_option(tn_cmd, session);
 	    }
 	    state = DPS_TXT;
+	    break;
+
+	case DPS_SUB:
+	    if (*src == TN_SE) {
+		process_subnegotiation(session);
+		state = DPS_TXT;
+	    } else {
+		if (session->tn_sublen < sizeof(session->tn_sub)) {
+		    session->tn_sub[session->tn_sublen++] = *src;
+		} else {
+		    /* something went wrong.. */
+		    log_printf(LL1, "ahi!\n");
+		}
+	    }
 	    break;
 
 	case DPS_CR:
