@@ -25,14 +25,15 @@
 #include <term.h>
 #endif
 
+extern int term_nrows;
+extern int term_ncols;
+
+# define NCOL          term_ncols
+# define NRIGHE        term_nrows
+
 #ifdef HAVE_CTI
-extern int NRIGHE;
-extern int NCOL;
 extern char *ctistr_ll;
 extern int cti_bce;   /* Flag background color erase */
-#else
-# define NCOL          80
-# define NRIGHE        25
 #endif
 
 #define cti_visual_bell()      putp(flash_screen)

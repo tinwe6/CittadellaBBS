@@ -173,7 +173,8 @@ void esegui_segnali(void)
                 }
         }
         if (new_signals & SEGNALE_WINCH) {
-                cti_interroga();
+                cti_get_winsize();
+                cti_validate_winsize();
         }
         new_signals = false;
 }
