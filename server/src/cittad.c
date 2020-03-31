@@ -904,11 +904,17 @@ static void tn_answer_commands(session_data *session)
     }
 }
 
+void resize_pty(int fd, int ncols, int nrows)
+{
+    struct winsize ws = {.ws_col = ncols, .ws_row = nrows};
+    ioctl(fd, TIOCSWINSZ, &ws);
+}
+
 static void process_subnegotiation(session_data *session)
 {
-
     if (session->tn_sub[0] == TN_NAWS) {
 	set_winsize(session, session->tn_sub + 1);
+	resize_pty(session->fd_out, session->ncols, session->nrows);
     } else {
 	log_telnet_command("Unknown subnegotiation: ", session->tn_sub,
 			   session->tn_sublen);
@@ -1306,6 +1312,7 @@ static session_data * start_pty(daemon_config *config, daemon_data *data,
 	s_socket->close_conn = true;
 	return NULL;
     }
+    resize_pty(fd_master, s_socket->ncols, s_socket->nrows);
     session_data *s_master = make_pty(data, fd_master, s_socket);
     return s_master;
 }
