@@ -26,9 +26,6 @@ void setup_segnali(void);
 void setup_keep_alive(void);
 void segnali_ign_sigtstp(void);
 void segnali_acc_sigtstp(void);
-void hupsig(int sig);
-void handler_tstp(int sig);
-void handler_cont(int sig);
 void esegui_segnali(void);
 
 #endif /* signals.h */

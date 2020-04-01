@@ -38,13 +38,77 @@ bool send_keepalive;
 /*****************************************************************************/
 /*****************************************************************************/
 /*
+ * Pulisci, salva ed esci
+ */
+static void handler_hup(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        pulisci_ed_esci(SHOW_EXIT_BANNER);
+}
+
+/*
+ * Sospensione client con Ctrl-Z.
+ */
+static void handler_tstp(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        signal(SIGTSTP, SIG_DFL);
+
+        /* resetta il terminale */
+        reset_term();
+
+        /* Sospende il programma */
+        raise(SIGTSTP);
+}
+
+/*
+ * Continua il processo interrotto con Ctrl-Z.
+ */
+static void handler_cont(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        signal(SIGCONT, handler_cont);
+        signal(SIGTSTP, handler_tstp);
+
+        /* setta il terminale */
+        term_save();
+        term_mode();
+}
+
+/*
+ * Alarm SIGALRM
+ */
+static void handler_alrm(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+	//        signal(SIGALRM, handler_alrm);
+
+	new_signals |= SIG_ALARM;
+}
+
+/*
+ * Window size change: SIGWINCH
+ */
+static void handler_winch(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        //signal(SIGWINCH, handler_winch);
+        new_signals |= SIG_WINCH;
+}
+
+/*********************************************************************/
+/*
  * Inizializza i segnali per il client
  */
 void setup_segnali(void)
 {
-        signal(SIGHUP, hupsig);
+        signal(SIGHUP, handler_hup);
         signal(SIGINT, SIG_IGN); /* Ignoro il Ctrl-C */
-        signal(SIGTERM, hupsig);
+        signal(SIGTERM, handler_hup);
 
         signal(SIGCONT, handler_cont);
         signal(SIGTSTP, handler_tstp);
@@ -70,69 +134,6 @@ void segnali_ign_sigtstp(void)
 void segnali_acc_sigtstp(void)
 {
         signal(SIGTSTP, handler_tstp);
-}
-
-/*
- * Pulisci, salva ed esci
- */
-void hupsig(int signum)
-{
-        IGNORE_UNUSED_PARAMETER(signum);
-
-        pulisci_ed_esci(SHOW_EXIT_BANNER);
-}
-
-/*
- * Sospensione client con Ctrl-Z.
- */
-void handler_tstp(int signum)
-{
-        IGNORE_UNUSED_PARAMETER(signum);
-
-        signal(SIGTSTP, SIG_DFL);
-
-        /* resetta il terminale */
-        reset_term();
-
-        /* Sospende il programma */
-        raise(SIGTSTP);
-}
-
-/*
- * Continua il processo interrotto con Ctrl-Z.
- */
-void handler_cont(int signum)
-{
-        IGNORE_UNUSED_PARAMETER(signum);
-
-        signal(SIGCONT, handler_cont);
-        signal(SIGTSTP, handler_tstp);
-
-        /* setta il terminale */
-        term_save();
-        term_mode();
-}
-
-/*
- * Alarm SIGALRM
- */
-void handler_alrm(int signum)
-{
-        IGNORE_UNUSED_PARAMETER(signum);
-	//        signal(SIGALRM, handler_alrm);
-
-	new_signals |= SIG_ALARM;
-}
-
-/*
- * Window size change: SIGWINCH
- */
-void handler_winch(int signum)
-{
-        IGNORE_UNUSED_PARAMETER(signum);
-
-        //signal(SIGWINCH, handler_winch);
-        new_signals |= SIG_WINCH;
 }
 
 /***************************************************************************/
