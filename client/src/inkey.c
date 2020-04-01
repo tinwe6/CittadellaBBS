@@ -67,13 +67,15 @@ int inkey_sc(int esegue)
                         tv.tv_usec = 0;
 			b = select(serv_sock + 1, &input_set, NULL, NULL, &tv);
 			if (b == -1) {
-                                if (errno == EINTR)
-                                        esegui_segnali();
-                                else {
+                                if (errno == EINTR) {
+                                        /* OK: incoming signal */
+                                } else {
                                         perror("Select");
                                         exit(1);
                                 }
                         }
+			/* handle signals */
+			esegui_segnali();
 		} while ((b <= 0));
 
                 if (FD_ISSET(serv_sock, &input_set)) {
@@ -157,12 +159,14 @@ int inkey_pager(int esegue, char *str, int *c)
 			b = select(serv_sock + 1, &input_set, NULL, NULL, &tv);
 			if (b == -1) {
 			        if (errno == EINTR) {
-                                        esegui_segnali();
+                                        /* OK: incoming signal */
 			        } else {
                                         perror("Select");
                                         exit(1);
                                 }
                         }
+			/* handle signals */
+			esegui_segnali();
 		} while (b <= 0);
 
                 if (FD_ISSET(serv_sock, &input_set)) {
@@ -184,7 +188,7 @@ int inkey_pager(int esegue, char *str, int *c)
 				fflush(stdout);
 			}
                 }
-		
+
                 if (FD_ISSET(0, &input_set)) {
                         /* Ho input dall'utente */
                         read(0, buf, 1);
@@ -224,8 +228,8 @@ static int getmeta(char *buf)
 		case 'C':
 		case 'c':
 			return(Key_RIGHT);
-		case 'D': 
-		case 'd': 
+		case 'D':
+		case 'd':
 			return(Key_LEFT);
 		}
 		if (buf[2] <= 'S' && buf[2] >= 'P')
@@ -243,8 +247,8 @@ static int getmeta(char *buf)
 		case 'C':
 		case 'c':
 			return Key_RIGHT;
-		case 'D': 
-		case 'd': 
+		case 'D':
+		case 'd':
 			return Key_LEFT;
 		case '4':
 		case '8':
@@ -299,52 +303,52 @@ static int getmeta(char *buf)
 #if 0
 	if (key_npage && !strncmp(buf, key_npage, strlen(key_npage)))
 		return Key_PAGEDOWN;
-	
+
 	if (key_ppage && !strncmp(buf, key_ppage, strlen(key_ppage)))
 		return Key_PAGEUP;
-		
+
 	if (key_up && !strncmp(buf, key_up, strlen(key_up)))
 		return Key_UP;
-		
+
 	if (key_down && !strncmp(buf, key_down, strlen(key_down)))
 		return Key_DOWN;
-		
+
 	if (key_right && !strncmp(buf, key_right, strlen(key_right)))
 		return Key_RIGHT;
-		
+
 	if (key_left && !strncmp(buf, key_left, strlen(key_left)))
 		return Key_LEFT;
-		
+
 	if (key_home && !strncmp(buf, key_home, strlen(key_home)))
 		return Key_HOME;
-	
+
 	if (key_end && !strncmp(buf, key_end, strlen(key_end)))
 		return Key_END;
-		
+
 	if (key_f1 && !strncmp(buf, key_f1, strlen(key_f1)))
 		return Key_F(1);
 
 	if (key_f2 && !strncmp(buf, key_f2, strlen(key_f2)))
 		return Key_F(2);
-		
+
 	if (key_f3 && !strncmp(buf, key_f3, strlen(key_f3)))
 		return Key_F(3);
 
 	if (key_f4 && !strncmp(buf, key_f4, strlen(key_f4)))
 		return Key_F(4);
-		
+
 	if (key_f5 && !strncmp(buf, key_f5, strlen(key_f5)))
 		return Key_F(5);
-		
+
 	if (key_f6 && !strncmp(buf, key_f6, strlen(key_f6)))
 		return Key_F(6);
-	
+
 	if (key_f7 && !strncmp(buf, key_f7, strlen(key_f7)))
 		return Key_F(7);
-		
+
 	if (key_f8 && !strncmp(buf, key_f8, strlen(key_f8)))
 		return Key_F(8);
-		
+
 	if (key_ic && !strncmp(buf, key_ic, strlen(key_ic)))
 		return Key_INS;
 
@@ -369,7 +373,7 @@ int inkey_elenco(const char *elenco)
         return(i);
 }
 
-/* 
+/*
  * Aspetta un carattere in un elenco di caratteri
  * 0 non è accettabile
  * se si preme \013 o \010
