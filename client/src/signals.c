@@ -136,6 +136,15 @@ void segnali_acc_sigtstp(void)
         signal(SIGTSTP, handler_tstp);
 }
 
+void signals_ignore_all(void) {
+	signal(SIGHUP, SIG_IGN);
+	signal(SIGINT, SIG_IGN);
+	signal(SIGTERM, SIG_IGN);
+	signal(SIGCONT, SIG_IGN);
+	signal(SIGTSTP, SIG_IGN);
+}
+
+
 /***************************************************************************/
 
 void esegui_segnali(void)

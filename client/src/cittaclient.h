@@ -18,7 +18,6 @@
 
 #define _CITTACLIENT_
 
-#include <setjmp.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -63,7 +62,6 @@ extern char last_x[MAXLEN_UTNAME];   /* Utente di default per Xmsg           */
 extern char last_xfu[MAXLEN_UTNAME]; /* Utente di default per Follow-up Xmsg */
 extern int  riga;
 extern char canale_chat;             /* n. canale, o 0 se utente non in chat */
-extern jmp_buf ciclo_principale;
 extern bool login_eseguito;
 extern char oa[];                          /* oa[sesso] e' la lettera finale */
 extern char current_floor[FLOORNAMELEN];   /* Floor corrente                 */

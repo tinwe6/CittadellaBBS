@@ -18,14 +18,11 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <signal.h>
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <signal.h>
 #include <pwd.h>
-#include <setjmp.h>
 #include <stddef.h>
 
 #ifdef DEBUG
@@ -123,10 +120,6 @@ char room_type[10];
 
 /* others */
 char oa[] = {'o', 'a'};            /* oa[sesso] e' la lettera finale */
-
-/* we don't use this anymore
-jmp_buf ciclo_principale;
-*/
 
 /* prototipi delle funzioni in questo file */
 static void info_sul_server(void);
@@ -1044,20 +1037,17 @@ static void ident_client(void)
 {
 }
 
+/* This command is used to crash the bbs client. Just because it is fun */
+/* when new users use it and think they crashed the server.             */
 static void pianta_bbs(void)
 {
 #ifdef LOCAL
 	int i=0;
 
-        signal(SIGHUP, SIG_IGN);
-        signal(SIGINT, SIG_IGN);
-        signal(SIGTERM, SIG_IGN);
-        signal(SIGCONT, SIG_IGN);
-        signal(SIGTSTP, SIG_IGN);
-
+	signals_ignore_all();
 	while (1) {
 	        sleep(1);
-		printf("\x1b[%dq", (i++) % 4);
+		printf("\x1b[%d\"q", (i++) % 4);
 		fflush(stdout);
 	}
 #else
