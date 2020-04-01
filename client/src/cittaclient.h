@@ -30,7 +30,7 @@
 
 
 /* Tempo in secondi tra due keep alive (NOOP) inviati al server */
-#define KEEP_ALIVE_INTERVAL 60
+#define KEEPALIVE_INTERVAL 60
 
 /* Dimensione buffer di caratteri standard */
 #define LBUF        256
