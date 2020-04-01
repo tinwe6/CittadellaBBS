@@ -27,35 +27,88 @@
 #include "terminale.h"
 #include "macro.h"
 
-#define SEGNALE_KEEPALIVE     1
-#define SEGNALE_WINCH         2
+typedef enum {
+	SIG_ALARM = 1 << 0,
+	SIG_WINCH = 1 << 1,
+} sig_flag;
 
-sig_atomic_t new_signals;      /* Flags con i nuovi segnali arrivati */
-sig_atomic_t send_keepalive;
-sig_atomic_t send_noop_now;
-
-/* Prototipi funzioni in questo file */
-void setup_segnali(void);
-void setup_keep_alive(void);
-void segnali_ign_sigtstp(void);
-void segnali_acc_sigtstp(void);
-void hupsig(int sig);
-void handler_tstp(int sig);
-void handler_cont(int sig);
-void handler_alrm(int sig);
-void handler_winch(int sig);
-void esegui_segnali(void);
+static volatile sig_atomic_t new_signals; /* Flags for incoming signals */
+bool send_keepalive;
 
 /*****************************************************************************/
 /*****************************************************************************/
+/*
+ * Pulisci, salva ed esci
+ */
+static void handler_hup(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        pulisci_ed_esci(SHOW_EXIT_BANNER);
+}
+
+/*
+ * Sospensione client con Ctrl-Z.
+ */
+static void handler_tstp(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        signal(SIGTSTP, SIG_DFL);
+
+        /* resetta il terminale */
+        reset_term();
+
+        /* Sospende il programma */
+        raise(SIGTSTP);
+}
+
+/*
+ * Continua il processo interrotto con Ctrl-Z.
+ */
+static void handler_cont(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        signal(SIGCONT, handler_cont);
+        signal(SIGTSTP, handler_tstp);
+
+        /* setta il terminale */
+        term_save();
+        term_mode();
+}
+
+/*
+ * Alarm SIGALRM
+ */
+static void handler_alrm(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+	//        signal(SIGALRM, handler_alrm);
+
+	new_signals |= SIG_ALARM;
+}
+
+/*
+ * Window size change: SIGWINCH
+ */
+static void handler_winch(int signum)
+{
+        IGNORE_UNUSED_PARAMETER(signum);
+
+        //signal(SIGWINCH, handler_winch);
+        new_signals |= SIG_WINCH;
+}
+
+/*********************************************************************/
 /*
  * Inizializza i segnali per il client
  */
 void setup_segnali(void)
 {
-        signal(SIGHUP, hupsig);
+        signal(SIGHUP, handler_hup);
         signal(SIGINT, SIG_IGN); /* Ignoro il Ctrl-C */
-        signal(SIGTERM, hupsig);
+        signal(SIGTERM, handler_hup);
 
         signal(SIGCONT, handler_cont);
         signal(SIGTSTP, handler_tstp);
@@ -69,9 +122,8 @@ void setup_keep_alive(void)
 {
         signal(SIGALRM, handler_alrm);
 
-	send_keepalive = false;
-	send_noop_now = false;
-	alarm(KEEP_ALIVE_INTERVAL);
+	send_keepalive = true;
+	alarm(KEEPALIVE_INTERVAL);
 }
 
 void segnali_ign_sigtstp(void)
@@ -84,97 +136,22 @@ void segnali_acc_sigtstp(void)
         signal(SIGTSTP, handler_tstp);
 }
 
-/*
- * Pulisci, salva ed esci
- */
-void hupsig(int sig)
-{
-        IGNORE_UNUSED_PARAMETER(sig);
-
-        pulisci_ed_esci(SHOW_EXIT_BANNER);
-}
-
-/*
- * Sospensione client con Ctrl-Z.
- */
-void handler_tstp(int sig)
-{
-        IGNORE_UNUSED_PARAMETER(sig);
-
-        signal(SIGTSTP, SIG_DFL);
-
-        /* resetta il terminale */
-        reset_term();
-
-        /* Sospende il programma */
-        raise (SIGTSTP);
-}
-
-/*
- * Continua il processo interrotto con Ctrl-Z.
- */
-void handler_cont(int sig)
-{
-        IGNORE_UNUSED_PARAMETER(sig);
-
-        signal(SIGCONT, handler_cont);
-        signal(SIGTSTP, handler_tstp);
-
-        /* setta il terminale */
-        term_save();
-        term_mode();
-
-/* Questo creava problemi con il Ctrl-Z: grazie Abel!
-        if (login_eseguito)
-                longjmp (ciclo_principale, -1);
-*/
-}
-
-/*
- * Alarm SIGALRM
- */
-void handler_alrm(int sig)
-{
-        IGNORE_UNUSED_PARAMETER(sig);
-
-	if (send_keepalive) {
-                send_noop_now = true;
-	}
-
-	send_keepalive = true;
-	alarm(KEEP_ALIVE_INTERVAL);
-}
-
-/*
- * Window size change: SIGWINCH
- */
-void handler_winch(int sig)
-{
-        IGNORE_UNUSED_PARAMETER(sig);
-
-        signal(SIGWINCH, handler_winch);
-        new_signals |= SEGNALE_WINCH;
-}
-
 /***************************************************************************/
 
 void esegui_segnali(void)
 {
-        if (errno!= EINTR) {
-                perror("Select");
-	   new_signals = false;
-	   return;
-                exit(1);
-        }
-        if (new_signals & SEGNALE_KEEPALIVE) {
-                if (send_noop_now) {
-                        serv_puts("NOOP");
-                        send_noop_now = false;
-                }
-        }
-        if (new_signals & SEGNALE_WINCH) {
-                cti_get_winsize();
-                cti_validate_winsize();
-        }
-        new_signals = false;
+	if (new_signals) {
+		if (new_signals & SIG_ALARM) {
+			if (send_keepalive) {
+				serv_puts("NOOP");
+			}
+			send_keepalive = true;
+			alarm(KEEPALIVE_INTERVAL);
+		}
+		if (new_signals & SIG_WINCH) {
+			cti_get_winsize();
+			cti_validate_winsize();
+		}
+		new_signals = 0;
+	}
 }
