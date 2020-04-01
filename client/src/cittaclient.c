@@ -424,8 +424,6 @@ static char ciclo_client(void)
         int cmd;
         char cmdstr[LBUF];
 
-        /* setjmp(ciclo_principale); */
-
 	esegue_cmd_old();
         while ( (cmd = getcmd(cmdstr)) != 0) {
                 switch(cmd) {
@@ -892,15 +890,12 @@ static char ciclo_client(void)
                         sleep(1);
 		} /* fine switch */
 
+                /* Process new signals */
+		esegui_segnali();
+
                 /* Se qui la coda comandi non e` vuota e` perche' qualcosa */
                 /* e` arrivato mentre ero impegnato                        */
 		esegue_cmd_old();
-
-                /* Se e` arrivato qualche segnale, trattalo correttamente  */
-#ifdef LOCAL
-                if (new_signals)
-                        esegui_segnali();
-#endif
         }
         return 0;
 }

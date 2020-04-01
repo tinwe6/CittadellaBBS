@@ -16,10 +16,10 @@
 #ifndef _SIGNALS_H
 #define _SIGNALS_H   1
 
+#include <stdbool.h>
 #include <signal.h>
 
-extern sig_atomic_t send_keepalive;
-extern sig_atomic_t new_signals;
+extern bool send_keepalive;
 
 /* Prototipi funzioni in signals.c */
 void setup_segnali(void);
