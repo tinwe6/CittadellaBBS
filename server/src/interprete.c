@@ -100,6 +100,7 @@ static const struct comando cmd_list[] = {
 { "CFGG", { .pass_arg = cmd_cfgg }, PASS_ARG, CON_NOCHECK, MINLVL_USERCFG },
 { "CFGP", { .pass_arg = cmd_cfgp }, PASS_ARG, CON_COMANDI|CON_CONF, MINLVL_USERCFG },
 { "CHEK", { cmd_chek }, NO_ARG,   CON_COMANDI, ILC_NO_LOGIN },
+{ "CHUP", { cmd_chup }, NO_ARG,   CON_NOCHECK, ILC_NOCHECK },
 { "CLAS", { cmd_clas }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "CMSG", { cmd_cmsg }, NO_ARG,   CON_COMANDI, MINLVL_CHAT },
 { "CUSR", { .special = cmd_cusr }, PASS_ARG, CON_COMANDI, ILC_NOCHECK },/*veder*/
@@ -307,7 +308,7 @@ void interprete_comandi(struct sessione *t, char *com)
 			/* Esegue il comando */
 			switch (cmd_list[i].argnum) {
 			case CMD_NOOP:
-				/* cmd_noop(t); */
+				cmd_noop(t);
 				break;
 			case NO_ARG:
 				cmd_list[i].cmd.no_arg(t);

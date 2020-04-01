@@ -912,7 +912,8 @@ void ciclo_server(int s)
 			prossimo = punto->prossima;
 			if ((punto->stato == CON_LIC)
 			    && (punto->idle.min >= login_timeout_min)) {
-				citta_logf("Login timeout da [%s].", punto->host);
+				citta_logf("Login timeout da [%s].",
+					   punto->host);
 				punto->stato = CON_CHIUSA;
 				if (scrivi_a_client(punto, comm) < 0)
 					chiudi_sessione(punto);

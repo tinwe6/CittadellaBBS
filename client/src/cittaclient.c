@@ -898,13 +898,13 @@ static char ciclo_client(void)
  * Manda al server il segnale di chiusura, chiude la connessione,
  * ripristina lo schermo ed esce.
  */
-void pulisci_ed_esci(exit_banner show_banner)
+void pulisci_ed_esci(exit_mode mode)
 {
         char buf[LBUF];
 	unsigned long in, out, cmd, online;
 
 	setcolor(C_NORMAL);
-        if (show_banner == SHOW_EXIT_BANNER && !client_cfg.no_banner) {
+        if (mode == SHOW_EXIT_BANNER && !client_cfg.no_banner) {
                 /* Display logout banner */
                 leggi_file(STDMSG_MESSAGGI, STDMSGID_GOODBYE);
         }
@@ -912,32 +912,36 @@ void pulisci_ed_esci(exit_banner show_banner)
         /* Cancellazione file temporanei e robe varie */
 
         /* Disconnessione */
-        printf(_("[Disconnessione...]\n"));
-        serv_puts("QUIT");
-        serv_gets(buf);
-        if (show_banner == SHOW_EXIT_BANNER) {
-                cmd = extract_long(buf+4, 0);
-                out = extract_long(buf+4, 1);
-                in  = extract_long(buf+4, 2);
-                online  = extract_long(buf+4, 3);
-                printf(
+	if (mode == TERMINATE_SIGNAL) {
+		printf(_("[Terminate signal received.]\n"));
+		serv_puts("CHUP");
+	} else {
+		printf(_("[Disconnessione...]\n"));
+		serv_puts("QUIT");
+		serv_gets(buf);
+		if (mode == SHOW_EXIT_BANNER) {
+			cmd = extract_long(buf+4, 0);
+			out = extract_long(buf+4, 1);
+			in  = extract_long(buf+4, 2);
+			online  = extract_long(buf+4, 3);
+			printf(
 "Hai inviato %ld bytes, ricevuto %ld bytes [compressione %d%%].\n"
 "(%ld comandi, %ld sec)\n",
-                       out, in, decompress_stat(), cmd, online
-                       );
-        }
+                        out, in, decompress_stat(), cmd, online
+			       );
+		}
+	}
         printf("Bye bye.\n");
         if (close(serv_sock) == -1) {
 	    perror("close() socket\n");
 	}
 
-        /* Ripristino terminale e segnali */
-	/* reset_term(); */
+        /* Note: Terminal and signals reset is performed by atexit() */
 
 #if DEBUG
         MemstatS();
 #endif
-        exit(0);
+        exit(EXIT_SUCCESS);
 }
 
 static void info_sul_server(void)
@@ -1056,7 +1060,7 @@ static void pianta_bbs(void)
        reset_term();
        ansi_reset();
 #endif
-       exit(0);
+       exit(EXIT_SUCCESS);
 }
 
 /**************************************************************************/

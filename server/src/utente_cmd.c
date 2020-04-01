@@ -322,8 +322,20 @@ void cmd_quit(struct sessione *t)
         cprintf(t, "%d %ld|%ld|%ld|%ld\n", OK, t->num_cmd, t->bytes_in,
                 t->bytes_out, time_online);
         if ((t->utente) && (!strcmp(t->utente->nome, "Ospite")
-                            || !strcmp(t->utente->nome, "Guest")))
+                            || !strcmp(t->utente->nome, "Guest"))) {
                 Free(t->utente);
+	}
+}
+
+/* Client hangup: close connection without replying */
+void cmd_chup(struct sessione *t)
+{
+        notify_logout(t, DROP);
+        t->stato = CON_CHIUSA;
+        if ((t->utente) && (!strcmp(t->utente->nome, "Ospite")
+                            || !strcmp(t->utente->nome, "Guest"))) {
+                Free(t->utente);
+	}
 }
 
 /*

@@ -81,10 +81,11 @@ extern long postref_locnum;
 typedef enum {
         NO_EXIT_BANNER,
         SHOW_EXIT_BANNER,
-} exit_banner;
+	TERMINATE_SIGNAL,
+} exit_mode;
 
 /* prototipi delle funzioni in cittaclient.c */
 char * interpreta_tilde_dir(const char *buf);
-void pulisci_ed_esci(exit_banner show_banner);
+void pulisci_ed_esci(exit_mode mode);
 
 #endif /* cittaclient.h */

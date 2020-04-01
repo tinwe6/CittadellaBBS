@@ -28,8 +28,10 @@
 #include "macro.h"
 
 typedef enum {
+	SIG_CLEAR = 0,
 	SIG_ALARM = 1 << 0,
 	SIG_WINCH = 1 << 1,
+	SIG_HUP   = 1 << 2,
 } sig_flag;
 
 static volatile sig_atomic_t new_signals; /* Flags for incoming signals */
@@ -44,7 +46,7 @@ static void handler_hup(int signum)
 {
         IGNORE_UNUSED_PARAMETER(signum);
 
-        pulisci_ed_esci(SHOW_EXIT_BANNER);
+	new_signals |= SIG_HUP;
 }
 
 /*
@@ -107,14 +109,14 @@ static void handler_winch(int signum)
 void setup_segnali(void)
 {
         signal(SIGHUP, handler_hup);
-        signal(SIGINT, SIG_IGN); /* Ignoro il Ctrl-C */
         signal(SIGTERM, handler_hup);
+        signal(SIGINT, SIG_IGN);       /* Ignore Ctrl-C */
 
         signal(SIGCONT, handler_cont);
         signal(SIGTSTP, handler_tstp);
         signal(SIGWINCH, handler_winch);
 
-        new_signals = false;
+        new_signals = SIG_CLEAR;
 }
 
 /* Inizializza il keepalive */
@@ -150,6 +152,10 @@ void signals_ignore_all(void) {
 void esegui_segnali(void)
 {
 	if (new_signals) {
+		if (new_signals & SIG_HUP) {
+			pulisci_ed_esci(TERMINATE_SIGNAL);
+			/* no return */
+		}
 		if (new_signals & SIG_ALARM) {
 			if (send_keepalive) {
 				serv_puts("NOOP");
@@ -161,6 +167,6 @@ void esegui_segnali(void)
 			cti_get_winsize();
 			cti_validate_winsize();
 		}
-		new_signals = 0;
+		new_signals = SIG_CLEAR;
 	}
 }

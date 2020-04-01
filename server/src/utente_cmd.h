@@ -23,6 +23,7 @@ void cmd_user(struct sessione *t, char *nome);
 void cmd_usr1(struct sessione *t, char *nome);
 void cmd_chek(struct sessione *t);
 void cmd_quit(struct sessione *t);
+void cmd_chup(struct sessione *t);
 void cmd_prfl(struct sessione *t, char *nome);
 void cmd_rusr(struct sessione *t);
 void cmd_rgst(struct sessione *t, char *buf);
