@@ -732,3 +732,38 @@ int min_lungh(char *str , int min) {
 
 	return (l >= min);
 }
+
+/****************************************************************************/
+/* TODO move timeval_subtract in share */
+
+/*
+ * Subtract the `struct timeval' values X and Y, storing the result in RESULT.
+ * Return 1 if the difference is negative, otherwise 0. (taken from glibc info)
+ */
+int timeval_subtract(struct timeval *result, struct timeval *x,
+		     struct timeval *y)
+{
+	struct timeval z;
+
+	z.tv_sec = y->tv_sec;
+	z.tv_usec = y->tv_usec;
+	/* Perform the carry for the later subtraction by updating Y. */
+	if (x->tv_usec < z.tv_usec) {
+		int nsec = (z.tv_usec - x->tv_usec) / 1000000 + 1;
+		z.tv_usec -= 1000000 * nsec;
+		z.tv_sec += nsec;
+	}
+	if (x->tv_usec - z.tv_usec > 1000000) {
+		int nsec = (x->tv_usec - z.tv_usec) / 1000000;
+		z.tv_usec += 1000000 * nsec;
+		z.tv_sec -= nsec;
+	}
+
+	/* Compute the time remaining to wait.
+	   `tv_usec' is certainly positive. */
+	result->tv_sec = x->tv_sec - z.tv_sec;
+	result->tv_usec = x->tv_usec - z.tv_usec;
+
+	/* Return 1 if result is negative. */
+	return x->tv_sec < z.tv_sec;
+}

@@ -13,18 +13,19 @@
 * File : signals.c                                                          *
 *        gestione segnali                                                   *
 ****************************************************************************/
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <errno.h>
+#include <sys/time.h>
 
 #include "signals.h"
 #include "cittaclient.h"
 #include "conn.h"
-#include "cti.h"
+#include "cterminfo.h"
 #include "terminale.h"
+#include "utility.h"
 #include "macro.h"
 
 typedef enum {
@@ -148,9 +149,23 @@ void signals_ignore_all(void) {
 
 
 /***************************************************************************/
+struct timeval t_sigwinch = {.tv_sec = 0, .tv_usec = 0};
 
 void esegui_segnali(void)
 {
+	if (t_sigwinch.tv_sec || t_sigwinch.tv_usec) {
+		struct timeval t_now, t_elapsed;
+		gettimeofday(&t_now, NULL);
+		timeval_subtract(&t_elapsed, &t_now, &t_sigwinch);
+		if (t_elapsed.tv_usec > 200000) {
+			if (cti_record_term_change()) {
+				t_sigwinch = (struct timeval){0};
+			} else {
+				t_sigwinch = t_now;
+			}
+			fflush(stdout);
+		}
+	}
 	if (new_signals) {
 		if (new_signals & SIG_HUP) {
 			pulisci_ed_esci(TERMINATE_SIGNAL);
@@ -164,9 +179,8 @@ void esegui_segnali(void)
 			alarm(KEEPALIVE_INTERVAL);
 		}
 		if (new_signals & SIG_WINCH) {
-			cti_get_winsize();
-			cti_validate_winsize();
+			gettimeofday(&t_sigwinch, NULL);
 		}
-		new_signals = SIG_CLEAR;
+		new_signals = SIG_CLEAR;//= keep_winch ? SIG_WINCH : SIG_CLEAR;
 	}
 }

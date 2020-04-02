@@ -28,11 +28,9 @@
 int cti_ok;    /* Se trovo nelle terminfo tutte le informazioni necessarie
 		* vale 1, altrimenti vale 0 e passo alla modalita' di
 		* testo semplice, senza indirizzamento di cursore. */
-#ifdef HAVE_CTI
-#if 0
-int cti_bce;   /* Flag background color erase */
-#endif
-#endif
+
+#define MIN_ROWS             24
+#define MIN_COLS             80
 
 #define NROWS_DFLT           24
 #define NCOLS_DFLT           80
@@ -40,8 +38,8 @@ int cti_bce;   /* Flag background color erase */
 int term_nrows = NROWS_DFLT;
 int term_ncols = NCOLS_DFLT;
 
-int term_nrows_new = NROWS_DFLT;
-int term_ncols_new = NCOLS_DFLT;
+struct winsize target_termsize = {.ws_col = NCOLS_DFLT, .ws_row = NROWS_DFLT};
+struct winsize current_termsize = {.ws_col = NCOLS_DFLT, .ws_row = NROWS_DFLT};
 
 char *ctistr_ll;
 
@@ -82,8 +80,85 @@ char *key_f7, *key_f8, *key_f9;
 
 /******************************************************************************
 ******************************************************************************/
-
 #ifdef HAVE_CTI
+
+static bool winsize_is_allowed(struct winsize *ws)
+{
+	return (ws->ws_col >= MIN_COLS && ws->ws_row >= MIN_ROWS);
+}
+
+/*
+ * The BBS works with a terminal size 80x24 or larger. If the current number
+ * of rows or cols is lower than that, resize them to their minimum value and
+ * return true. If no resizing was necessary, return false
+ */
+static void cti_enforce_min_winsize(struct winsize *ws)
+{
+	ws->ws_col = ws->ws_col < MIN_COLS ? MIN_COLS : ws->ws_col;
+	ws->ws_row = ws->ws_row < MIN_ROWS ? MIN_ROWS : ws->ws_row;
+}
+
+/*
+ * Asks the window size in characters to the terminal. If the request fails,
+ * assumes the window size matches the default window size. Updates the values
+ * in current_termsize, term_nrows, and term_ncols correspondingly.
+ */
+static void cti_get_winsize(void)
+{
+	struct winsize ws = {0};
+	int ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+	if (ret == -1 || ws.ws_col == 0 || ws.ws_row == 0) {
+		ws.ws_col = tigetnum("cols");
+		ws.ws_row = tigetnum("lines");
+
+		ws.ws_col = ws.ws_col ? ws.ws_col : NCOLS_DFLT;
+		ws.ws_row = ws.ws_row ? ws.ws_row : NROWS_DFLT;
+	}
+	current_termsize = ws;
+	term_nrows = current_termsize.ws_row;
+	term_ncols = current_termsize.ws_col;
+}
+
+/*
+ * Asks the terminal to set the window size in characters to the size specified
+ * by ws. Returns true if the operation was successful, false otherwise.
+ */
+static bool cti_set_winsize(struct winsize *ws)
+{
+	printf("\x1b[8;%d;%dt", ws->ws_row, ws->ws_col);
+
+	cti_get_winsize();
+
+	return (current_termsize.ws_col == ws->ws_col
+		&& current_termsize.ws_row == ws->ws_row);
+}
+
+/*
+ * If the current terminal size differs from the target terminal size, resize
+ * the terminal to match the target terminal size. Returns true if successful.
+ */
+bool cti_update_winsize(void)
+{
+
+	cti_enforce_min_winsize(&target_termsize);
+	if (current_termsize.ws_row != target_termsize.ws_row
+	    || current_termsize.ws_col != target_termsize.ws_col) {
+		return cti_set_winsize(&target_termsize);
+	}
+	return true;
+}
+
+/*
+ * Grows the winsize 'ws' to match the minimum required size if needed, and
+ * then tries to set the terminal window size to 'ws'. Returns true if the
+ * operation was successful.
+ */
+bool cti_record_term_change(void)
+{
+	cti_get_winsize();
+	target_termsize = current_termsize;
+	return cti_update_winsize();
+}
 
 void cti_init(void)
 {
@@ -102,16 +177,31 @@ void cti_init(void)
 		cti_ok = 0;
 		return;
 	}
+
+	/* Checks the dimensions of the terminal window */
 	cti_get_winsize();
-	if (cti_validate_winsize()) {
-		printf(_(
+	target_termsize = current_termsize;
+	if (!winsize_is_allowed(&target_termsize)) {
+		if (cti_update_winsize()) {
+			printf(_(
 "\n"
-"*** Le dimensioni minime del terminale per assicurare un funzionamento\n"
-"    ottimale della BBS sono di %dx%d caratteri. Provo a ridimensionare\n"
-"    il tuo terminale.\n\n"
-			 ), NCOLS_DFLT, NROWS_DFLT);
-		hit_any_key();
-		//		sleep(1);
+"   Il tuo terminale e' stato ridimensionato in quanto le dimensioni\n"
+"   minime per assicurare un funzionamento ottimale della BBS sono di\n"
+"   %dx%d caratteri.\n"
+"\n"
+				 ), MIN_COLS, MIN_ROWS);
+			hit_any_key();
+		} else {
+			printf(_(
+"\n"
+"   Le dimensioni minime del terminale per assicurare un funzionamento\n"
+"   ottimale della BBS sono di %dx%d caratteri. Provo a ridimensionare\n"
+"   il tuo terminale; se l'operazione non ha avuto successo prova a\n"
+"   ricollegarti da un terminale di dimensioni maggiori.\n"
+"\n"
+				 ), MIN_COLS, MIN_ROWS);
+			hit_any_key();
+		}
 	}
 
 	/* Testo la presenza delle capacita' minimali del terminale */
@@ -140,52 +230,6 @@ void cti_term_exit(void)
 {
 	putp(exit_ca_mode); /* Inizializza modalita' cursore. */
 	cti_ll();             /* Cursor in Lower Left pos. */
-}
-
-void cti_get_winsize(void)
-{
-	struct winsize ws = {0};
-
-	int ret = ioctl(0, TIOCGWINSZ, &ws);
-	if (ret == -1 || ws.ws_col == 0 || ws.ws_row == 0) {
-		term_ncols = tigetnum("cols");
-		term_nrows = tigetnum("lines");
-
-		term_ncols = term_ncols ? term_ncols : NCOLS_DFLT;
-		term_nrows = term_nrows ? term_nrows : NROWS_DFLT;
-	} else {
-		term_ncols = ws.ws_col;
-		term_nrows = ws.ws_row;
-	}
-
-	/* printf("N colsxrows = %dx%d\n", term_ncols, term_nrows); */
-
-#if 0
-	cti_bce = tigetflag("bce");
-#endif
-}
-
-void cti_set_winsize(int rows, int cols)
-{
-	printf("\x1b[8;%d;%dt", rows, cols);
-	term_nrows = rows;
-	term_ncols = cols;
-}
-
-/*
- * The BBS works with a terminal size 80x24 or larger. If the current number
- * of rows or cols is lower than that, resize them to their minimum value and
- * return true. If no resizing was necessary, return false
- */
-bool cti_validate_winsize(void)
-{
-	int ncols = term_ncols < NCOLS_DFLT ? NCOLS_DFLT : term_ncols;
-	int nrows = term_nrows < NROWS_DFLT ? NROWS_DFLT : term_nrows;
-	if (ncols != term_ncols || nrows != term_nrows) {
-		cti_set_winsize(nrows, ncols);
-		return true;
-	}
-	return false;
 }
 
 void cti_scroll_reg(int start, int end)
@@ -248,4 +292,3 @@ void cti_clear_screen(void)
 		putchar('\n');
 #endif
 }
-

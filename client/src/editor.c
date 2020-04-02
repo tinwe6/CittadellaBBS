@@ -39,7 +39,6 @@ int Editor_Vcurs; /*                  ... e verticale.                  */
 #include "cittacfg.h" /* for CLIENT_TABSIZE */
 #include "cml.h"
 #include "conn.h"
-#include "cti.h"
 #include "edit.h"
 #include "editor.h"
 #include "extract.h"

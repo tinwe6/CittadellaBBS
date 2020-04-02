@@ -18,15 +18,17 @@
 
 #define HAVE_CURSES_H   1
 
-
 #ifdef HAVE_CURSES_H
 #define HAVE_CTI 1
 #include <curses.h>
 #include <term.h>
 #endif
 
+#include <stdbool.h>
+
 extern int term_nrows;
 extern int term_ncols;
+extern struct winsize target_term_size;
 
 # define NCOL          term_ncols
 # define NRIGHE        term_nrows
@@ -53,7 +55,12 @@ extern char *key_f0, *key_f1, *key_f2, *key_f3, *key_f4, *key_f5, *key_f6;
 extern char *key_f7, *key_f8, *key_f9;
 */
 
-/* Prototipi delle funzioni in terminale.c */
-#include "cti.h"
+/* Prototipi delle funzioni in cterminfo.c */
+void cti_init(void);
+void cti_term_init(void);
+void cti_term_exit(void);
+bool cti_record_term_change(void);
+void cti_clear_screen(void);
+void cti_scroll_reg(int start, int end);
 
 #endif /* cterminfo.h */

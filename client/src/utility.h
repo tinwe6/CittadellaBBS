@@ -75,10 +75,8 @@ void stampa_data_smb(long ora);
 void stampa_ora(long ora);
 int min_lungh(char *str , int min);
 char * astrcat(char *str1, char *str2);
-
-/* Variabili esterne */
-/* extern int serv_sock; */
-
+int timeval_subtract(struct timeval *result, struct timeval *x,
+		     struct timeval *y);
 
 /**************************************************************************/
 

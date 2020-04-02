@@ -52,7 +52,6 @@ int inkey_sc(int esegue)
 {
         int a = 0, b;
         fd_set input_set;
-        struct timeval tv;
         char buf[LBUF];
 
         fflush(stdout);
@@ -63,9 +62,10 @@ int inkey_sc(int esegue)
                         FD_ZERO(&input_set);
                         FD_SET(0, &input_set);         /* Input dall'utente */
                         FD_SET(serv_sock, &input_set); /* Input dal server  */
-                        tv.tv_sec = 1;
-                        tv.tv_usec = 0;
+                        struct timeval tv = {.tv_sec = 0, .tv_usec = 100};
+			//			printf("Enter select.\n");
 			b = select(serv_sock + 1, &input_set, NULL, NULL, &tv);
+			//printf("Exit select.\n");
 			if (b == -1) {
                                 if (errno == EINTR) {
                                         /* OK: incoming signal */
@@ -143,7 +143,6 @@ int inkey_pager(int esegue, char *str, int *c)
         int b, ret = 0;
 	char buf[LBUF];
         fd_set input_set;
-        struct timeval tv;
 
         fflush(stdout);
 	*c = 0;
@@ -154,8 +153,7 @@ int inkey_pager(int esegue, char *str, int *c)
                         FD_ZERO(&input_set);
                         FD_SET(0, &input_set);         /* Input dall'utente */
                         FD_SET(serv_sock, &input_set); /* Input dal server  */
-                        tv.tv_sec = 1;
-                        tv.tv_usec = 0;
+                        struct timeval tv = {.tv_sec = 0, .tv_usec = 100};
 			b = select(serv_sock + 1, &input_set, NULL, NULL, &tv);
 			if (b == -1) {
 			        if (errno == EINTR) {
