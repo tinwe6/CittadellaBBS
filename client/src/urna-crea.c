@@ -13,7 +13,7 @@
 *                                                                           *
 * File : urna-crea.c                                                        *
 *    funzioni per la gestione dei referendum e sondaggi.                    *
-*Fri Nov 21 23:08:46 CET 2003 
+*Fri Nov 21 23:08:46 CET 2003
 * i18n
 ****************************************************************************/
 
@@ -101,7 +101,7 @@ void urna_new(void)
 
    cml_printf(_("&Egrave possibile votare scheda bianca [n]? "));
 
-   risp = inkey_elenco_def(str_si_no, _('n'));
+   risp = inkey_elenco_def(str_si_no, 'n');
    if(risp == Ctrl('X')) {
       interrompi();
      free_dati(dati);
@@ -109,9 +109,9 @@ void urna_new(void)
       return;
    }
 
-   dati->bianca = risp == _('n') ? 0 : 1;
+   dati->bianca = risp == 'n' ? 0 : 1;
 
-  
+
  strcpy(dati->titolo,"");
 
   while(!min_lungh(dati->titolo,3)){
@@ -192,7 +192,7 @@ void urna_new(void)
       dati->max_len_prop = risp;
       break;
    default:
-      dati->num_voci=chiedi_scelte(dati->testa_voci, min_scelte, 
+      dati->num_voci=chiedi_scelte(dati->testa_voci, min_scelte,
                  MAXLEN_VOCE, MAX_VOCI,_("voci"));
    }
 
@@ -232,7 +232,7 @@ void urna_new(void)
    printf(_("\n"));
    printf(_("\nVuoi inviare il %s (s/n)? "), rs_tipo);
 
-   if(si_no() == _('n')) {
+   if(si_no() == 'n') {
      free_dati(dati);
      myFree(dati);
       interrompi();
@@ -244,7 +244,7 @@ void urna_new(void)
    txt_rewind(txt);
 
 
-   /* 
+   /*
 	* controllare che non sia
 	* troppo lungo
 	* !!?
@@ -390,9 +390,9 @@ int scegli_diritto(struct urna_client *dati)
    case 6:
       printf(_("Sesso (m/f): "));
       c = 0;
-      while(c != _('m') && c != _('f'))
+      while(c != 'm' && c != 'f')
          c = tolower(inkey_sc(0));
-      if(c == _('m')) {
+      if(c == 'm') {
          printf(_("Maschi.\n"));
          dati->val_crit = 1;
       } else {

@@ -41,9 +41,9 @@ static bool check_recipient(struct name_list *nl, char *caio, int status);
 static void recipient_err(const char *format, ...);
 
 /**************************************************************************
- * 
+ *
  * Funzioni per input da tastiera con tab completion.
- * 
+ *
  * mode = 0 : completa con i nomi degli utenti connessi
  * mode = 1 : completa con i nomi degli utenti in file_utenti
  * mode = 2 : completa con i nomi dei file di help (DA FARE)
@@ -74,7 +74,6 @@ static int tcgetline(char *str, int max, char maiuscole, int del)
 
         printf("%s", str);
         do {
-                a = 0;
                 a = inkey_sc(0);
                 if (del) {
                         putnspace(del);
@@ -134,7 +133,7 @@ static int tc_newstring(char *str, int len, int mode, int del)
         int matches = 0; /* numero di corrispondenze */
         char buf[LBUF];
         char cmp[LBUF];
-  
+
         str[0] = 0;
         do {
 		ret = tcgetline(str, len, 1, del);
@@ -438,7 +437,7 @@ struct name_list * get_multi_recipient(int mode)
 }
 
 static bool check_recipient(struct name_list *nl, char *caio, int status)
-{     
+{
         char buf[LBUF];
 	const char *fr;
         int amico;

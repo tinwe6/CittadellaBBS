@@ -272,7 +272,8 @@ void bug_report(void)
 
         serv_puts("BUGE");
         serv_gets(buf);
-        printf("%s\n", &buf[4]);
+	/* TODO generate the message in the client, not in the server */
+        printf("\n%s\n", &buf[4]);
 }
 
 /*

@@ -125,7 +125,6 @@ void get_number(char *str, bool neg, bool enter)
 
         b = strlen(str);
         do {
-                a = 0;
                 a = inkey_sc(0);
                 if (isdigit(a) || (a == 8) ||
                     (neg && (a == '-') && (b == 0))) {
@@ -256,9 +255,8 @@ char * print_si_no(bool a)
 
 char si_no(void)
 {
-        char c;
+        char c = 0;
 
-        c = 0;
         while((c != 's') && (c != 'n'))
                 c = inkey_sc(0);
         if (c == 's') {
@@ -272,11 +270,10 @@ char si_no(void)
 
 bool new_si_no_def(char *prompt, bool def)
 {
-        char c;
+        char c = 0;
         bool risultato;
 
         cml_printf("%s (s/n) [%s] : ", prompt, print_si_no(def));
-        c = 0;
         while((c != 's') && (c != 'n') && (c != 10) && (c != 13))
                 c = inkey_sc(0);
         if (c == 's')
@@ -338,7 +335,6 @@ void us_sleep(unsigned int n)
 
 /*
  * Cancella un carattere
- * DA IMPLEMENTARE COME MACRO
  */
 void delchar(void)
 {
@@ -349,7 +345,6 @@ void delchar(void)
 
 /*
  * Cancella n caratteri
- * DA IMPLEMENTARE COME MACRO
  */
 void delnchar(int n)
 {
@@ -372,7 +367,8 @@ void putnspace(int n)
 
 void cleanline(void)
 {
-        printf("\r%79s\r", "");
+	printf("\r\x1b[K\r");
+        /* printf("\r%79s\r", ""); */
 }
 
 

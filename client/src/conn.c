@@ -479,7 +479,8 @@ static int serv_buffer_has_input(void)
 
 /*
  * Prende una riga di input dal socket, e se e' un comando dal server da
- * eseguire subito lo processa. Prende al piu' max caratteri.
+ * eseguire subito lo processa, altrimenti la mette nella coda comandi.
+ * Prende al piu' max caratteri.
  * Restituisce CMD_ESEGUITO se ha eseguito un comando,
  *             CMD_IN_CODA  se e' un comando da eseguire dopo,
  *             NO_CMD       se non e' un comando dal server.
@@ -504,15 +505,16 @@ int elabora_input(void)
 
 	send_keepalive = false;
 
-	if (DEBUG_MODE)
+	if (DEBUG_MODE) {
         	printf("&S %s\n", buf);
+	}
 
         /* Se c'e' altro input in coda, segnala in una variabile globale */
         server_input_waiting = serv_buffer_has_input();
 
-        if (*buf == '8')                      /* Comandi da eseguire subito */
-		return esegue_urgenti(buf);
-        else if (*buf == '9') {               /* Comandi da eseguire dopo   */
+        if (*buf == '8') {                    /* Comandi da eseguire subito */
+		return esegue_urgente(buf);
+	} else if (*buf == '9') {             /* Comandi da eseguire dopo   */
                 metti_in_coda(&comandi, buf);
 		return CMD_IN_CODA;
         }
@@ -553,7 +555,7 @@ int elabora_input(char *str, const int max)
 
 	/* Comandi da eseguire subito */
         if (str[0] == '8') {
-		return esegue_urgenti(str);
+		return esegue_urgente(str);
 	/* Comandi da eseguire dopo   */
         } else if (str[0] == '9') {
                 metti_in_coda(&comandi, str);
