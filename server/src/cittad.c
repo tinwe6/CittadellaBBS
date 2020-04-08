@@ -31,7 +31,7 @@ static char default_client_path[] = "./bin/remote_cittaclient";
 static const char too_many_conn_msg[] =
     "Too many remote users. Try again later...\n";
 static const char tn_msg_negotiation_failed[] =
-    "Telnet negotiations failed.\n";
+    "Telnet negotiations failed. Please retry.\r\n";
 static const char tn_msg_negotiation_need_echo[] =
     "Telnet client must support ECHO command.\n";
 static const char tn_msg_negotiation_need_sga[] =
@@ -807,6 +807,10 @@ static void tn_reject_option(const uint8_t *cmd, session_data *dest)
 
     assert(cmd[0] == TN_IAC);
 
+    if (cmd[0] != TN_IAC) {
+	    log_printf(LL0, "reject option: cmd[0] != TN_IAC\n");
+    }
+
     if (cmd[1] == TN_WILL) {
 	answer[1] = TN_DONT;
     } else if (cmd[1] == TN_DO) {
@@ -834,6 +838,7 @@ static void tn_answer_commands(session_data *session)
     for (;;) {
 
 	if (session->tn_naws) {
+	    /* Receive window size subnegotiation string */
 	    bytes = read(session->fd, &cmd, 6);
 	    if (bytes == -1) {
 		break;
@@ -860,6 +865,7 @@ static void tn_answer_commands(session_data *session)
 	    write(session->fd, tn_msg_negotiation_failed,
 		  sizeof(tn_msg_negotiation_failed));
 	    session->close_conn = true;
+	    break;
 	}
 
 	/* Check the answers to our requests */
@@ -1637,10 +1643,10 @@ static int daemon_init(daemon_config *config)
     return config->listen_fd;
 }
 
-/* Subtract the `struct timeval' values X and Y, storing the result in RESULT.
-      Return 1 if the difference is negative, otherwise 0.
-      (from glibc info)
-      */
+/*
+ * Subtract the `struct timeval' values X and Y, storing the result in RESULT.
+ * Return 1 if the difference is negative, otherwise 0. (taken from glibc info)
+ */
 int timeval_subtract(struct timeval *result, struct timeval *x,
 		     struct timeval *y)
 {
