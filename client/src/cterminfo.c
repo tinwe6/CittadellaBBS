@@ -15,6 +15,7 @@
 * Per la compilazione: -ltermcap -DTERMCAP se uso termcap.h                 *
 *                      aggiungere -DUNIX se non uso GNU termcap             *
 ****************************************************************************/
+#include <assert.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,7 @@
 #include "cterminfo.h"
 #include "cittacfg.h"
 #include "string_utils.h"
+#include "utility.h"
 
 int cti_ok;    /* Se trovo nelle terminfo tutte le informazioni necessarie
 		* vale 1, altrimenti vale 0 e passo alla modalita' di
@@ -40,6 +42,9 @@ int term_ncols = NCOLS_DFLT;
 
 struct winsize target_termsize = {.ws_col = NCOLS_DFLT, .ws_row = NROWS_DFLT};
 struct winsize current_termsize = {.ws_col = NCOLS_DFLT, .ws_row = NROWS_DFLT};
+
+/* TODO Is this variable really needed? */
+static bool scroll_region_is_defined = false;
 
 char *ctistr_ll;
 
@@ -126,6 +131,12 @@ static void cti_get_winsize(void)
 static bool cti_set_winsize(struct winsize *ws)
 {
 	printf("\x1b[8;%d;%dt", ws->ws_row, ws->ws_col);
+	fflush(stdout);
+
+	/* NOTE: We need to wait that the terminal sends the WINCH signal
+	 *       to acknowledge the window resize. The signal will interrupt
+	 *       the sleep() as soon as it arrives.                          */
+	//sleep(1);
 
 	cti_get_winsize();
 
@@ -139,8 +150,8 @@ static bool cti_set_winsize(struct winsize *ws)
  */
 bool cti_update_winsize(void)
 {
-
 	cti_enforce_min_winsize(&target_termsize);
+
 	if (current_termsize.ws_row != target_termsize.ws_row
 	    || current_termsize.ws_col != target_termsize.ws_col) {
 		return cti_set_winsize(&target_termsize);
@@ -167,9 +178,11 @@ void cti_init(void)
 
 	/* xterm non gestisce bene lo scrolling -> passa a vt220 */
 	term = getenv("TERM");
+	/* printf("TERM = %s\n", term); */
 
-	if (!strncmp(term, "xterm", 5))
+	if (!strncmp(term, "xterm", 5)) {
 		setenv("TERM", "vt220", 1);
+	}
 
 	if (setupterm(NULL, fileno(stdin), &errret) != OK) {
 		printf("\n*** Terminale sconosciuto [errret = %d].\n"
@@ -185,9 +198,8 @@ void cti_init(void)
 		if (cti_update_winsize()) {
 			printf(_(
 "\n"
-"   Il tuo terminale e' stato ridimensionato in quanto le dimensioni\n"
-"   minime per assicurare un funzionamento ottimale della BBS sono di\n"
-"   %dx%d caratteri.\n"
+"   Il tuo terminale e' stato ridimensionato: le dimensioni minima per\n"
+"   assicurare un funzionamento ottimale della BBS sono di %dx%d caratteri.\n"
 "\n"
 				 ), MIN_COLS, MIN_ROWS);
 			hit_any_key();
@@ -204,6 +216,14 @@ void cti_init(void)
 		}
 	}
 
+	/*
+	printf("\nTerm size %dx%d (curr %dx%d, targ %dx%d)\n", term_ncols,
+	       term_nrows, current_termsize.ws_col, current_termsize.ws_row,
+	       target_termsize.ws_col, target_termsize.ws_row);
+	fflush(stdout);
+	hit_any_key();
+	*/
+
 	/* Testo la presenza delle capacita' minimali del terminale */
 	if ((cursor_address == NULL) || (change_scroll_region == NULL)) {
 		printf("\n*** Terminale non sopporta modalita' avanzata.\n"
@@ -214,29 +234,116 @@ void cti_init(void)
 	if (cursor_to_ll != NULL) {
 		ctistr_ll = cursor_to_ll;
 	} else {
-		ctistr_ll = citta_strdup(tparm(cursor_address, NRIGHE-1, 0));
+		ctistr_ll = citta_strdup(tparm(cursor_address,
+					       term_nrows - 1, 0));
 	}
 	key_left = tigetstr("kcub1");
 	cti_ok = 1;
 }
 
+/* Enter cursor mode and move the cursor to the lower left corner */
 void cti_term_init(void)
 {
-	putp(enter_ca_mode); /* Inizializza modalita' cursore. */
-	cti_ll();             /* Cursor in Lower Left pos. */
+	putp(enter_ca_mode);
+	cti_ll();
 }
 
+/* Exit cursor mode and move the cursor to the lower left corner */
 void cti_term_exit(void)
 {
-	putp(exit_ca_mode); /* Inizializza modalita' cursore. */
-	cti_ll();             /* Cursor in Lower Left pos. */
+	putp(exit_ca_mode);
+	cti_ll();
 }
 
-void cti_scroll_reg(int start, int end)
+/*
+ * Asks the terminal to perform the scrolling in the region defined between
+ * line 'first' and line 'last'.
+ */
+static void set_scroll_region(int first, int last)
 {
-	tputs(tparm(change_scroll_region, start, end), end-start, putchar);
+	tputs(tparm(change_scroll_region, first, last), last - first, putchar);
+	scroll_region_is_defined = true;
 }
 
+void set_scroll_full(void)
+{
+	set_scroll_region(0, NRIGHE-1);
+	scroll_region_is_defined = false;
+}
+
+/*
+ * Cancels the scroll region and makes the terminal to perform the scrolling
+ * in the full window.
+ */
+void reset_scroll_region(void)
+{
+	if (scroll_region_is_defined) {
+		set_scroll_full();
+	}
+}
+
+typedef enum {
+	WIN_TOP, WIN_BOTTOM, WIN_FULL
+} window_pos;
+
+typedef struct {
+	int first_row;
+	int last_row;
+} window;
+
+#define WIN_STACK_SIZE 4
+static window current_window;
+static window win_stack[WIN_STACK_SIZE];
+static int win_stack_index;
+
+int debug_get_winstack_index(void)
+{
+	return win_stack_index;
+}
+
+void debug_get_winstack(int index, int *first, int *last)
+{
+	assert(win_stack_index > index);
+	*first = win_stack[index].first_row;
+	*last = win_stack[index].last_row;
+}
+
+void debug_get_current_win(int *first, int *last)
+{
+	*first = current_window.first_row;
+	*last = current_window.last_row;
+}
+
+void init_window(void)
+{
+	current_window = (window){.first_row = 0, .last_row = NRIGHE - 1};
+	win_stack_index = 0;
+}
+
+void window_push(int first_row, int last_row)
+{
+	assert(win_stack_index < WIN_STACK_SIZE);
+
+	win_stack[win_stack_index++] = current_window;
+	set_scroll_region(first_row, last_row);
+	current_window = (window){
+		.first_row = first_row,
+		.last_row = last_row
+	};
+}
+
+void window_pop(void)
+{
+	assert(win_stack_index > 0);
+
+	--win_stack_index;
+
+	current_window = win_stack[win_stack_index];
+	set_scroll_region(current_window.first_row, current_window.last_row);
+}
+
+
+/*****************************************************************************/
 void cti_test(void)
 {
 	char *numcaps[3] = {"colors", "pairs", "ncv"};
@@ -274,11 +381,6 @@ void cti_test(void)
 			       strcaps[i], buf+1);
 	}
 	printf("\n");
-# if ((16 + 8) < 32)
-	printf("\n32 bits\n");
-# else
-	printf("\n16 bits\n");
-# endif
 }
 #endif
 
@@ -292,3 +394,4 @@ void cti_clear_screen(void)
 		putchar('\n');
 #endif
 }
+

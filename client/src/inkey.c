@@ -24,7 +24,6 @@
 #include "cittaclient.h"
 #include "cmd_da_server.h"
 #include "conn.h"
-#include "cti.h"
 #include "edit.h"
 #include "inkey.h"
 #include "messaggi.h"
@@ -33,95 +32,100 @@
 #include "cterminfo.h"
 #include "editor.h"
 
-/* Prototipi funzioni in questo file */
-int inkey_sc(int esegue);
-int inkey_pager(int esegue, char *str, int *c);
-int inkey_elenco(const char *elenco);
-int inkey_elenco_def(const char *elenco, int def);
+static int read_key(void);
 static int getmeta(char *buf);
 
 /*****************************************************************************/
+
 /*
  * Prende un carattere in input dall'utente.
  * Mentre aspetta che l'utente prema un tasto, ascolta ed elabora
  * i comandi provenienti dal server.
- * Se (esegue) allora elabora tutti i comandi, altrimenti solo quelli
- * urgenti.
+ * Se 'esegue_non_urgenti' e' true, allora elabora anche i comandi non
+ * urgenti, altrimenti solo quelli urgenti.
  */
-int inkey_sc(int esegue)
-{
-        int a = 0, b;
-        fd_set input_set;
-        char buf[LBUF];
 
+#define INKEY_TIMEOUT_MS 33
+#define MSEC_TO_USEC 1000
+#define INKEY_TIMEOUT_USEC (INKEY_TIMEOUT_MS*MSEC_TO_USEC)
+
+#define dwrite(str) write(STDOUT_FILENO, str, strlen(str))
+
+int inkey_sc(bool exec_all_cmds)
+{
         fflush(stdout);
 
-        do {
+	bool window_changed = false;
+	struct timeval *timeout_ptr = NULL;
+	struct timeval timeout;
+	bool fast_mode = false;
+
+        while (true) {
                 /* Controlliamo se il client ha input */
-                do {
+		fd_set input_set;
+                for (;;) {
+			esegui_segnali(&window_changed, &fast_mode);
+			if (window_changed) {
+				return Key_Window_Changed;
+			}
+
                         FD_ZERO(&input_set);
                         FD_SET(0, &input_set);         /* Input dall'utente */
                         FD_SET(serv_sock, &input_set); /* Input dal server  */
-                        struct timeval tv = {.tv_sec = 0, .tv_usec = 100};
-			//			printf("Enter select.\n");
-			b = select(serv_sock + 1, &input_set, NULL, NULL, &tv);
-			//printf("Exit select.\n");
-			if (b == -1) {
+                        timeout = (struct timeval){
+				.tv_sec = 0,
+				.tv_usec = INKEY_TIMEOUT_USEC,
+			};
+			timeout_ptr = fast_mode ? &timeout : NULL;
+			int ret = select(serv_sock + 1, &input_set, NULL, NULL,
+					 timeout_ptr);
+			if (ret == -1) {
                                 if (errno == EINTR) {
-                                        /* OK: incoming signal */
+                                        /* Incoming signal */
                                 } else {
                                         perror("Select");
                                         exit(1);
                                 }
-                        }
-			/* handle signals */
-			esegui_segnali();
-		} while ((b <= 0));
+                        } else if (ret > 0) {
+				break;
+			}
+		}
 
+		/* Check incoming server commands */
                 if (FD_ISSET(serv_sock, &input_set)) {
-                        /* Ho input dal server */
 #ifdef HAVE_CTI
 			if (prompt_curr == P_EDITOR) {
-				cti_scroll_reg(0, Editor_Pos - 1);
+				window_push(0, Editor_Pos - 1);
 				cti_mv(0, Editor_Pos - 1);
 				scroll_up();
-				fflush(stdout);
+				//fflush(stdout);
 			}
 #endif
-                        do
-			if ((elabora_input() == CMD_ESEGUITO)
-			    || (esegue && esegue_comandi(0))) {
-				if (post_timeout)
-					return 0;
-				if (prompt_curr != P_EDITOR)
-					print_prompt();
-#ifdef HAVE_CTI
-				else {
-					if (Editor_Win)
-						cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
-					else
-						cti_scroll_reg(0, NRIGHE-1);
-					cti_mv(Editor_Hcurs, Editor_Vcurs);
+                        do {
+				if (elabora_input() & CMD_POST_TIMEOUT) {
+					return Key_Timeout;
 				}
+				if (exec_all_cmds) {
+					esegue_comandi(0);
+				}
+                        } while (server_input_waiting);
+			if (prompt_curr == P_EDITOR) {
+#ifdef HAVE_CTI
+				window_pop();
+				cti_mv(Editor_Hcurs, Editor_Vcurs);
 #endif
-				fflush(stdout);
+			} else {
+				print_prompt();
 			}
-                        while (server_input_waiting);
-                }
+			fflush(stdout);
+		}
 
+		/* Check user input */
                 if (FD_ISSET(0, &input_set)) {
-                        /* Ho input dall'utente */
-                        read(0, buf, 1);
-                        a = (unsigned char)buf[0];
-			if (a == Key_ESC)
-				a = getmeta(buf);
-			else if (a == Key_DEL)
-				a = Key_BS;
+			int key = read_key();
+			return key;
                 }
-
-        } while (a == 0);
-
-        return a;
+        }
 }
 
 /*
@@ -133,39 +137,52 @@ int inkey_sc(int esegue)
  * urgenti.
  * Restituisce un intero con i bit INKEY_KEY e INKEY_SERVER settati
  * se c'e' stato input da tastiera o da server rispettivamente.
- * Se e' stato premuto un tasto, questo viene memorizzato in *c,
+ * Se e' stato premuto un tasto, questo viene memorizzato in *key,
  * se c'e' input da server si trova nella stringa *str.
  * Puo' capitare che ci sia input contemporaneo, nel qual caso i due bit
- * sono settati e i risultati si trovano in str e *c.
+ * sono settati e i risultati si trovano in str e *key.
  */
-int inkey_pager(int esegue, char *str, int *c)
+int inkey_pager(int esegue, char *str, int *key)
 {
-        int b, ret = 0;
-	char buf[LBUF];
-        fd_set input_set;
-
         fflush(stdout);
-	*c = 0;
+	*key = 0;
 
-        do {
-                /* Controlliamo se il client ha input */
-                do {
-                        FD_ZERO(&input_set);
-                        FD_SET(0, &input_set);         /* Input dall'utente */
-                        FD_SET(serv_sock, &input_set); /* Input dal server  */
-                        struct timeval tv = {.tv_sec = 0, .tv_usec = 100};
-			b = select(serv_sock + 1, &input_set, NULL, NULL, &tv);
-			if (b == -1) {
-			        if (errno == EINTR) {
-                                        /* OK: incoming signal */
-			        } else {
-                                        perror("Select");
-                                        exit(1);
-                                }
-                        }
-			/* handle signals */
-			esegui_segnali();
-		} while (b <= 0);
+	bool window_changed = false;
+	struct timeval *timeout_ptr = NULL;
+	struct timeval timeout;
+	bool fast_mode = false;
+
+        int ret = 0;
+        while (!(ret & INKEY_EXIT)) {
+		/* Controlliamo se il client ha input */
+		fd_set input_set;
+		for (;;) {
+			esegui_segnali(&window_changed, &fast_mode);
+			if (window_changed) {
+				return Key_Window_Changed;
+			}
+
+			FD_ZERO(&input_set);
+			FD_SET(0, &input_set);         /* Input dall'utente */
+			FD_SET(serv_sock, &input_set); /* Input dal server  */
+			timeout = (struct timeval){
+				.tv_sec = 0,
+				.tv_usec = INKEY_TIMEOUT_USEC,
+			};
+			timeout_ptr = fast_mode ? &timeout : NULL;
+			int ret = select(serv_sock + 1, &input_set, NULL, NULL,
+					 timeout_ptr);
+			if (ret == -1) {
+				if (errno == EINTR) {
+					/* Incoming signal */
+				} else {
+					perror("Select");
+					exit(1);
+				}
+			} else if (ret > 0) {
+				break;
+			}
+		}
 
                 if (FD_ISSET(serv_sock, &input_set)) {
                         /* Ho input dal server */
@@ -188,19 +205,27 @@ int inkey_pager(int esegue, char *str, int *c)
                 }
 
                 if (FD_ISSET(0, &input_set)) {
-                        /* Ho input dall'utente */
-                        read(0, buf, 1);
-                        *c = (unsigned char)buf[0];
-			if (*c == Key_ESC)
-				*c = getmeta(buf);
-			else if (*c == Key_DEL)
-				*c = Key_BS;
+			*key = read_key();
 			ret |= INKEY_KEY;
                 }
 
-        } while (!(ret & INKEY_EXIT));
+        }
 
         return ret;
+}
+
+static int read_key(void)
+{
+	char buf[LBUF];
+
+	read(0, buf, 1);
+	int key = (unsigned char)buf[0];
+	if (key == Key_ESC) {
+		key = getmeta(buf);
+	} else if (key == Key_DEL) {
+		key = Key_BS;
+	}
+	return key;
 }
 
 /*

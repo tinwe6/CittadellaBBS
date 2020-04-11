@@ -24,6 +24,7 @@
 #include "cittaclient.h"
 #include "conn.h"
 #include "cterminfo.h"
+#include "editor.h"
 #include "terminale.h"
 #include "utility.h"
 #include "macro.h"
@@ -101,6 +102,8 @@ static void handler_winch(int signum)
 
         //signal(SIGWINCH, handler_winch);
         new_signals |= SIG_WINCH;
+
+	//write(STDOUT_FILENO, "<Winch>", 7);
 }
 
 /*********************************************************************/
@@ -151,27 +154,66 @@ void signals_ignore_all(void) {
 /***************************************************************************/
 struct timeval t_sigwinch = {.tv_sec = 0, .tv_usec = 0};
 
-void esegui_segnali(void)
+/*
+ * Returns true if a timer is set up that requires that the function is
+ * called more frequently.
+ */
+void esegui_segnali(bool *window_changed, bool *fast_mode)
 {
+	bool window_has_changed = false;
+
 	if (t_sigwinch.tv_sec || t_sigwinch.tv_usec) {
 		struct timeval t_now, t_elapsed;
 		gettimeofday(&t_now, NULL);
 		timeval_subtract(&t_elapsed, &t_now, &t_sigwinch);
-		if (t_elapsed.tv_usec > 200000) {
+		/*
+		 * On macos Terminal.app we must make sure that the user
+		 * released the mouse before we change the window size,
+		 * otherwise the terminal size goes out of sync with the
+		 * effective size. We simply wait WINCH_TIMEOUT_MS millisecs.
+		 * It's a compromize: the terminal size remains reactive and
+		 * the user will usually have done resizing; if not he will
+		 * have to resize the window again.
+		 */
+		/*
+		 * TODO: is there any way to detect when the user is done? */
+#define WINCH_TIMEOUT_MS 500
+#define MSEC_TO_USEC 1000
+		if (t_elapsed.tv_usec > WINCH_TIMEOUT_MS*MSEC_TO_USEC
+		    || t_elapsed.tv_sec > 1) {
 			if (cti_record_term_change()) {
+				//write(STDOUT_FILENO, "<OK>", 4);
 				t_sigwinch = (struct timeval){0};
+				if (window_changed) {
+					window_has_changed = true;
+				}
 			} else {
+				//write(STDOUT_FILENO, "r", 1);
+				/* if it didn't work, try again next time */
 				t_sigwinch = t_now;
 			}
 			fflush(stdout);
 		}
 	}
+
+	/*
+	if (new_signals > (SIG_ALARM|SIG_WINCH|SIG_HUP)) {
+		printf("new signals %d -- impossible! \n", new_signals);
+	}
+	*/
+
 	if (new_signals) {
+		//write(STDOUT_FILENO, "S", 1);
+		//printf("Sig mask = %d...\n", new_signals);
 		if (new_signals & SIG_HUP) {
+			//write(STDOUT_FILENO, "H", 1);
+			set_scroll_full();
+			// assert(false);
 			pulisci_ed_esci(TERMINATE_SIGNAL);
 			/* no return */
 		}
 		if (new_signals & SIG_ALARM) {
+			//write(STDOUT_FILENO, "A", 1);
 			if (send_keepalive) {
 				serv_puts("NOOP");
 			}
@@ -179,8 +221,16 @@ void esegui_segnali(void)
 			alarm(KEEPALIVE_INTERVAL);
 		}
 		if (new_signals & SIG_WINCH) {
+			//write(STDOUT_FILENO, "W", 1);
 			gettimeofday(&t_sigwinch, NULL);
 		}
-		new_signals = SIG_CLEAR;//= keep_winch ? SIG_WINCH : SIG_CLEAR;
+		new_signals = SIG_CLEAR;
+	}
+
+	if (window_changed) {
+		*window_changed = window_has_changed;
+	}
+	if (fast_mode) {
+		*fast_mode = (t_sigwinch.tv_sec || t_sigwinch.tv_usec);
 	}
 }

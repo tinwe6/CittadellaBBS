@@ -16,6 +16,8 @@
 #ifndef _INKEY_H
 #define _INKEY_H   1
 
+#include <stdbool.h>
+
 #include "iso8859.h"
 
 #define IF_ISMETA(c) if (((c) >= Key_META) && ((c) < Key_META + 0xff))
@@ -41,12 +43,16 @@
 #define Key_PAGEDOWN    309
 #define Key_META        400
 #define Key_F0          700
+/* Special codes that notify special events that occurred while waiting */
+#define Key_Signal      800 /* If an incoming signal interrupted inkey  */
+#define Key_Window_Changed 801 /* The term window has been resized      */
+#define Key_Timeout     802 /* Server sent post timeout message         */
 
 #define META(C)  (Key_META + C)
 #define Key_F(n)    (Key_F0 + (n))
 
 /* Prototipi funzioni in inkey.c */
-int inkey_sc(int esegue);
+int inkey_sc(bool esegue);
 int inkey_pager(int esegue, char *str, int *c);
 int inkey_elenco(const char *elenco);
 int inkey_elenco_def(const char *elenco, int def);

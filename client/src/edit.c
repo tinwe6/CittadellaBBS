@@ -23,6 +23,7 @@
 #include <sys/wait.h>
 
 #include "cittaclient.h"
+#include "cterminfo.h"
 #include "metadata.h"
 #include "cittacfg.h"
 #include "ansicol.h"
@@ -69,7 +70,7 @@ static void Editor_Fg_Color(int *curr_col, int *curs_col, int col);
 static void Editor_Bg_Color(int *curr_col, int *curs_col, int col);
 static void Editor_Attr_Toggle(int *curr_col, int *curs_col, int attr);
 static void help_edit(void);
-static void help_line_edit(void);
+static void help_line_edit(int editor_vpos);
 
 /***************************************************************************/
 /*
@@ -175,6 +176,11 @@ static int getline_wrap(char *str, int max, bool maiuscole, bool special,
  *
  * Valori di ritorno: -1 : Abort; 0 : Nessun testo; N : Numero righe scritte.
  */
+/*
+ * NOTE: used by bug_report() and as a fallback if term capacities do not
+ *       allow the use of the use of the full internal editor.
+ *       Currently, is called only with abortp == false.
+ */
 int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
 {
         int riga = 0, pos = 0, wlen, maxchar = 79;
@@ -279,7 +285,7 @@ int get_textl_cursor(struct text *txt, int max, int nlines, bool chat)
 
 	CREATE(str, char, (max+1)*nlines, 0);
 
-        len = getline_scroll(">", C_EDIT_PROMPT, str, max*nlines, 0, 0);
+        len = getline_scroll(">", C_EDIT_PROMPT, str, max*nlines, 0, 0, -1);
 
 	if (len != 0) {
 		/* Formatta il testo */
@@ -321,14 +327,17 @@ int get_textl_cursor(struct text *txt, int max, int nlines, bool chat)
 }
 
 /* Prende una stringa con prompt "prompt" lunga massimo "max caratteri e
- * con un campo di immissione lungo al piu' "field". Se field = 0 arriva fino in
- * fondo alla riga.
+ * con un campo di immissione lungo al piu' "field". Se field = 0 arriva
+ * fino in fondo alla riga.
  * Se str non e' nulla, l'editing inizia dal fondo della stringa, e i primi
  * "protect" caratteri di "str" non sono editabili.
+ * If editor_vpos >= 0 the editing occurs at row 'editor_vpos': this is used
+ * when getline_scroll is called by the full internal editor (e.g. to enter
+ * attachments).
  * Restituisce la lunghezza della stringa inserita.
  */
 int getline_scroll(const char *cmlprompt, int color, char *str, int max,
-                   int field, int protect)
+                   int field, int protect, int editor_vpos)
 {
         int c, len = 0, rpos = 0, ipos = 0, promptlen, tmp;
 	char prompt_tmp, *prompt;
@@ -420,7 +429,7 @@ int getline_scroll(const char *cmlprompt, int color, char *str, int max,
                         break;
                 case Ctrl('I'):
                 case Key_F(1): /* Help  */
-		        help_line_edit();
+		        help_line_edit(editor_vpos);
 			refresh_line_curs(prompt,promptlen,color,str+rpos, str+ipos, field);
                         break;
 		case Ctrl('P'): /* Delete Word   */
@@ -642,7 +651,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
 			if ( (fp = fopen(filename, "w")) == NULL) {
 				printf(_("*** Abort - Problemi di I/O.\n"));
 				Free(filename);
-				return -1;
+				return EDIT_ABORT;
 			}
 			if (txt_len(txt)>0) { /* Continue */
 				fprintf(fp, "<cml>\n");
@@ -767,7 +776,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
 		}
 		return get_text_full(txt, max_linee, 79, false, 0, mdlist);
         }
-	return 1;
+	return EDIT_DONE;
 }
 
 /*
@@ -931,7 +940,8 @@ static int getline_col_wrap(int **str0, int **col0, int max,
 		addchar = false;
 		prompt_txt = (char *)str; /* SISTEMARE!!! */
                 c = inkey_sc(0);
-		if (post_timeout) {
+		//		if (post_timeout) {
+		if (c == Key_Timeout) {
 			printf("\r%79s", "");
 			str[0] = '\0';
 			*str0 = str;
@@ -1511,6 +1521,7 @@ int gl_extchar(int status)
 	return -1;
 }
 
+/* TODO: help strings duplicates of the ones in editor.c? Unify. */
 #if 0
 const char * help_getline =
 "Movimento del cursore: Utililizzare i tasti di cursore oppure\n"
@@ -1624,14 +1635,30 @@ static void help_edit(void)
 	pull_color();
 }
 
-
-static void help_line_edit(void)
+/* If editor_vpos >= 0 the line editor was called by the full internal editor,
+ * and is thus placed in line editor_vpos: we must define the correct scroll
+ * region in order for the help to appear correctly above the editor. */
+static void help_line_edit(int editor_vpos)
 {
 	push_color();
 	setcolor(C_HELP);
-	printf("\r%80s\n", "");
+	if (editor_vpos >= 0) {
+#ifdef HAVE_CTI
+		window_push(0, editor_vpos - 1);
+		cti_mv(0, editor_vpos - 1);
+		scroll_up();
+#endif
+	} else {
+		printf("\r%80s\n", "");
+	}
 	cml_printf("%s", help_line_editor);
 	pull_color();
+	if (editor_vpos >= 0) {
+#ifdef HAVE_CTI
+		window_pop();
+		cti_mv(0, editor_vpos);
+#endif
+	}
 }
 
 /*****************************************************************************/

@@ -45,7 +45,6 @@
 #include "configurazione.h"
 #include "conn.h"
 #include "cterminfo.h"
-#include "cti.h"
 #include "decompress.h"
 #include "extract.h"
 #include "floor_cmd.h"
@@ -169,13 +168,13 @@ int main(int argc, char **argv)
         term_mode();
 	atexit(reset_term);
 	atexit(ansi_reset);
+	atexit(reset_scroll_region);
         setup_segnali();
 
 	/* Inizializza schermo */
 	cti_init();
 	cti_term_init();
 	cti_term_exit();
-	/* Editor_Win = 0; */
 
 	/* Parse command line options */
         parse_opt(argc, argv, &rcfile, &no_rc);
@@ -884,7 +883,7 @@ static char ciclo_client(void)
 		} /* fine switch */
 
                 /* Process new signals */
-		esegui_segnali();
+		esegui_segnali(NULL, NULL);
 
                 /* Se qui la coda comandi non e` vuota e` perche' qualcosa */
                 /* e` arrivato mentre ero impegnato                        */

@@ -20,10 +20,11 @@
 #include <string.h>
 
 /* Valori di ritorno di elabora_input() */
-#define CMD_ESEGUITO 1
-#define CMD_IN_CODA  2
-#define CMD_BINARY   4
-#define NO_CMD       8
+#define CMD_ESEGUITO       (1 << 0)
+#define CMD_IN_CODA        (1 << 1)
+#define CMD_BINARY         (1 << 2)
+#define CMD_POST_TIMEOUT   (1 << 3)
+#define NO_CMD             (1 << 4)
 
 struct serv_buffer {
     char * data;

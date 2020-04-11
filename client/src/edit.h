@@ -31,8 +31,8 @@ int enter_text(struct text *txt, int max_linee, char mode,
 void send_text(struct text *txt);
 int get_textl(struct text *txt, size_t max, unsigned int nlines);
 int get_textl_cursor(struct text *txt, int max, int nlines, bool chat);
-int getline_scroll(const char *prompt, int color, char *str, int max,
-		   int field, int protect);
+int getline_scroll(const char *cmlprompt, int color, char *str, int max,
+                   int field, int protect, int editor_vpos);
 
 void print_ht_max(char *str, int max);
 char * elabora_testo_max(char *str, int maxlen);

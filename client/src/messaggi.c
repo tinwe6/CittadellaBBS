@@ -29,6 +29,7 @@
 #include "comandi.h"
 #include "comunicaz.h"
 #include "edit.h"
+#include "editor.h"
 #include "errore.h"
 #include "extract.h"
 #include "friends.h"
@@ -99,21 +100,19 @@ static int entry_cmd(void);
 void enter_message(int mode, bool reply, int aide)
 {
 	struct text *txt;
-	char buf[LBUF], subj[LBUF], caio[LBUF], reply_to[LBUF],
-		reply_subj[LBUF], anonick[LBUF], fine, ent;
+	char buf[LBUF], caio[LBUF], reply_to[LBUF], reply_subj[LBUF];
+	char subj[LBUF] = {0};
+	char anonick[LBUF] = {0};
+	char fine;
         bool anon = false, spoiler = false;
 	int sysopmail = 0; /* TODO define constants for sysopmail values */
         long flags, reply_num;
         Metadata_List mdlist;
-	strcpy(subj,"");
-	strcpy(anonick,"");
-
-
 
 	if (reply && !(rflags & RF_REPLY)) /* Niente reply qui.. */
 		return;
 
-	post_timeout = false; /* Questo e` inutile, ma non si sa mai... */
+	post_timeout = false;
 	barflag = 0;
 
 	if (mode == -1)
@@ -201,19 +200,24 @@ void enter_message(int mode, bool reply, int aide)
 	}
 	putchar('\n');
 
-	ent = 1;
 	txt = txt_create();
         md_init(&mdlist);
 
+	bool edit = true;
+	int ret = EDIT_DONE;
 	do {
-		if ((ent) && (enter_text(txt, serverinfo.maxlineepost, mode,
-                                         &mdlist) == -1))
+		if (edit) {
+			ret = enter_text(txt, serverinfo.maxlineepost, mode,
+					 &mdlist);
+		}
+		if (ret == EDIT_ABORT) {
 			fine = 1;
-		else {
-			if (post_timeout) {
+		} else {
+			if (ret == EDIT_TIMEOUT || post_timeout) {
 				if (txt)
 					txt_free(&txt);
 				post_timeout = false;
+				printf("Post timeout.\n");
 				return;
 			}
 			switch (entry_cmd()) {
@@ -222,14 +226,14 @@ void enter_message(int mode, bool reply, int aide)
 				printf(sesso ? _("Sei sicura (s/n)? ") :
 				       _("Sei sicuro (s/n)? "));
 				if (si_no() != 's') {
-					ent = 1;
+					edit = true;
 					fine = 0;
 				} else
 					fine = 1;
 				break;
 			case 'c':
-				printf(_("Continue.\n"));
-				ent = 1;
+				printf(_("Continue.\n\n"));
+				edit = true;
 				fine = 0;
 				break;
 			case 'h':
@@ -245,7 +249,7 @@ void enter_message(int mode, bool reply, int aide)
 				txt_rewind(txt);
 				txt_pager(txt);
 				putchar('\n');
-				ent = 0;
+				edit = false;
 				fine = 0;
 				break;
 			case 's':

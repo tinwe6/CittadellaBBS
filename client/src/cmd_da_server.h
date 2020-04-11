@@ -25,7 +25,7 @@
 
 /* Prototipi delle funzioni in questo file */
 int controlla_server(void);
-int esegue_urgenti(char *str);
+int esegue_urgente(char *str);
 int esegue_comandi(int mode);
 void esegue_cmd_old(void);
 

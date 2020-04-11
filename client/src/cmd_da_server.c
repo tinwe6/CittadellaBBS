@@ -93,26 +93,26 @@ int controlla_server()
         /* Controlliamo se c'e' qualcosa da leggere */
         FD_ZERO(&input_set);
         FD_SET(serv_sock, &input_set);
-  
+
         if (select(serv_sock + 1, &input_set, NULL, NULL, &t_nullo) < 0) {
-                 if (errno == EINTR)
-                         esegui_segnali();
-                 else {
-                         perror("Select");
-                         exit(1);
-                 }
+		if (errno == EINTR) {
+			esegui_segnali(NULL, NULL);
+		} else {
+			perror("Select");
+			exit(1);
+		}
         }
 
         if (FD_ISSET(serv_sock, &input_set))
                 flag = 1;
-        
+
         return(flag);
 }
 
-/* Esegue i comandi urgenti provenienti dal server. */
-int esegue_urgenti(char *str)
+/* Esegue il comando urgente 'str' proveniente dal server. */
+int esegue_urgente(char *str)
 {
-	int minuti;
+	int result = CMD_ESEGUITO;
 
 	setcolor(C_NOTIF_URG);
 	switch(str[1]) {
@@ -135,11 +135,12 @@ int esegue_urgenti(char *str)
 				cml_printf(_("<b>\a*** Attenzione: shutdown del server tra "));
 			else
 				cml_printf(_("<b>\a*** Attenzione: reboot quotidiano del server tra "));
-			minuti = extract_int(str+4, 0);
-			if (minuti == 1)
+			int minuti = extract_int(str+4, 0);
+			if (minuti == 1) {
 				cml_printf(_("un minuto.</b>\n"));
-			else
+			} else {
 				cml_printf(_("%d minuti.</b>\n"), minuti);
+			}
 			break;
 		case '1': /* Shutdown Annullato */
 			del_prompt();
@@ -149,7 +150,7 @@ int esegue_urgenti(char *str)
 		}
 		break;
 	case '4': /* Il server richiede l'host di connessione */
-		
+
 		break;
 	case '5':
 		Beep();
@@ -161,14 +162,17 @@ int esegue_urgenti(char *str)
 	case '6':
 		Beep();
 		switch (str[2]) {
-		case '0': /* Shutdown */
+		case '0':
 			del_prompt();
-		cml_print(_("\n*** Il tempo che avevi a disposizione per lasciare un messaggio qui &egrave; scaduto!\n"));
-		post_timeout = true;
+			cml_print(_("\n*** Il tempo che avevi a disposizione per lasciare un messaggio qui &egrave; scaduto!\n"));
+			post_timeout = true;
+			result |= CMD_POST_TIMEOUT;
 			break;
-		case '1': /* Shutdown Annullato */
-		cml_print(_("\n\t\t*** il sondaggio a cui stai votando\n"
-								"\t\tsta per scadere \n(continua a votare)--->"));
+		case '1':
+			cml_print(_(
+"\n*** il sondaggio a cui stai votando sta per scadere \n"
+"(continua a votare)--->"
+				    ));
 			break;
 		break;
 		}
@@ -176,7 +180,7 @@ int esegue_urgenti(char *str)
 	Free(str);
 	setcolor(C_NORMAL);
 
-	return CMD_ESEGUITO;
+	return result;
 }
 
 /*
@@ -195,7 +199,7 @@ int esegue_comandi(int mode)
 			break;
                 case '1':
                         ret = notifica(buf);
-			setcolor(C_NORMAL);	
+			setcolor(C_NORMAL);
 			break;
                 case '2':
                         ret = idle_cmd(buf);
@@ -329,7 +333,7 @@ static int bx(char *str)
         case '5': /* Riga testo in canale chat */
 		if ((msg.riga == 0) && (str[4] == '/')) {
 			if (!strncmp(str+5, "me ", 3)) {
-				msg.type = MSG_CHAT_ME;	
+				msg.type = MSG_CHAT_ME;
 				txt_putf(msg.txt, " <b>%s</b> %s\n",
 					 msg.author, str+8);
 				txt_putf(msg.txt, "%s", str+8);
@@ -371,7 +375,7 @@ static int bx(char *str)
                 msg.riga = 0;
 		strcpy(msg.author, "");
 		ret = 1;
-		break; 
+		break;
         case '7': /* Aggiunge destinatario alla lista */
 	          /* TODO: why is the last arg (userid = 1) set to 1? */
                 nl_insert(msg.dest, str+4, 1);
@@ -399,7 +403,7 @@ static int notifica(char *str)
                         color2cml(col2, C_NENEMY);
         } else
                 color2cml(col2, C_NUSER);
-        
+
         setcolor(C_NOTIF_NORM);
 
         switch(str[2]) {
@@ -524,7 +528,7 @@ static int idle_cmd(char *str)
                 printf(sesso ? _("*** Ultimo avvertimento! Stai per essere cacciata fuori...\n") : _("*** Ultimo avvertimento! Stai per essere cacciato fuori...\n"));
                 serv_puts("QUIT");
                 serv_gets(str);
-                exit(1); 
+                exit(1);
                 break;
 	default:
 		setcolor(C_NORMAL);

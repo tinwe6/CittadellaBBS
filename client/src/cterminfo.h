@@ -33,19 +33,23 @@ extern struct winsize target_term_size;
 # define NCOL          term_ncols
 # define NRIGHE        term_nrows
 
+/* ANSI escape sequence to erase all text from cursor pos to end of line */
+#define ERASE_TO_EOL "\x1b[K"
+
 #ifdef HAVE_CTI
 extern char *ctistr_ll;
 extern int cti_bce;   /* Flag background color erase */
 #endif
 
-#define cti_visual_bell()      putp(flash_screen)
-#define cti_curs_inv()         putp(cursor_invisible)
-#define cti_curs_nor()         putp(cursor_normal)
-#define cti_ll()               putp(ctistr_ll)
-#define cti_mv(hpos, vpos)     putp(tparm(cursor_address, (vpos), (hpos)))
-#define cti_scroll_ureg()      cti_scroll_reg(0, NRIGHE-1)
-#define scroll_up()            putp(scroll_forward)
-#define scroll_down()          putp(scroll_reverse)
+#define cti_visual_bell()       putp(flash_screen)
+#define make_cursor_invisible() putp(cursor_invisible)
+#define make_cursor_visible()   putp(cursor_normal)
+#define cti_mv(hpos, vpos)      putp(tparm(cursor_address, (vpos), (hpos)))
+//#define cti_ll()               putp(ctistr_ll)
+#define cti_ll()                cti_mv(0, NRIGHE - 1)
+#define cti_scroll_ureg()       set_scroll_region(0, NRIGHE-1)
+#define scroll_up()             putp(scroll_forward)
+#define scroll_down()           putp(scroll_reverse)
 
 /* Sequenze di escape caratteri estesi */
 /*
@@ -61,6 +65,13 @@ void cti_term_init(void);
 void cti_term_exit(void);
 bool cti_record_term_change(void);
 void cti_clear_screen(void);
-void cti_scroll_reg(int start, int end);
+void reset_scroll_region(void);
+void init_window(void);
+void window_push(int first_row, int last_row);
+void window_pop(void);
+
+int debug_get_winstack_index(void);
+void debug_get_winstack(int index, int *first, int *last);
+void debug_get_current_win(int *first, int *last);
 
 #endif /* cterminfo.h */
