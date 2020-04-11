@@ -23,6 +23,7 @@
 /* Numero massimo di colonne per l'editor */
 #define MAX_EDITOR_COL 128
 
+#define EDIT_TIMEOUT   -2
 #define EDIT_ABORT     -1
 #define EDIT_NULL       0
 #define EDIT_DONE       1
@@ -37,6 +38,7 @@
 #define EDIT_BS        10
 #define EDIT_DEL       11
 
+/* Numero di righe sopra all'editor riservate ai messaggi urgenti */
 #define MSG_WIN_SIZE 10
 
 /* Questi colori sono standard */
@@ -49,9 +51,9 @@
 
 /* Variabili globali */
 extern int Editor_Pos;   /* Riga di inizio dell'editor              */
-extern int Editor_Win;   /* 1 se la finestra dell'editor e' attiva  */
 extern int Editor_Hcurs; /* Posizione cursore orizzontale...        */
 extern int Editor_Vcurs; /*                  ... e verticale.       */
+extern bool Editor_needs_refresh;
 
 #include "metadata.h"
 

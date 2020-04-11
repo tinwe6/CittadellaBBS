@@ -448,7 +448,7 @@ static bool mdop_file(char *filename, unsigned long filenum,
 
         if (!local_client) {
                 cml_printf(_(
-			     "Devi usare il client locale per scaricare "
+"\nMi dispiace, ma devi usare il client locale per scaricare il file.\n"
 			     ));
 #if 0
 		/* TODO the client should ask a cittaweb link from which
@@ -491,7 +491,7 @@ static bool mdop_file(char *filename, unsigned long filenum,
                         return false;
                 case 'r':
                         if ( (getline_scroll(_("<b>Nuovo nome:</b> "),
-                                      getcolor(), fname, LBUF/2, 0, 0) > 0)) {
+			          getcolor(), fname, LBUF/2, 0, 0, -1) > 0)) {
                                 strcpy(fname, filename);
                                 sprintf(filepath, "%s/%s", DOWNLOAD_DIR, fname);
                         } else

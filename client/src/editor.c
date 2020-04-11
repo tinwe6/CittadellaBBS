@@ -13,6 +13,30 @@
 * File : editor.c                                                           *
 *        Editor interno per il cittaclient                                  *
 ****************************************************************************/
+
+/*
+  TODO
+
+  When the users enters a message with attachments and decides to "continue"
+  to edit or "hold" the text, the attachments are lost. This must be fixed
+  but requires some restructuring of how the data is kept outside the editor.
+
+  Check what 'flag' does. If it is to stay make it a bool and rename it.
+
+  Do we require an ending 0 for the Editor_Line.str strings? It is written in
+  some places, but not always.
+
+  Do not allow to insert attachments in ASCII art mode as it can mess up. Or
+  maybe simply not allow to edit chars reserved for the attachment using the
+  ASCII art mode.
+
+  When hitting Enter on space between two words to break the line in two,
+  eliminate the leading space in the new line.
+
+*/
+
+
+
 #include <assert.h>
 #include "editor.h"
 #include "cterminfo.h"
@@ -20,9 +44,9 @@
 
 /* Variabili globali */
 int Editor_Pos; /* Riga di inizio dell'editor                           */
-int Editor_Win; /* 1 se la finestra dell'editor e' attiva, 0 altrimenti */
 int Editor_Hcurs; /* Posizione cursore orizzontale...                   */
 int Editor_Vcurs; /*                  ... e verticale.                  */
+bool editor_reached_full_size;
 
 #ifdef HAVE_CTI
 
@@ -77,16 +101,27 @@ typedef struct Editor_Text_ {
 	Editor_Line *first;   /* Prima riga del testo             */
 	Editor_Line *last;    /* Ultima riga                      */
 	Editor_Line *curr;    /* Riga corrente                    */
-        int riga;     /* Numero righe del testo                   */
+        int riga;             /* Numero righe del testo           */
+	int term_nrows;       /* Num rows in terminal             */
         /* Dati del testo nel copy bufferando                     */
-	Editor_Line *buf_first;   /* Prima riga del testo         */
-	Editor_Line *buf_last;    /* Ultima riga                  */
-        int buf_riga;     /* Numero righe del testo               */
-        int buf_pasted;   /* TRUE se il buffer e' stato incollato */
-        int copy;/* TRUE se aggiunto riga al copy buf nell'ultima op */
+	Editor_Line *buf_first; /* Prima riga del testo           */
+	Editor_Line *buf_last;  /* Ultima riga                    */
+        int buf_riga;           /* Numero righe del testo         */
+        bool buf_pasted;  /* true se il buffer e' stato incollato */
+        bool copy; /* true se aggiunto riga al copy buf nell'ultima op */
         /* struttura per i metadata */
         Metadata_List *mdlist;
 } Editor_Text;
+
+/* Editor_Merge_Lines() result codes */
+typedef enum {
+	MERGE_NOTHING = 0,     /* The text was not modified */
+	MERGE_ABOVE_EMPTY = 1, /* The line above was empty and was deleted */
+	MERGE_BELOW_EMPTY = 2, /* The line balow was empty and was deleted */
+	MERGE_EXTRA_SPACE = 3, /* An extra space was added befoer merging  */
+	MERGE_REGULAR     = 4, /* No extra space needed; merge performed   */
+} Merge_Lines_Result;
+
 
 /* Macro per settare i colori, attributi e mdnum
  * Col ha la seguente struttura
@@ -120,9 +155,10 @@ typedef struct Editor_Text_ {
 
 /* Per avere informazione sul debugging definire EDITOR_DEBUG */
 #undef EDITOR_DEBUG
+//#define EDITOR_DEBUG
 
 #ifdef EDITOR_DEBUG
-# define DEB(t, s) Editor_Debug_Status((t),(c))
+# define DEB(t, s) Editor_Debug_Status((t),(s))
 #else
 # define DEB(t, s)
 #endif
@@ -133,7 +169,6 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 static int get_line_wrap(Editor_Text *t, bool wrap);
 static void Editor_Putchar(Editor_Text *t, int c);
 static void Editor_Key_Enter(Editor_Text *t);
-static void Editor_Yank(Editor_Text *t);
 static void Editor_Key_Backspace(Editor_Text *t);
 static void Editor_Backspace(Editor_Text *t);
 static void Editor_Key_Delete(Editor_Text *t);
@@ -146,6 +181,8 @@ static void Editor_Insert_Line_Here(Editor_Text *t);
 static void Editor_Copy_Line(Editor_Text *t);
 static void Editor_Delete_Line(Editor_Text *t, Editor_Line *l);
 static int Editor_Wrap_Word(Editor_Text *t);
+static void Editor_Kill_Line(Editor_Text *t);
+static void Editor_Yank(Editor_Text *t);
 static void Editor_Key_Tab(Editor_Text *t);
 static void Editor_Key_Up(Editor_Text *t);
 static void Editor_Key_Down(Editor_Text *t);
@@ -155,7 +192,7 @@ static void Editor_Key_Left(Editor_Text *t);
 static void Editor_Curs_Left(Editor_Text *t);
 static void Editor_PageDown(Editor_Text *t);
 static void Editor_PageUp(Editor_Text *t);
-static int Editor_Merge_Lines(Editor_Text *t);
+static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t);
 static void Editor_Scroll_Up(int stop);
 static void Editor_Scroll_Down(int start, int stop);
 static void Editor_Up(Editor_Text *t);
@@ -176,17 +213,48 @@ static void Editor_Free_MD(Editor_Text *t, Editor_Line *l);
 static void Editor_Free_Copy_Buffer(Editor_Text *t);
 static void Editor_Refresh(Editor_Text *t, int start);
 static void Editor_Head(Editor_Text *t);
-static void Editor_Head_Refresh(Editor_Text *t, int mode);
+static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh);
+static void Editor_Refresh_All(Editor_Text *t);
 static void Editor2CML(Editor_Line *line, struct text *txt, int col,
                        Metadata_List *mdlist);
 static void text2editor(Editor_Text *t, struct text *txt, int color,
                         int max_col);
 static void help_edit(Editor_Text *t);
 static int Editor_Ask_Abort(Editor_Text *t);
+static void refresh_line_curs(int *pos, int *curs);
 #ifdef EDITOR_DEBUG
 static void Editor_Debug_Status(Editor_Text *t, char *str);
+static void Editor_Debug_Show_Copy_Buffer(Editor_Text *t);
+static void sanity_checks(Editor_Text *t);
 #endif
-static void refresh_line_curs(int *pos, int *curs);
+
+/* Erase current line, using current color, and leave cursor in column 0. */
+static inline void erase_current_line(void)
+{
+	printf("\r" ERASE_TO_EOL "\r");
+}
+
+/*
+ * Fills line vpos with spaces with background color 'color' and leaves
+ * the cursor in that row, at column 0.
+ */
+static void fill_line(int vpos, int color)
+{
+	cti_mv(0, vpos);
+	setcolor(color);
+	printf(ERASE_TO_EOL "\r");
+}
+
+/*
+ * Erases line vpos filling it with spaces of default color.
+ */
+static inline void clear_line(int vpos)
+{
+	cti_mv(0, vpos);
+	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
+	printf(ERASE_TO_EOL);
+}
+
 /***************************************************************************/
 /*
  * Le funzioni di editing implementano i seguenti comandi: (Emacs like)
@@ -286,7 +354,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 		  int color, Metadata_List *mdlist)
 {
 	Editor_Text t;
-        char prompt_tmp, fine = FALSE;
+        char prompt_tmp;
         int ret;
 
 	/* The abortp option is not available (and useless) when the option */
@@ -296,30 +364,24 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 
 	/* Inizializza schermo */
 	cti_term_init();
-	Editor_Win = 0;
+	init_window();
 	push_color();
 
-	if (max_col > MAX_EDITOR_COL)
-                t.max = MAX_EDITOR_COL;
-	else
-		t.max = max_col;
+	editor_reached_full_size = false;
 
-	Editor_Pos = NRIGHE - 2;
-	Editor_Vcurs = NRIGHE - 1;
+	t.max = (max_col > MAX_EDITOR_COL) ? MAX_EDITOR_COL : max_col;
+	t.term_nrows = NRIGHE;
+
+	Editor_Pos = t.term_nrows - 2;
+	Editor_Vcurs = t.term_nrows - 1;
 	prompt_tmp = prompt_curr;
 	prompt_curr = P_EDITOR;
 
 	/* Inizializza il testo da editare */
 	t.riga = 1;
 	t.insert = MODE_INSERT;
-	if (color) {
-		t.curs_col = color;
-		t.curr_col = color;
-	} else {
-		t.curs_col = C_DEFAULT;
-		t.curr_col = C_DEFAULT;
-	}
-	setcolor(t.curr_col);
+	t.curs_col = color ? color : C_DEFAULT;
+	t.curr_col = t.curs_col;
 
 	CREATE(t.first, Editor_Line, 1, 0);
 	t.curr = t.first;
@@ -335,12 +397,14 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
         t.buf_first = NULL;
         t.buf_last = NULL;
 	t.buf_riga = 0;
-	t.buf_pasted = FALSE;
-        t.copy = FALSE;
+	t.buf_pasted = false;
+        t.copy = false;
 
         /* Inizializza il metadata */
         md_init(mdlist);
         t.mdlist = mdlist;
+
+	setcolor(t.curr_col);
 
 	/* Inserisce nell'editor il testo del quote o hold */
 	text2editor(&t, txt, color, max_col);
@@ -349,35 +413,45 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	/* Visualizza l'header dell'editor ed eventualmente il testo */
 	t.curr = t.first;
 	Editor_Head(&t);
-	while(t.curr->next)
+	while(t.curr->next) {
 		Editor_Newline(&t);
+	}
 	Editor_Refresh(&t, 0);
 
+	DEB(&t, "---");
+
+	bool fine = false;
 	do {
 		switch((ret = get_line_wrap(&t, true))) {
 		case EDIT_ABORT:
 			cti_ll();
-			printf("%80s\rAbort.\n", "");
-			fine = TRUE;
+			printf(ERASE_TO_EOL "\rAbort.\n");
+			fine = true;
+			break;
+
+		case EDIT_TIMEOUT:
+			cti_ll();
+			printf(ERASE_TO_EOL "\rPost timeout.\n");
+			fine = true;
 			break;
 
 		case EDIT_DONE:
 			cti_ll();
 			putchar('\n');
-			fine = TRUE;
+			fine = true;
 			break;
 		}
 	} while ((t.riga < max_linee) && (!fine));
 
+	/* TODO: how can ret be EDIT_NEWLINE? it can't... what's the point
+         	 of the next block?      */
 	if (ret == EDIT_NEWLINE) {
 		refresh_line_curs(t.curr->str, t.curr->str + t.curr->pos);
 
-		if (get_line_wrap(&t, false) == EDIT_ABORT)
-			ret = EDIT_ABORT;
-		else {
+		ret = get_line_wrap(&t, false);
+		if (ret == EDIT_DONE) {
 			cti_ll();
 			putchar('\n');
-			ret = EDIT_DONE;
 		}
 	}
 
@@ -385,10 +459,16 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	Editor_Free(&t);
 	prompt_curr = prompt_tmp;
 
-	if (Editor_Win) {
-		Editor_Win = 0;
-		cti_scroll_ureg();
+	if (editor_reached_full_size) {
+		window_pop();
 	}
+	{
+		int first, last;
+		assert(debug_get_winstack_index() == 0);
+		debug_get_current_win(&first, &last);
+		assert(first == 0 && last == NRIGHE - 1);
+	}
+
 	cti_term_exit();
 	pull_color();
 
@@ -404,8 +484,6 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 /* TODO why is arg wrap not used here? the two calls to this function have
         wrap = true and wrap = false, why? */
 {
-	Editor_Line *ltmp;
-        int  c, i, addchar;
 	int status = GL_NORMAL;    /* stato dell'editor             */
 
 	IGNORE_UNUSED_PARAMETER(wrap);
@@ -413,15 +491,46 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
         do {
-		addchar = FALSE;
-		Editor_Head_Refresh(t, FALSE);
+#ifdef EDITOR_DEBUG
+		sanity_checks(t);
+		//DEB(t, "^");
+		Editor_Debug_Show_Copy_Buffer(t);
+#endif
+		Editor_Head_Refresh(t, false);
 
 		/* TODO: SISTEMARE PROMPT ?
                    prompt_txt = t->curr->str;
                 */
 		Editor_Hcurs = t->curr->pos + 1;
-                c = inkey_sc(1);
-		switch(c) {
+
+		int key = inkey_sc(true);
+		bool addchar = false;
+
+		if (key == Key_Window_Changed) {
+			if (t->term_nrows < NRIGHE) {
+				/* the terminal has grown vertically */
+				int extra_rows = NRIGHE - t->term_nrows;
+				Editor_Pos += extra_rows;
+				Editor_Vcurs += extra_rows;
+			} else {
+				int extra_rows = t->term_nrows - NRIGHE;
+				if (Editor_Pos - extra_rows < MSG_WIN_SIZE) {
+					extra_rows = Editor_Pos - MSG_WIN_SIZE;
+					//Editor_Pos = MSG_WIN_SIZE;
+				}
+				Editor_Pos -= extra_rows;
+				Editor_Vcurs -= extra_rows;
+			}
+			t->term_nrows = NRIGHE;
+			Editor_Refresh_All(t);
+			continue;
+		}
+
+		if (key == Key_Timeout) {
+			return EDIT_TIMEOUT;
+		}
+
+		switch(key) {
 		case Key_CR:
 		case Key_LF:
 			Editor_Key_Enter(t);
@@ -433,6 +542,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 
 			/* Deleting characters */
 		case Key_INS:
+		case META('I'):
 			t->insert = (t->insert + 1) % 3;
 			break;
 		case Key_BS:
@@ -512,41 +622,20 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
                         Editor_Insert_Metadata(t);
                         break;
                 case Ctrl('T'): /* Save text to file */
-                        Editor_Save_Text(t);
+			if (local_client) {
+				Editor_Save_Text(t);
+			}
                         break;
 		case Ctrl('K'): /* Kill line */
-			if ((t->curr->len == 0) && t->curr->next) {
-				ltmp = t->curr->next;
-				Editor_Delete_Line(t, t->curr);
-				t->curr = ltmp;
-				t->curr->pos = 0;
-				Editor_Refresh(t, Editor_Vcurs);
-                                t->copy = TRUE;
-				break;
-			}
-			if (t->curr->pos == t->curr->len) {
-				Editor_Delete(t);
-                                t->copy = TRUE;
-				break;
-			}
-                        Editor_Copy_Line(t);
-                        t->copy = TRUE;
-                        setcolor(C_DEFAULT);
-			for (i = t->curr->pos; i < t->curr->len; i++)
-				putchar(' ');
-			setcolor(t->curr_col);
-			t->curr->str[t->curr->pos] = '\0';
-			t->curr->len = t->curr->pos;
-			/* cti_mv(t->curr->pos+1, Editor_Vcurs); */
-			break;
-
+			Editor_Kill_Line(t);
+                        break;
 		case Ctrl('Y'):
 		case Ctrl('G'):
 			Editor_Yank(t);
 			break;
 
 		case Ctrl('L'): /* Rivisualizza il contenuto dello schermo */
-			Editor_Refresh(t, 0);
+			Editor_Refresh_All(t);
 			break;
 
 		case Key_F(1): /* Visualizza l'Help */
@@ -707,87 +796,90 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			status = GL_RING;
 			break;
 		case META('S'):
-			c = Key_SECTION_SIGN;
-			addchar = TRUE;
+			key = Key_SECTION_SIGN;
+			addchar = true;
 			break;
 		case META('s'):
-			c = Key_SHARP_S;
-			addchar = TRUE;
+			key = Key_SHARP_S;
+			addchar = true;
 			break;
                 case META('t'):
-                        c = '~';
-                        addchar = TRUE;
+                        key = '~';
+                        addchar = true;
                         break;
 		case META('P'):
-			c = Key_PILCROW_SIGN;
-			addchar = TRUE;
+			key = Key_PILCROW_SIGN;
+			addchar = true;
 			break;
 		case META('%'):
-			c = Key_DIVISION_SIGN;
-			addchar = TRUE;
+			key = Key_DIVISION_SIGN;
+			addchar = true;
 			break;
 		case META('!'):
-			c = Key_INV_EXCL_MARK;
-			addchar = TRUE;
+			key = Key_INV_EXCL_MARK;
+			addchar = true;
 			break;
 		case META('?'):
-			c = Key_INV_QUOT_MARK;
-			addchar = TRUE;
+			key = Key_INV_QUOT_MARK;
+			addchar = true;
 			break;
 		case META('<'):
-			c = Key_LEFT_GUILLEM;
-			addchar = TRUE;
+			key = Key_LEFT_GUILLEM;
+			addchar = true;
 			break;
 		case META('>'):
-			c = Key_RIGHT_GUILLEM;
-			addchar = TRUE;
+			key = Key_RIGHT_GUILLEM;
+			addchar = true;
 			break;
 		case META('|'):
-			c = Key_BROKEN_BAR;
-			addchar = TRUE;
+			key = Key_BROKEN_BAR;
+			addchar = true;
 			break;
 		case META('-'):
-			c = Key_SOFT_HYPHEN;
-			addchar = TRUE;
+			key = Key_SOFT_HYPHEN;
+			addchar = true;
 			break;
 		case META('_'):
-			c = Key_MACRON;
-			addchar = TRUE;
+			key = Key_MACRON;
+			addchar = true;
 			break;
 		case META('+'):
-			c = Key_PLUS_MINUS;
-			addchar = TRUE;
+			key = Key_PLUS_MINUS;
+			addchar = true;
 			break;
 		case META('.'):
-			c = Key_MIDDLE_DOT;
-			addchar = TRUE;
+			key = Key_MIDDLE_DOT;
+			addchar = true;
 			break;
 		case META('*'):
-			c = Key_MULT_SIGN;
-			addchar = TRUE;
+			key = Key_MULT_SIGN;
+			addchar = true;
 			break;
 
 			/* Add a character */
 		default:
-			IF_ISMETA(c) {
+			IF_ISMETA(key) {
 				;
-			} else if ((isascii(c) && isprint(c)) || is_isoch(c))
-				addchar = TRUE;
+			} else if ((isascii(key) && isprint(key))
+				   || is_isoch(key)) {
+				addchar = true;
+			}
 		}
-                if (c != Ctrl('K'))
-                        t->copy = FALSE;
-
+                if (key != Ctrl('K')) {
+                        t->copy = false;
+		}
 		if (status != GL_NORMAL) {
-			c = gl_extchar(status);
-			if (c != -1)
-				addchar = TRUE;
-			else
+			key = gl_extchar(status);
+			if (key != -1) {
+				addchar = true;
+			} else {
 				Beep();
+			}
 			status = GL_NORMAL;
 		}
-		if (addchar == TRUE)
-			Editor_Putchar(t, c);
-
+		if (addchar) {
+			Editor_Putchar(t, key);
+		}
 	} while (t->curr->len < t->max);
 
 	return EDIT_NULL;
@@ -839,21 +931,21 @@ static void Editor_Putchar(Editor_Text *t, int c)
 /* Processa <Enter> */
 static void Editor_Key_Enter(Editor_Text *t)
 {
-	Editor_Line *newl;
-	int i;
-
         Editor_Insert_Line(t);
 	if (t->curr->pos < t->curr->len) {
-		newl = t->curr->next;
-		memcpy(newl->str, t->curr->str + t->curr->pos,
+		Editor_Line *new_line = t->curr->next;
+		memcpy(new_line->str, t->curr->str + t->curr->pos,
 		       (t->curr->len - t->curr->pos + 1) * sizeof(int));
-		memcpy(newl->col, t->curr->col + t->curr->pos,
+		memcpy(new_line->col, t->curr->col + t->curr->pos,
 		       (t->curr->len - t->curr->pos + 1) * sizeof(int));
-		newl->len = t->curr->len - t->curr->pos;
+		new_line->len = t->curr->len - t->curr->pos;
 		t->curr->len = t->curr->pos;
+		// TODO: final \0 is needed?
                 setcolor(C_DEFAULT);
-		for(i = 0; i < newl->len; i++)
+		// TODO: Eliminate the loop, use ansi
+		for(int i = 0; i < new_line->len; i++) {
 			putchar(' ');
+		}
 	}
         t->curr->next->pos = 0;
         t->curr->pos = 0;
@@ -861,50 +953,6 @@ static void Editor_Key_Enter(Editor_Text *t)
 
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
-}
-
-/* Processa <Y>ank */
-static void Editor_Yank(Editor_Text *t)
-{
-	Editor_Line *newl, *buf;
-	int i;
-
-        if (t->buf_riga == 0) /* Non c'e' nulla nel buffer di copia */
-                return;
-
-        if (t->curr->len)
-                Editor_Key_Enter(t);
-        if ((t->curr->pos == 0) && (t->curr->len > 0)) {
-                        Editor_Insert_Line_Here(t);
-                        t->curr=t->curr->prev;
-                        t->curr->pos = 0;
-                        t->curr->next->pos = 0;
-                        Editor_Refresh(t, Editor_Vcurs);
-        }
-
-        buf = t->buf_first;
-        for (i = 0; i < t->buf_riga; i++) {
-                newl = t->curr;
-		memcpy(newl->str, buf->str, (buf->len) * sizeof(int));
-		memcpy(newl->col, buf->col, (buf->len) * sizeof(int));
-		newl->len = buf->len;
-                line_refresh(t->curr, Editor_Vcurs, 0);
-                buf = buf->next;
-                if (buf) {
-                        Editor_Key_Enter(t);
-                        /*
-                        Editor_Insert_Line(t);
-                        t->curr->next->pos = 0;
-                        t->curr->pos = 0;
-                        Editor_Newline(t);
-                        line_refresh(t->curr, Editor_Vcurs, 0);
-                        */
-                }
-        }
-        t->curr->pos = t->curr->len;
-        line_refresh(t->curr, Editor_Vcurs, 0);
-	setcolor(t->curr_col);
-        t->buf_pasted = TRUE;
 }
 
 /* Effettua un backspace cancellando gli eventuali allegati */
@@ -927,39 +975,54 @@ static void Editor_Key_Backspace(Editor_Text *t)
 /* Effettua un backspace */
 static void Editor_Backspace(Editor_Text *t)
 {
-	int len;
-
-	/* Sono all'inizio della riga: merge con la precedente */
+	DEB(t, "editor_backspace_*******************");
+	/* if the cursor is at the line start, merge with the line above */
 	if (t->curr->pos == 0) {
 		if (t->curr->prev) {
-			len = t->curr->prev->len;
-			Editor_Up(t);
-			t->curr->pos = len;
+			//Editor_Line *above = t->curr->prev;
+			int above_len = t->curr->prev->len;
+			Editor_Line *below = t->curr;
+			Editor_Up(t); /* make t->curr the line above */
 			switch (Editor_Merge_Lines(t)) {
-			case 2:
-				t->curr->pos++;
-			case 1:
-			case 3:
+			case MERGE_EXTRA_SPACE:
+				//DEB(t, "extra");
+				t->curr->pos = above_len + 1;
 				Editor_Refresh(t, Editor_Vcurs);
 				break;
-			case 0:
+			case MERGE_ABOVE_EMPTY:
+				//DEB(t, "above");
+				/* The above line was deleted */
+				t->curr = below;
+				t->curr->pos = 0;
+				Editor_Refresh(t, Editor_Vcurs);
+				break;
+			case MERGE_REGULAR:
+			case MERGE_BELOW_EMPTY:
+				//DEB(t, "regular");
+				//DEB(t, "below");
+				t->curr->pos = above_len;
+				Editor_Refresh(t, Editor_Vcurs);
+				break;
+			case MERGE_NOTHING: /*  Can I even get here?? */
+				//DEB(t, "nothing");
+				t->curr->pos = above_len;
 				line_refresh(t->curr, Editor_Vcurs, 0);
 				break;
 			}
 			setcolor(t->curr_col);
-		} else
+		} else {
 			Beep();
+		}
 		return;
 	}
 
 	/* Cancella il carattere precedente */
 	if (t->curr->pos != t->curr->len) {
-		memmove(t->curr->str + t->curr->pos - 1,
-			t->curr->str + t->curr->pos,
-			(t->curr->len - t->curr->pos) * sizeof(int));
-		memmove(t->curr->col + t->curr->pos - 1,
-			t->curr->col + t->curr->pos,
-			(t->curr->len - t->curr->pos) * sizeof(int));
+		int *src_str = t->curr->str + t->curr->pos;
+		int *src_col = t->curr->col + t->curr->pos;
+		size_t bytes = (t->curr->len - t->curr->pos)*sizeof(int);
+		memmove(src_str - 1, src_str, bytes);
+		memmove(src_col - 1, src_col, bytes);
 	}
 	t->curr->str[--t->curr->len] = '\0';
 	t->curr->pos--;
@@ -1069,6 +1132,92 @@ static void Editor_Delete_Next_Word(Editor_Text *t)
 	setcolor(t->curr_col);
 }
 
+/*
+ * If the current line is not empty, erase its content, otherwise eliminate
+ * the line.
+ */
+static void Editor_Kill_Line(Editor_Text *t)
+{
+	if ((t->curr->len == 0) && t->curr->next) {
+		Editor_Line *next_line = t->curr->next;
+		Editor_Delete_Line(t, t->curr);
+		t->curr = next_line;
+		t->curr->pos = 0;
+		Editor_Refresh(t, Editor_Vcurs);
+	} else if (t->curr->pos == t->curr->len) {
+		Editor_Delete(t);
+	} else {
+		/* copy the line to the copy buffer */
+		Editor_Copy_Line(t);
+		/* Eliminate the text from the cursor to the end of line */
+		t->curr->str[t->curr->pos] = '\0';
+		t->curr->len = t->curr->pos;
+		/* cti_mv(t->curr->pos+1, Editor_Vcurs); */
+
+		/* Update the screen accordingly */
+		setcolor(C_DEFAULT);
+		printf(ERASE_TO_EOL);
+		setcolor(t->curr_col);
+		/*
+		  for (int i = t->curr->pos; i < t->curr->len; i++) {
+		  putchar(' ');
+		  }
+		*/
+	}
+	t->copy = true;
+}
+
+/* Process <Y>ank */
+static void Editor_Yank(Editor_Text *t)
+{
+        if (t->buf_riga == 0) { /* copy buffer is empty */
+                return;
+	}
+	/* unless the cursor sits in an empty line, insert a new empty
+	 * at the cursor's location (breaking the current line if needed) */
+	if (t->curr->len) {
+		bool cursor_at_line_start = (t->curr->pos == 0);
+		bool cursor_at_line_end = (t->curr->pos == t->curr->len);
+		Editor_Key_Enter(t);
+		if (cursor_at_line_start) {
+			Editor_Up(t);
+			t->curr->pos = 0;
+			t->curr->next->pos = 0;
+			Editor_Refresh(t, Editor_Vcurs);
+			DEB(t, "Y-1");
+		} else if (cursor_at_line_end) {
+			/* do nothing */
+			DEB(t, "Y-2");
+		} else {
+			Editor_Insert_Line_Here(t);
+			t->curr = t->curr->prev;
+			t->curr->pos = 0;
+			t->curr->next->pos = 0;
+			Editor_Refresh(t, Editor_Vcurs);
+			DEB(t, "Y-3");
+		}
+	}
+
+	assert(t->curr->len == 0);
+	assert(t->curr->pos == 0);
+        for (Editor_Line *src = t->buf_first; src; ) {
+                Editor_Line *new_line = t->curr;
+		memcpy(new_line->str, src->str, src->len*sizeof(int));
+		memcpy(new_line->col, src->col, src->len*sizeof(int));
+		new_line->len = src->len;
+		new_line->pos = src->len;
+                line_refresh(t->curr, Editor_Vcurs, 0);
+                src = src->next;
+                if (src) {
+                        Editor_Key_Enter(t);
+                }
+        }
+        t->curr->pos = t->curr->len;
+        line_refresh(t->curr, Editor_Vcurs, 0);
+	setcolor(t->curr_col);
+        t->buf_pasted = true;
+}
+
 static void Editor_Key_Tab(Editor_Text *t)
 {
 	if (t->insert == MODE_ASCII_ART) {
@@ -1090,6 +1239,7 @@ static void Editor_Key_Up(Editor_Text *t)
 {
 	int i, mdnum;
 
+	assert(t->curr);
 	if (t->curr->prev == NULL) {
 		Beep();
 		return;
@@ -1247,21 +1397,21 @@ static void Editor_Curs_Left(Editor_Text *t)
 /* Va alla pagina precedente */
 static void Editor_PageUp(Editor_Text *t)
 {
-	int i;
-
 	if (t->curr->prev == NULL) {
 		Beep();
 		t->curr->pos = 0;
 		cti_mv(1, Editor_Vcurs);
 		return;
 	}
-	for (i = Editor_Vcurs; (i > Editor_Pos) && t->curr->prev; i--)
+	for (int i = Editor_Vcurs; (i > Editor_Pos) && t->curr->prev; i--) {
 		t->curr = t->curr->prev;
+	}
 	if (t->curr->num < (NRIGHE - 1 - Editor_Pos)) {
 		t->curr = t->first;
 		Editor_Vcurs = Editor_Pos + 1;
-	} else
+	} else {
 		Editor_Vcurs = NRIGHE - 1;
+	}
 	t->curr->pos = 0;
 	Editor_Refresh(t, 0);
 }
@@ -1288,122 +1438,155 @@ static void Editor_PageDown(Editor_Text *t)
 	Editor_Refresh(t, 0);
 }
 
-/* scroll down dalla posizione corrente */
+/* Scroll down the region from the current row to the bottom of the terminal,
+ * resulting in an empty line on the current row. */
 void EdTerm_Scroll_Down(void)
 {
-	cti_scroll_reg(Editor_Vcurs, NRIGHE-1);
+	window_push(Editor_Vcurs, NRIGHE-1);
 	cti_mv(0, Editor_Vcurs);
 	scroll_down();
-	if (Editor_Win)
-		cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
-	else
-		cti_scroll_ureg();
+	window_pop();
 }
 
 /* Va alla riga successiva del testo. */
 static void Editor_Newline(Editor_Text *t)
 {
+	assert(t->curr->next);
+
 	t->curr = t->curr->next;
 	if (Editor_Vcurs != NRIGHE-1) {
 		Editor_Vcurs++;
 		EdTerm_Scroll_Down();
 		cti_mv(0, Editor_Vcurs);
-	} else
+	} else {
 		Editor_Scroll_Up(NRIGHE-1);
+	}
 }
 
 /*
- * Inserisce una nuova riga dopo la linea corrente, senza modificare
- * la linea corrente.
+ * Insert a new line below the current line. The current line is not modified.
  */
 static void Editor_Insert_Line(Editor_Text *t)
 {
-	Editor_Line *nl, *l;
+	Editor_Line *new_line;
 	int num;
 
-	CREATE(nl, Editor_Line, 1, 0);
-	nl->len = 0;
-	nl->prev = t->curr;
-	nl->next = t->curr->next;
-	t->curr->next = nl;
-	if (nl->next)
-		nl->next->prev = nl;
-	else
-		t->last = nl;
+	CREATE(new_line, Editor_Line, 1, 0);
+	new_line->len = 0;
+	new_line->prev = t->curr;
+	new_line->next = t->curr->next;
+	t->curr->next = new_line;
+	if (new_line->next) {
+		new_line->next->prev = new_line;
+	} else {
+		t->last = new_line;
+	}
 	num = t->curr->num;
-	for (l = nl; l; l = l->next)
+	for (Editor_Line *l = new_line; l; l = l->next) {
 		l->num = ++num;
+	}
 	t->riga++;
 }
 
-/* Inserisce una riga scrollando la riga corrente */
+/* Insert a new line above the current line, without changing the
+ * current line. */
 static void Editor_Insert_Line_Here(Editor_Text *t)
 {
-	Editor_Line *nl, *l;
-	int num;
+	Editor_Line *new_line;
 
-	CREATE(nl, Editor_Line, 1, 0);
-	nl->len = 0;
-	nl->prev = t->curr->prev;
-	nl->next = t->curr;
-	t->curr->prev = nl;
-	if (nl->prev)
-		nl->prev->next = nl;
-	else
-		t->first = nl;
-	num = t->curr->num;
-	for (l = nl; l; l = l->next)
-		l->num = num++;
+	CREATE(new_line, Editor_Line, 1, 0);
+	new_line->len = 0;
+	new_line->prev = t->curr->prev;
+	new_line->next = t->curr;
+	t->curr->prev = new_line;
+	if (new_line->prev) {
+		new_line->prev->next = new_line;
+	} else {
+		t->first = new_line;
+	}
+
+	int num = t->curr->num;
+	for (Editor_Line *line = new_line; line; line = line->next) {
+		line->num = num++;
+	}
 	t->riga++;
 }
 
+/*
+ * Copies the text in the current line (t->curr) from the cursor position to
+ * the end into a new line that is appended to the copy buffer. The current
+ * line is not modified.
+ */
 static void Editor_Copy_Line(Editor_Text *t)
 {
-	Editor_Line *nl;
+	Editor_Line *new_line;
 
-        if (t->copy == FALSE)
+        if (t->copy == false) {
                 Editor_Free_Copy_Buffer(t);
+	}
 
-	CREATE(nl, Editor_Line, 1, 0);
-	nl->len = 0;
-        nl->next = NULL;
+	/* Allocate a new line and append it at the end of the buffer list */
+	CREATE(new_line, Editor_Line, 1, 0);
+        new_line->next = NULL;
         if (t->buf_riga == 0) {
-                nl->prev = NULL;
-                t->buf_first = nl;
+                new_line->prev = NULL;
+                t->buf_first = new_line;
         } else {
-                nl->prev = t->buf_last;
-                t->last->next = nl;
+                new_line->prev = t->buf_last;
+                t->buf_last->next = new_line;
         }
-        t->buf_last = nl;
+        t->buf_last = new_line;
 	t->buf_riga++;
 
-	memcpy(t->buf_last->str, t->curr->str + t->curr->pos,
-		(t->curr->len - t->curr->pos)*sizeof(int));
-	memcpy(t->buf_last->col, t->curr->col + t->curr->pos,
-		(t->curr->len - t->curr->pos)*sizeof(int));
-        t->buf_last->len = t->curr->len - t->curr->pos;
-	t->buf_last->str[t->buf_last->len] = '\0';
+	/* copy the contents of current line starting from cursor */
+	Editor_Line *src = t->curr;
+	int *str = src->str + src->pos;
+	int *col = src->col + src->pos;
+	int count = src->len - src->pos;
+	memcpy(new_line->str, str, count*sizeof(int));
+	memcpy(new_line->col, col, count*sizeof(int));
+        new_line->len = count;
+	new_line->str[new_line->len] = '\0';
 }
 
-/* Elimina la riga *l */
-static void Editor_Delete_Line(Editor_Text *t, Editor_Line *l)
+/* Elimina la riga *line */
+static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
 {
-	Editor_Line * tmp;
-
-        for (tmp = l->next; tmp; tmp = tmp->next)
+        for (Editor_Line *tmp = line->next; tmp; tmp = tmp->next) {
 		tmp->num--;
+	}
 	t->riga--;
 
-	if (l->next)
-		l->next->prev = l->prev;
-	else
-		t->last = l->prev;
+	if (line == t->first) {
+		t->first = line->next;
+	}
+	if (line == t->last) {
+		t->last = line->prev;
+	}
+	if (line->next) {
+		line->next->prev = line->prev;
+	}
+	if (line->prev) {
+		line->prev->next = line->next;
+	}
+	assert(t->first->prev == NULL);
+	assert(t->last->next == NULL);
+	//DEB(t, "delete line OK");
 
-	if (l->prev)
-		l->prev->next = l->next;
-	else
-		t->first = l->next;
-	free(l);
+	/*
+	if (line->next) {
+		line->next->prev = line->prev;
+	} else {
+		t->last = line->prev;
+	}
+
+	if (line->prev) {
+		line->prev->next = line->next;
+	} else {
+		t->first = line->next;
+	}
+	*/
+	free(line);
 }
 
 /*
@@ -1501,89 +1684,126 @@ static int Editor_Wrap_Word(Editor_Text *t)
 }
 
 /*
- * Mette insieme la riga corrente con la successiva, formattandole.
- * Restituisce 0 se il testo non e' stato modificato,
- * 1 se la riga successiva era vuota, altrimenti 2 se e` stato inserito
- * uno spazio, 3 se la riga corrente terminava gia` con uno spazio.
+ * Merges the line 'above' with the line 'below'. If everything fits on a
+ * single line the contents of the line below (if any) are appended to
+ * the above line and the line below is eliminated. Similarly, if the
+ * above line is empty, it is simply eliminated.
+ * Otherwise, moves as much as fits from the line below to the above
+ * line, inserting an extra space if needed to separate the words, and
+ * wrapping the line at word boundaries.
+ *
+ * Returns an Editor_Merge_Result value specifying how the merge was
+ * performed (see the enum definition for the descriptions).
  */
-static int Editor_Merge_Lines(Editor_Text *t)
+static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
+					   Editor_Line *below)
 {
-	int i, tmp, len, ret;
-
-	if (t->curr->next == NULL)
-		return 0;
-
-	/* La riga successiva e` vuota */
-	if (t->curr->next->len == 0) {
-		Editor_Delete_Line(t, t->curr->next);
-		return 1;
+	if (above == NULL || below == NULL) {
+		return MERGE_NOTHING;
 	}
 
-	/* Calcola quanto della prossima riga sta in questa */
-	tmp = t->max - t->curr->len-1;
-	if (t->curr->str[t->curr->len] == ' ')
-		tmp++;
-	if (tmp > t->curr->next->len)
-		len = t->curr->next->len;
-	else {
-		len = 0;
-		for (i = 0; (i < tmp) && (i < t->curr->next->len); i++)
-			if (t->curr->next->str[i] == ' ')
+	/* If line above is empty, just eliminate it. */
+	if (above->len == 0) {
+		Editor_Delete_Line(t, above);
+		return MERGE_ABOVE_EMPTY;
+	}
+
+	/* If the line below is empty, just eliminate it. */
+	if (below->len == 0) {
+		Editor_Delete_Line(t, below);
+		return MERGE_BELOW_EMPTY;
+	}
+
+	/* Is an extra space necessary to keep words separated after merge? */
+	bool need_extra_space = (above->str[above->len - 1] != ' '
+				 && below->str[0] != ' ');
+	int extra_space = need_extra_space ? 1 : 0;
+	/* Remaining space available in the above line */
+	int avail_chars = t->max - above->len - extra_space;
+
+	/* Find out how much of the string below can be appended to the
+	   string above without breaking any word */
+	int len = 0;
+	if (avail_chars < below->len) {
+		for (int i = 0; i < avail_chars; i++) {
+			if (below->str[i] == ' ') {
 				len = i;
+			}
+		}
+	} else {
+		len = below->len;
 	}
 
-	/* Se ci sta qualcosa, spostalo. */
+	/* If a substring fits, move it above. */
 	if (len > 0) {
-		ret = 3;
-		if (t->curr->str[t->curr->len-1] != ' ') {
-			t->curr->str[t->curr->len] = ' ';
-			t->curr->col[t->curr->len] = t->curr->next->col[0];
-			t->curr->len++;
-			ret = 2;
+		int ret;
+		/* BUG HAS HERE */
+		if (need_extra_space) {
+			assert(above->len > 0);
+			above->str[above->len] = ' ';
+			above->col[above->len] = above->col[above->len - 1];
+			above->len++;
+			ret = MERGE_EXTRA_SPACE;
+		} else {
+			ret = MERGE_REGULAR;
 		}
-		memcpy(t->curr->str + t->curr->len, t->curr->next->str,
-		       len * sizeof(int));
-		memcpy(t->curr->col + t->curr->len, t->curr->next->col,
-		       len * sizeof(int));
-		memcpy(t->curr->next->str, t->curr->next->str + len + 1,
-		       (t->curr->next->len - len) * sizeof(int));
-		memcpy(t->curr->next->col, t->curr->next->col + len + 1,
-		       (t->curr->next->len - len) * sizeof(int));
-		t->curr->len += len;
-		t->curr->next->len -= len + 1;
-		if (t->curr->next->len <= 0)
-			Editor_Delete_Line(t, t->curr->next);
+		int *dest_str = above->str + above->len;
+		int *dest_col = above->col + above->len;
+		int *src_str = below->str;
+		int *src_col = below->col;
+		int *rest_str = below->str + len + 1;
+		int *rest_col = below->col + len + 1;
+		size_t bytes_to_copy = len*sizeof(int);
+		size_t remaining_bytes = (below->len - len)*sizeof(int);
+		memcpy(dest_str, src_str, bytes_to_copy);
+		memcpy(dest_col, src_col, bytes_to_copy);
+		memmove(src_str, rest_str, remaining_bytes);
+		memmove(src_col, rest_col, remaining_bytes);
+
+		above->len += len;
+		below->len -= len;
+		if (below->len <= 0) {
+			DEB(t, "delete below");
+			Editor_Delete_Line(t, below);
+			//ret = MERGE_BELOW_EMPTY; /* CHECK */
+		}
 		return ret;
 	}
-	return 0;
+	/* There's no room in the above line to fit something from below */
+	return MERGE_NOTHING;
+}
+
+static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t)
+{
+	return text_merge_lines(t, t->curr, t->curr->next);
 }
 
 /* Scrolla in su di una riga dello schermo. Se l'editor raggiunge la dimensione
  * massima, setta la finestra di scrolling sullo spazio disponibile.         */
 static void Editor_Scroll_Up(int stop)
 {
-	if (!Editor_Win) {
+	if (!editor_reached_full_size) {
 		if (Editor_Pos > MSG_WIN_SIZE) { /*L'editor e' ancora piccino*/
 			Editor_Pos--;
 			if (stop != NRIGHE-1) {
-				cti_scroll_reg(0, stop);
+				window_push(0, stop);
 				cti_mv(0, stop);
 				scroll_up();
-				cti_scroll_ureg();
+				window_pop();
 				cti_mv(0, stop);
 			}
 			scroll_up();
 		} else { /* Estensione massima dell'editor: setta finestra */
-			Editor_Win = 1;
-			cti_scroll_reg(Editor_Pos+1, stop);
+			window_push(Editor_Pos + 1, stop);
+			editor_reached_full_size = true;
 			cti_mv(0, stop);
 			scroll_up();
 		}
-	} else if (stop != NRIGHE-1){ /* E' una sottofinestra */
-		cti_scroll_reg(Editor_Pos+1, stop);
+	} else if (stop != NRIGHE - 1){ /* E' una sottofinestra */
+		window_push(Editor_Pos + 1, stop);
 		cti_mv(0, stop);
 		scroll_up();
-		cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
+		window_pop();
 		cti_mv(0, stop);
 	} else /* Scrolla tutto il testo */
 		scroll_up();
@@ -1592,11 +1812,11 @@ static void Editor_Scroll_Up(int stop)
 /* Scrolla il giu' la regione di testo tra start e stop */
 static void Editor_Scroll_Down(int start, int stop)
 {
-	if (Editor_Win) {
-		cti_scroll_reg(start, stop);
+	if (editor_reached_full_size) {
+		window_push(start, stop);
 		cti_mv(0, start);
 		scroll_down();
-		cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
+		window_pop();
 	} else {
 		Editor_Scroll_Up(start - 1);
 		Editor_Vcurs--;
@@ -1604,24 +1824,28 @@ static void Editor_Scroll_Down(int start, int stop)
 	cti_mv(Editor_Hcurs, Editor_Vcurs);
 }
 
-/* Vai alla riga precedente */
+/* Moves the cursor to the line above and updates the display */
 static void Editor_Up(Editor_Text *t)
 {
+	assert(t->curr->prev);
+
 	t->curr = t->curr->prev;
-	if ((Editor_Win) && (Editor_Vcurs == Editor_Pos+1))
+	if (editor_reached_full_size && (Editor_Vcurs == Editor_Pos + 1)) {
 		scroll_down();
-	else
+	} else {
 		Editor_Vcurs--;
+	}
 }
 
 /* Vai alla riga successiva */
 static void Editor_Down(Editor_Text *t)
 {
 	t->curr = t->curr->next;
-	if (Editor_Vcurs == NRIGHE-1)
+	if (Editor_Vcurs == NRIGHE-1) {
 		Editor_Scroll_Up(NRIGHE-1);
-	else
+	} else {
 		Editor_Vcurs++;
+	}
 }
 
 /* Modifica il colore del cursore */
@@ -1640,16 +1864,20 @@ static void Editor_Insert_Metadata(Editor_Text *t)
 {
         int c;
 
-        if (Editor_Win)
-                cti_scroll_ureg();
-        cti_mv(0, Editor_Pos);
-        setcolor(COL_HEAD_MD);
-        printf("%-80s\r", "");
-        cti_curs_inv();
+	/*
+	  NOTE: it is responsibility of the Editor_Insert_* functions called
+	        below to execute window_pop() _before_ the text buffer is
+	        modified, and anyways before returning.
+	*/
+        if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
+	fill_line(Editor_Pos, COL_HEAD_MD);
+        make_cursor_invisible();
         cml_printf(_("<b>--- Scegli ---</b> \\<<b>f</b>>ile upload \\<<b>l</b>>ink \\<<b>p</b>>ost \\<<b>r</b>>oom \\<<b>t</b>>ext file \\<<b>u</b>>ser \\<<b>a</b>>bort"));
-        do
-                c = inkey_sc(1);
-        while ((c == 0) || !index("aflprtu\x1b", c));
+        do {
+                c = inkey_sc(true);
+        } while ((c == 0) || !index("aflprtu\x1b", c));
 
         switch (c) {
         case 'f':
@@ -1671,8 +1899,8 @@ static void Editor_Insert_Metadata(Editor_Text *t)
                 Editor_Insert_User(t);
                 break;
         }
-        cti_curs_nor();
-        Editor_Head_Refresh(t, TRUE);
+        make_cursor_visible();
+        Editor_Head_Refresh(t, true);
 }
 
 /* Inserisce il riferimento a un post */
@@ -1683,37 +1911,47 @@ static void Editor_Insert_PostRef(Editor_Text *t)
         int id, col, offset = 0;
         long local_number;
 
-        printf("\r%-80s\r", "");
+	erase_current_line();
         cml_printf("<b>--- Room [%s]:</b> ", postref_room);
         get_roomname("", roomname, true);
         if (roomname[0] == 0) {
-                if (postref_room[0] == 0)
-                        return;
                 strcpy(roomname, postref_room);
         }
-        if (roomname[0] == ':')
-                offset++;
+	if (roomname[0]) {
+		if (roomname[0] == ':') {
+			offset++;
+		}
+		cti_mv(40, Editor_Pos);
+		local_number = new_long_def(" <b>msg #</b>", postref_locnum);
+	}
 
-        cti_mv(40, Editor_Pos);
-        local_number = new_long_def(" <b>msg #</b>", postref_locnum);
+	if (editor_reached_full_size) {
+		window_pop();
+	}
 
-        Editor_Head_Refresh(t, TRUE);
+	if (roomname[0] == 0) {
+		return;
+	}
+
+        Editor_Head_Refresh(t, true);
         id = md_insert_post(t->mdlist, roomname, local_number);
 
         tmpcol = t->curs_col;
         col = COLOR_ROOM;
         Editor_Set_MDNum(col, id);
         Editor_Set_Color(t, col);
-        for (ptr = roomname+offset; *ptr; ptr++)
+        for (ptr = roomname+offset; *ptr; ptr++) {
                 Editor_Putchar(t, *ptr);
+	}
 
         col = COLOR_ROOMTYPE;
         Editor_Set_MDNum(col, id);
         Editor_Set_Color(t, col);
-        if (offset)
+        if (offset) {
                 Editor_Putchar(t, ':');
-        else
+	} else {
                 Editor_Putchar(t, '>');
+	}
 
         if (local_number) {
                 col = COLOR_LOCNUM;
@@ -1722,8 +1960,9 @@ static void Editor_Insert_PostRef(Editor_Text *t)
                 Editor_Putchar(t, ' ');
                 Editor_Putchar(t, '#');
                 sprintf(locstr, "%ld", local_number);
-                for (ptr = locstr; *ptr; ptr++)
+                for (ptr = locstr; *ptr; ptr++) {
                         Editor_Putchar(t, *ptr);
+		}
         }
 
         Editor_Set_Color(t, tmpcol);
@@ -1737,16 +1976,20 @@ static void Editor_Insert_Room(Editor_Text *t)
 	char tmpcol;
         int id, col;
 
-        printf("\r%-80s\r", "");
+	erase_current_line();
         cml_printf("<b>--- Room [%s]:</b> ", postref_room);
         get_roomname("", roomname, true);
         if (roomname[0] == 0) {
-                if (postref_room[0] == 0)
-                        return;
                 strcpy(roomname, postref_room);
         }
+        if (editor_reached_full_size) {
+		window_pop();
+	}
+        if (roomname[0] == 0) {
+		return;
+	}
 
-        Editor_Head_Refresh(t, TRUE);
+        Editor_Head_Refresh(t, true);
 
         id = md_insert_room(t->mdlist, roomname);
 
@@ -1785,16 +2028,22 @@ static void Editor_Insert_User(Editor_Text *t)
         char *ptr, tmpcol;
         int id, col;
 
-        printf("\r%-80s\r", "");
+	erase_current_line();
         cml_printf("<b>--- Utente [%s]: </b> ", last_profile);
         get_username("", username);
         if (username[0] == 0) {
-                if (last_profile[0] == 0)
-                        return;
                 strncpy(username, last_profile, MAXLEN_UTNAME);
         }
 
-        Editor_Head_Refresh(t, TRUE);
+	if (editor_reached_full_size) {
+		window_pop();
+	}
+
+	if (username[0] == 0) {
+		return;
+	}
+
+        Editor_Head_Refresh(t, true);
 
         id = md_insert_user(t->mdlist, username);
 
@@ -1802,8 +2051,9 @@ static void Editor_Insert_User(Editor_Text *t)
         col = COLOR_USER;
         Editor_Set_MDNum(col, id);
         Editor_Set_Color(t, col);
-        for (ptr = username; *ptr; ptr++)
+        for (ptr = username; *ptr; ptr++) {
                 Editor_Putchar(t, *ptr);
+	}
 
         Editor_Set_Color(t, tmpcol);
 }
@@ -1819,49 +2069,66 @@ static void Editor_Insert_File(Editor_Text *t)
         struct stat filestat;
         unsigned long filenum, len, flags;
 
-        printf("\r%-80s\r", "");
-        if (!local_client) {
+	if (local_client) {
+		erase_current_line();
+        } else {
                 setcolor(COL_HEAD_ERROR);
-                printf("%-80s\r", "");
-                cml_printf(_(" *** Server il client locale per l'upload dei file.    -- Premi un tasto --"), "");
-                while (c == 0)
+		erase_current_line();
+                cml_printf(_(
+" *** Server il client locale per l'upload dei file.    -- Premi un tasto --"
+			     ));
+                while (c == 0) {
                         c = getchar();
+		}
+		if (editor_reached_full_size) {
+			window_pop();
+		}
                 return;
         }
 
-        printf("\r%-80s\r", "");
-        path[0] = 0;
+	erase_current_line();
+	path[0] = 0;
         if ( (pathlen = getline_scroll("<b>File name:</b> ", COL_HEAD_MD, path,
-                                       LBUF-1, 0, 0) > 0)) {
+                                       LBUF-1, 0, 0, Editor_Pos) > 0)) {
 	        find_filename(path, filename, sizeof(filename));
-                if (filename[0] == 0)
+                if (filename[0] == 0) {
+			if (editor_reached_full_size) {
+				window_pop();
+			}
                         return;
+		}
                 fullpath = interpreta_tilde_dir(path);
 
                 fp = fopen(fullpath, "r");
                 if (fp == NULL) {
-                        cti_mv(0, Editor_Pos);
-                        setcolor(COL_HEAD_ERROR);
-                        printf("%-80s\r", "");
-                        cml_printf(_(" *** File inesistente.            -- Premi un tasto per continuare --"));
-                        while (c == 0)
+			fill_line(Editor_Pos, COL_HEAD_ERROR);
+                        cml_printf(_(
+" *** File inesistente.            -- Premi un tasto per continuare --"
+				     ));
+                        while (c == 0) {
                                 c = getchar();
-                        if (fullpath)
+			}
+                        if (fullpath) {
                                 Free(fullpath);
+			}
+			if (editor_reached_full_size) {
+				window_pop();
+			}
                         return;
                 }
                 fstat(fileno(fp), &filestat);
                 len = (unsigned long)filestat.st_size;
                 if (len == 0) {
-                        cti_mv(0, Editor_Pos);
-                        setcolor(COL_HEAD_ERROR);
-                        printf("%-80s\r", "");
+			fill_line(Editor_Pos, COL_HEAD_ERROR);
                         cml_printf(_(" *** Mi rifiuto di allegare file vuoti!     -- Premi un tasto per continuare --"));
                         while (c == 0)
                                 c = getchar();
                         if (fullpath)
                                 Free(fullpath);
                         fclose(fp);
+			if (editor_reached_full_size) {
+				window_pop();
+			}
                         return;
                 }
 
@@ -1869,9 +2136,7 @@ static void Editor_Insert_File(Editor_Text *t)
                 serv_gets(buf);
 
                 if (buf[0] == '1') {
-                        cti_mv(0, Editor_Pos);
-                        setcolor(COL_HEAD_ERROR);
-                        printf("%-80s\r", "");
+			fill_line(Editor_Pos, COL_HEAD_ERROR);
                         switch (buf[1]) {
                         case '3':
                                 cml_printf(_(" *** Non si possono allegare file in questa room.     -- Premi un tasto --"));
@@ -1889,20 +2154,29 @@ static void Editor_Insert_File(Editor_Text *t)
                                 cml_printf(_(" *** Non c'&egrave; spazio a sufficienza nel server!       --- Premi un tasto ---  "));
                                 break;
                         }
-                        while (c == 0)
+                        while (c == 0) {
                                 c = getchar();
-                        if (fullpath)
+			}
+                        if (fullpath) {
                                 Free(fullpath);
+			}
+			if (editor_reached_full_size) {
+				window_pop();
+			}
                         return;
                 }
                 filenum = extract_ulong(buf+4, 0); /* no. prenotazione */
 
-                // TODO setta i flags
+                // TODO check the flagsflags
                 flags = 0;
 
-                Editor_Head_Refresh(t, TRUE);
-                id = md_insert_file(t->mdlist, filename, fullpath, filenum, len,
-                                    flags);
+		if (editor_reached_full_size) {
+			window_pop();
+		}
+
+                Editor_Head_Refresh(t, true);
+                id = md_insert_file(t->mdlist, filename, fullpath, filenum,
+				    len, flags);
 
                 tmpcol = t->curs_col;
                 filecol = COLOR_FILE;
@@ -1911,13 +2185,12 @@ static void Editor_Insert_File(Editor_Text *t)
                 Editor_Set_Color(t, filecol);
                 for (ptr = (t->mdlist->md[id-1])->content; *ptr; ptr++) {
                         if ((isascii(*ptr) && isprint(*ptr))
-                            || is_isoch(*ptr))
+                            || is_isoch(*ptr)) {
                                 Editor_Putchar(t, *ptr);
+			}
                 }
                 Editor_Set_Color(t, tmpcol);
         }
-        /*
-        */
 }
 
 /* Inserisce un testo da un file */
@@ -1927,15 +2200,15 @@ static void Editor_Insert_Link(Editor_Text *t)
         char *ptr, tmpcol;
         int id, linkcol;
 
-        printf("\r%-80s\r", "");
+	erase_current_line();
 	buf[0] = 0;
 
         if (getline_scroll("<b>Insert Link:</b> ", COL_HEAD_MD, buf,
-                           LBUF-8, 0, 0) > 0) {
-                printf("\r%-80s\r", "");
+                           LBUF-8, 0, 0, Editor_Pos) > 0) {
+		erase_current_line();
                 label[0] = 0;
                 getline_scroll("<b>Etichetta (opzionale):</b> ", COL_HEAD_MD,
-                               label, NCOL - 2, 0, 0);
+                               label, NCOL - 2, 0, 0, Editor_Pos);
                 id = md_insert_link(t->mdlist, buf, label);
                 if (label[0] == 0) {
                         strncpy(label, buf, 75);
@@ -1943,7 +2216,11 @@ static void Editor_Insert_Link(Editor_Text *t)
                                 strcpy(label+75, "...");
                 }
 
-                Editor_Head_Refresh(t, TRUE);
+		if (editor_reached_full_size) {
+			window_pop();
+		}
+
+                Editor_Head_Refresh(t, true);
                 tmpcol = t->curs_col;
                 linkcol = COLOR_LINK;
                 Editor_Set_MDNum(linkcol, id);
@@ -1954,7 +2231,11 @@ static void Editor_Insert_Link(Editor_Text *t)
                                 Editor_Putchar(t, *ptr);
                 }
                 Editor_Set_Color(t, tmpcol);
-        }
+        } else {
+		if (editor_reached_full_size) {
+			window_pop();
+		}
+	}
 }
 
 /* Inserisce un testo da un file */
@@ -1966,20 +2247,26 @@ static void Editor_Insert_Text(Editor_Text *t)
 	int len, wlen, color, i;
         int c = 0;
 
-        if (Editor_Win)
-                cti_scroll_ureg();
-        cti_mv(0, Editor_Pos);
-        setcolor(COL_HEAD_ERROR);
-        printf("%-80s\r", "");
+
+	/*
+        if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
+	*/
+	fill_line(Editor_Pos, COL_HEAD_ERROR);
         file_path[0] = 0;
         if (getline_scroll("<b>Inserisci file:</b> ", COL_HEAD_MD, file_path,
-                           LBUF-1, 0, 0) > 0) {
+                           LBUF-1, 0, 0, Editor_Pos) > 0) {
                 filename = interpreta_tilde_dir(file_path);
                 fp = fopen(filename, "r");
-                if (filename)
+                if (filename) {
                         Free(filename);
+		}
                 if (fp != NULL) {
-                        Editor_Head_Refresh(t, TRUE);
+			if (editor_reached_full_size) {
+				window_pop();
+			}
+                        Editor_Head_Refresh(t, true);
                         fgets(buf, 6, fp);
                         if (!strncmp(buf, "<cml>", 5)) {
                                 color = C_DEFAULT;
@@ -2061,16 +2348,25 @@ static void Editor_Insert_Text(Editor_Text *t)
                         cti_mv(0, Editor_Pos);
                         setcolor(COL_HEAD_ERROR);
                         printf("%-80s\r", " *** File non trovato o non leggibile!! -- Premi un tasto per continuare --");
-                        while (c == 0)
+                        while (c == 0) {
                                 c = getchar();
+			}
+			if (editor_reached_full_size) {
+				window_pop();
+			}
                 }
-        }
-        Editor_Head_Refresh(t, TRUE);
+        } else {
+		if (editor_reached_full_size) {
+			window_pop();
+		}
+	}
+
+        Editor_Head_Refresh(t, true);
 }
 
 
 
-/* Inserisce un testo da un file */
+/* Save the text to a file */
 static void Editor_Save_Text(Editor_Text *t)
 {
         char file_path[LBUF], *filename, *out;
@@ -2079,18 +2375,18 @@ static void Editor_Save_Text(Editor_Text *t)
         int col;
         int c = 0;
 
-        if (Editor_Win)
-                cti_scroll_ureg();
-        cti_mv(0, Editor_Pos);
-        setcolor(COL_HEAD_MD);
-        printf("%-80s\r", "");
+        if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
+	fill_line(Editor_Pos, COL_HEAD_MD);
         file_path[0] = 0;
         if (getline_scroll("<b>Nome file:</b> ", COL_HEAD_MD, file_path,
-                           LBUF-1, 0, 0) > 0) {
+                           LBUF-1, 0, 0, Editor_Pos) > 0) {
                 filename = interpreta_tilde_dir(file_path);
                 fp = fopen(filename, "w");
-                if (filename)
+                if (filename) {
                         Free(filename);
+		}
                 if (fp != NULL) {
                         col = C_DEFAULT;
                         fprintf(fp, "<cml>\n");
@@ -2104,11 +2400,15 @@ static void Editor_Save_Text(Editor_Text *t)
                         cti_mv(0, Editor_Pos);
                         setcolor(COL_HEAD_ERROR);
                         printf("%-80s\r", " *** Non posso creare o modificare il file! -- Premi un tasto per continuare --");
-                        while (c == 0)
+                        while (c == 0) {
                                 c = getchar();
+			}
                 }
         }
-        Editor_Head_Refresh(t, TRUE);
+	if (editor_reached_full_size) {
+		window_pop();
+	}
+        Editor_Head_Refresh(t, true);
 }
 
 
@@ -2139,20 +2439,6 @@ static void line_refresh(Editor_Line *line, int vpos, int start)
 		putchar(' ');
 	setcolor(col);
 	cti_mv(line->pos+1, Editor_Vcurs);
-}
-
-
-/*
- * Cancella dallo schermo la riga vpos.
- */
-static void clear_line(int vpos)
-{
-	int i;
-
-	cti_mv(0, vpos);
-	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
-	for (i = 0; i < NCOL - 1; i++)
-		putchar(' ');
 }
 
 /* Libera la memoria allocata al testo. */
@@ -2186,109 +2472,128 @@ static void Editor_Free_MD(Editor_Text *t, Editor_Line *l)
 /* Libera la memoria allocata al buffer di copia. */
 static void Editor_Free_Copy_Buffer(Editor_Text *t)
 {
-	Editor_Line *l, *tmp;
+	Editor_Line *tmp;
 
-	for (l = t->buf_first; l; l = tmp) {
-		tmp = l->next;
-                if (t->buf_pasted == FALSE)
-                        Editor_Free_MD(t, l);
-		free(l);
+	for (Editor_Line *line = t->buf_first; line; line = tmp) {
+		tmp = line->next;
+                if (!t->buf_pasted) {
+                        Editor_Free_MD(t, line);
+		}
+		free(line);
 	}
         t->buf_riga = 0;
-        t->buf_pasted = FALSE;
+        t->buf_pasted = false;
         t->buf_first = NULL;
         t->buf_last = NULL;
 }
 
-/* Refresh del testo attualmente visualizzato, partendo dalla riga 'start'.
- * Se start e` nullo, rinfresca tutto il testo. */
+/* Refresh the displayed text, from terminal row 'start' to the bottom of the
+ * terminal window. If 'start' is zero, refreshes the full text display.   */
 static void Editor_Refresh(Editor_Text *t, int start)
 {
-	Editor_Line *line;
 	int i;
 
-	if (start < (Editor_Pos + 1))
+	if (start < (Editor_Pos + 1)) {
 		start = Editor_Pos + 1;
-	line = t->curr;
-	for (i = Editor_Vcurs; i > start; i--)
-		line = line->prev;
+	}
 
+	/* find the first line to be refreshed */
+	Editor_Line *line = t->curr;
+	for (i = Editor_Vcurs; i > start && line->prev; i--) {
+		line = line->prev;
+	}
+	assert(line);
+
+	/* refresh down to the bottom of the screen, or text end */
 	for (i = start; i < NRIGHE && line; i++) {
 		line_refresh(line, i, 0);
 		line = line->next;
 	}
-	for ( ; i < NRIGHE; i++)
+
+	/* clear the remaining rows if the text did not fill the display */
+	for ( ; i < NRIGHE; i++) {
 		clear_line(i);
+	}
 }
+
+const char status_front[] =
+	"--- Inserisci il testo ---   Help: F1   Exit: Ctrl-X   [ ";
+const char status_back[] =  "%s %3d/%3d,%2d ] ";
+const char *insmode[3] = {"Insert   ", "Overwrite", "ASCII Art"};
 
 static void Editor_Head(Editor_Text *t)
 {
 	push_color();
 	setcolor(C_EDITOR);
-	printf(_("--- Inserisci il testo ---   Help: F1   Exit: Ctrl-X"
-		 "   [ %s %3d/%3d,%2d ]"), "Ins", t->curr->num,
-	       t->riga, t->curr->pos+1);
+	printf(status_front);
+	printf(status_back, insmode[(int)t->insert], t->curr->num, t->riga,
+	       t->curr->pos + 1);
 	pull_color();
+	/* TODO: what is the role of the following '\n' (which is needed) */
 	putchar('\n');
 }
 
 /* Aggiorna l'header dell'editor, con modalita' di scrittura e pos cursore */
-/* Se mode e' TRUE refresh totale dell'header                              */
-static void Editor_Head_Refresh(Editor_Text *t, int mode)
+/* Se mode e' TRUE refresh dell'intero header, non solamente la parte      */
+/* finale che puo' cambiare.                                               */
+static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh)
 {
-	const char *insmode[3] = {"Insert   ", "Overwrite", "ASCII Art"};
-	char buf[LBUF];
-
-	if (Editor_Win)
-		cti_scroll_ureg();
+	if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
 	setcolor(COL_EDITOR_HEAD);
-        if (mode) {
+        if (full_refresh) {
                 cti_mv(0, Editor_Pos);
-                printf(_("--- Inserisci il testo ---   Help: F1   Exit: Ctrl-X"
-                /* "--- Editor: Inserisci il testo (Help: F1)           " */
-                         "   [ "));
-        } else
-                cti_mv(57, Editor_Pos);
-	sprintf(buf, "%s %3d/%3d,%2d ] ", insmode[(int) t->insert],
-		t->curr->num, t->riga, t->curr->pos+1);
-	printf("%-20s", buf);
-	if (Editor_Win)
-		cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
+		printf(status_front);
+        } else {
+                cti_mv(strlen(status_front), Editor_Pos);
+	}
+
+	printf(status_back, insmode[(int) t->insert], t->curr->num, t->riga,
+	       t->curr->pos+1);
+
+	if (editor_reached_full_size) {
+		window_pop();
+	}
 	setcolor(t->curr_col);
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
+}
+
+/* Refresh everything: header and text */
+static void Editor_Refresh_All(Editor_Text *t)
+{
+	/*
+	  We clear the line just above the editor status bar because the
+	  apple Terminal.app behaves erraticaly when resizing the terminal
+	  window, sometimes doing an extra scroll up. Erasing the line above
+	  the status bar is fine because it is anyway not used.
+	*/
+	cti_mv(0, Editor_Pos - 1);
+	printf(ERASE_TO_EOL);
+
+	Editor_Head_Refresh(t, true);
+	Editor_Refresh(t, 0);
 }
 
 static int Editor_Ask_Abort(Editor_Text *t)
 {
-	if (Editor_Win)
-		cti_scroll_ureg();
+	if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
 	cti_mv(0, Editor_Pos - 2);
 	setcolor(C_EDITOR_DEBUG);
-	printf(sesso ? _("\nSei sicura di voler lasciar perdere il testo (s/n)? ")
+	printf(sesso
+	       ? _("\nSei sicura di voler lasciar perdere il testo (s/n)? ")
 	       : _("\nSei sicuro di voler lasciar perdere il testo (s/n)? "));
 	if (si_no() == 'n')
-		return FALSE;
-	if (Editor_Win)
-		cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
+		return false;
+	if (editor_reached_full_size) {
+		window_pop();
+	}
 	setcolor(t->curr_col);
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
-	return TRUE;
+	return true;
 }
-
-#ifdef EDITOR_DEBUG
-static void Editor_Debug_Status(Editor_Text *t, char *str)
-{
-	if (Editor_Win)
-		cti_scroll_ureg();
-	cti_mv(0, Editor_Pos - 2);
-	setcolor(C_EDITOR_DEBUG);
-	printf("Debug Status: %s", str);
-	if (Editor_Win)
-		cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
-	setcolor(t->curr_col);
-	cti_mv(t->curr->pos + 1, Editor_Vcurs);
-}
-#endif
 
 static void Editor2CML(Editor_Line *line, struct text *txt, int col,
                        Metadata_List *mdlist)
@@ -2362,63 +2667,74 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
 static void help_edit(Editor_Text *t)
 {
 	cti_clear_screen();
-	if (Editor_Win)
-		cti_scroll_ureg();
+	if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
+	/* TODO: define the help strings as constants, possibly in another
+	 *       file. Unify with the help strings in edit.c .             */
 	cml_printf(_(
-                     //               "        <b>o---O Help Editor Interno O---o</b>\n\n"
-               "<b>Attenzione</b>: le combinazioni di tasti Alt- vanno composte su alcuni terminali\n"
-               "            con la pressione del tasto Escape seguita dal tasto dato dalla\n"
-               "            combinazione.\n\n"
-               "<b>Movimento del cursore:</b> Utililizzare i tasti di cursore oppure\n"
-	       "  Ctrl-B  Sposta il cursore di un carattere a sinistra (Backward).\n"
-	       "  Ctrl-F  Sposta il cursore di un carattere a destra   (Forward).\n"
-	       "  Ctrl-N  Vai alla riga successiva (Next).\n"
-	       "  Ctrl-P  Vai alla riga precedente (Previous).\n"
-	       "  Ctrl-A  Vai all'inizio della riga.\n"
-	       "  Ctrl-E  Vai alla fine della riga.\n"
-	       "  Ctrl-V, \\<Page Down\\>  Vai alla pagina successiva.\n"
-	       "  Alt-v , \\<Page Up\\>    Vai alla pagina precedente.\n"
-	       "  \\<Home\\>                Vai in cima al testo.\n"
-	       "  \\<End\\>                 Vai in fondo al testo.\n\n"
-	       "<b>Comandi di cancellazione:</b>\n"
-	       "  Ctrl-D, \\<Del\\>  Cancella il carattere sotto al cursore.\n"
-               "  Ctrl-G  Incolla il testo tagliato con Ctrl-K.\n"
-	       "  Ctrl-K  Cancella dal cursore fino alla fine della riga.\n"
-	       "  Ctrl-U  Cancella tutto il testo.\n"
-	       "  Ctrl-W  Cancella una parola all'indietro.\n"
-               "  Alt-d   Cancella la parola a destra del cursore.\n"));
+//"        <b>o---O Help Editor Interno O---o</b>\n\n"
+"<b>Attenzione</b>: le combinazioni di tasti Alt- vanno composte su alcuni terminali\n"
+"            con la pressione del tasto Escape seguita dal tasto dato dalla\n"
+"            combinazione.\n\n"
+"<b>Movimento del cursore:</b> Utililizzare i tasti di cursore oppure\n"
+"  Ctrl-B  Sposta il cursore di un carattere a sinistra (Backward).\n"
+"  Ctrl-F  Sposta il cursore di un carattere a destra   (Forward).\n"
+"  Ctrl-N  Vai alla riga successiva (Next).\n"
+"  Ctrl-P  Vai alla riga precedente (Previous).\n"
+"  Ctrl-A  Vai all'inizio della riga.\n"
+"  Ctrl-E  Vai alla fine della riga.\n"
+"  Ctrl-V, \\<Page Down\\>  Vai alla pagina successiva.\n"
+"  Alt-v , \\<Page Up\\>    Vai alla pagina precedente.\n"
+"  \\<Home\\>                Vai in cima al testo.\n"
+"  \\<End\\>                 Vai in fondo al testo.\n\n"
+"<b>Comandi di cancellazione:</b>\n"
+"  Ctrl-D, \\<Del\\>  Cancella il carattere sotto al cursore.\n"
+"  Ctrl-G  Incolla il testo tagliato con Ctrl-K.\n"
+"  Ctrl-K  Cancella dal cursore fino alla fine della riga.\n"
+"  Ctrl-U  Cancella tutto il testo.\n"
+"  Ctrl-W  Cancella una parola all'indietro.\n"
+"  Alt-d   Cancella la parola a destra del cursore.\n"
+		     ));
 	hit_any_key();
 	cti_clear_screen();
         cml_printf(_(
-               "<b>Inserimento allegati:</b>\n\n"
-               "  Premendo Alt-i &egrave; possibile inserire in allegato al post\n"
-               "  dei file, dei link a pagine web, o riferimenti a post, room e utenti.\n\n"
-               "<b>Salvataggio post su file e inserimento file testo:</b> (solo client locale)\n\n"
-               "  Alt-i \\<t>ext  Inserisce nel post un file di testo.\n"
-               "  Ctrl-T        Salva il post in un file di testo.\n"));
+"<b>Inserimento allegati:</b>\n\n"
+"  Premendo Alt-i &egrave; possibile inserire in allegato al post\n"
+"  dei file, dei link a pagine web, o riferimenti a post, room e utenti.\n\n"
+"<b>Salvataggio post su file e inserimento file testo:</b> (solo client locale)\n\n"
+"  Alt-i \\<t>ext  Inserisce nel post un file di testo.\n"
+"  Ctrl-T        Salva il post in un file di testo.\n"
+		     ));
         cml_printf(_(
-               "\n<b>Altri Comandi:</b>\n\n"
-	       "  Alt-a   Abort: lascia perdere (chiede conferma).\n"
-	       "  Ctrl-L  Rinfresca la schermata.\n"
-	       "  Ctrl-X  Termina l'immissione del testo.\n"));
-	cml_printf(_("\n<b>Modalit&agrave; di funzionamento dell'editor:</b>\n\n"
-		     "Le modalit&agrave; disponibili sono <b>Insert</b> per l'inserimento del testo,\n"
+"\n<b>Altri Comandi:</b>\n\n"
+"  Alt-a   Abort: lascia perdere (chiede conferma).\n"
+"  Ctrl-L  Rinfresca la schermata.\n"
+"  Ctrl-X  Termina l'immissione del testo.\n"
+		     ));
+	cml_printf(_(
+"\n<b>Modalit&agrave; di funzionamento dell'editor:</b>\n\n"
+"Le modalit&agrave; disponibili sono <b>Insert</b> per l'inserimento del testo,\n"
 "<b>Overwrite</b> per la sovrascrizione e <b>ASCII-Art</b> per creare disegni.\n"
-		     "La selezione avviene mediante la pressione ripetuta del tasto \\<<b>Ins</b>\\>.\n\n"));
+"La selezione avviene mediante la pressione ripetuta del tasto \\<<b>Ins</b>\\>.\n\n"
+		     ));
 	hit_any_key();
 	cti_clear_screen();
 	cml_print(help_colors);
-	cml_print(_("  \\<<b>F2</b>\\>  Applica colore e attributi correnti al carattere sotto al cursore.\n"
-                    "  \\<<b>F3</b>\\>  Applica colore e attributi correnti fino al prossimo spazio.\n"
-                    "  \\<<b>F4</b>\\>  Applica colore e attributi correnti a tutta la riga.\n\n"));
+	cml_print(_(
+"  \\<<b>F2</b>\\>  Applica colore e attributi correnti al carattere sotto al cursore.\n"
+"  \\<<b>F3</b>\\>  Applica colore e attributi correnti fino al prossimo spazio.\n"
+"  \\<<b>F4</b>\\>  Applica colore e attributi correnti a tutta la riga.\n\n"
+		    ));
 	hit_any_key();
 	cti_clear_screen();
 	cml_print(help_8bit);
 	hit_any_key();
 	cti_mv(0, Editor_Pos);
 	Editor_Head(t);
-	if (Editor_Win)
-		cti_scroll_reg(Editor_Pos+1, NRIGHE-1);
+	if (editor_reached_full_size) {
+		window_pop();
+	}
 	Editor_Refresh(t, 0);
 }
 
@@ -2545,6 +2861,181 @@ static void text2editor(Editor_Text *t, struct text *txt)
 		t->curr->next->pos = 0;
 		t->curr->pos = 0;
 		t->curr = t->curr->next;
+	}
+}
+#endif
+
+/**************************************************************************/
+/* Editor debugging utilities.                                            */
+/**************************************************************************/
+#ifdef EDITOR_DEBUG
+
+static void Editor_Debug_Status(Editor_Text *t, char *str)
+{
+	static char debug_str[LBUF] = {0};
+
+	if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
+
+	if (*str) {
+		strcpy(debug_str, str);
+	}
+
+	/* cti_mv(0, Editor_Pos - 2); */
+	cti_mv(0, 0);
+	setcolor(C_EDITOR_DEBUG);
+	erase_current_line();
+	printf("Debug Status: %s [ws: %d]", debug_str,
+	       debug_get_winstack_index());
+
+	cti_mv(0, 1);
+	int ws_count = debug_get_winstack_index();
+	int first, last;
+	debug_get_current_win(&first, &last);
+	printf("C %d,%d; ", first, last);
+	for (int i = 0; i != ws_count; i++) {
+		debug_get_winstack(i, &first, &last);
+		printf("%d %d,%d; ", i, first, last);
+	}
+
+	if (editor_reached_full_size) {
+		window_pop();
+	}
+	setcolor(t->curr_col);
+	cti_mv(t->curr->pos + 1, Editor_Vcurs);
+}
+
+static void Editor_Debug_Show_Copy_Buffer(Editor_Text *t)
+{
+	static int num_rows = 0;
+
+	if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
+
+	int row = 3;
+
+	if (t->buf_riga) {
+		cti_mv(0, row++);
+		setcolor(C_EDITOR_DEBUG);
+		erase_current_line();
+		printf("----- copy buffer -----");
+		for (Editor_Line *line = t->buf_first; line; line=line->next) {
+			cti_mv(0, row++);
+			erase_current_line();
+			for (int i = 0; (i<NCOL-2) && (line->str[i]!=0); i++) {
+				putchar(line->str[i]);
+			}
+		}
+		cti_mv(0, row++);
+		erase_current_line();
+		printf("--- end copy buffer ---");
+	}
+	int rows_written = row;
+	while(row < num_rows) {
+		cti_mv(0, row++);
+		erase_current_line();
+	}
+	fflush(stdout);
+
+	if (editor_reached_full_size) {
+		window_pop();
+	}
+	setcolor(t->curr_col);
+	cti_mv(t->curr->pos + 1, Editor_Vcurs);
+
+	num_rows = rows_written;
+}
+
+static void sanity_checks(Editor_Text *t)
+{
+	if (t->first == NULL) {
+		assert(t->last == NULL);
+		assert(t->curr == NULL);
+		goto SANITY_COPY_BUFFER;
+	}
+	assert(t->first->prev == NULL);
+	assert(t->last->next == NULL);
+
+	{
+		int num = 1;
+		Editor_Line *line = t->first;
+		for (;;) {
+			assert(line->num == num);
+			if (line->next == NULL) {
+				assert(line == t->last);
+				break;
+			}
+			if (line->prev) {
+				assert(line->prev->next == line);
+			} else {
+				assert(line == t->first);
+			}
+			num++;
+			line = line->next;
+		}
+		assert(t->riga == num);
+	}
+	{
+		Editor_Line *line = t->last;
+		for (;;) {
+			if (line->prev == NULL) {
+				assert(line == t->first);
+				break;
+			}
+			if (line->next) {
+				assert(line->next->prev == line);
+			} else {
+				assert(line == t->last);
+			}
+			line = line->prev;
+		}
+	}
+
+	/* Test the copy buffer sanity */
+ SANITY_COPY_BUFFER:
+
+	if (t->buf_first == NULL) {
+		assert(t->buf_last == NULL);
+		return;
+	}
+	assert(t->buf_first->prev == NULL);
+	assert(t->buf_last->next == NULL);
+
+	{
+		int num = 1;
+		Editor_Line *line = t->buf_first;
+		for (;;) {
+			//assert(line->num == num);
+			if (line->next == NULL) {
+				assert(line == t->buf_last);
+				break;
+			}
+			if (line->prev) {
+				assert(line->prev->next == line);
+			} else {
+				assert(line == t->buf_first);
+			}
+			num++;
+			line = line->next;
+		}
+		assert(t->buf_riga == num);
+	}
+	{
+		Editor_Line *line = t->buf_last;
+		for (;;) {
+			if (line->prev == NULL) {
+				assert(line == t->buf_first);
+				break;
+			}
+			if (line->next) {
+				assert(line->next->prev == line);
+			} else {
+				assert(line == t->buf_last);
+			}
+			line = line->prev;
+		}
 	}
 }
 #endif
