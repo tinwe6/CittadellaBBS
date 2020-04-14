@@ -41,6 +41,7 @@
 #define Key_END         307
 #define Key_PAGEUP      308
 #define Key_PAGEDOWN    309
+/* Meta keys encoded from 400 to 400 + 255 = 655 */
 #define Key_META        400
 #define Key_F0          700
 /* Special codes that notify special events that occurred while waiting */
@@ -48,7 +49,7 @@
 #define Key_Window_Changed 801 /* The term window has been resized      */
 #define Key_Timeout     802 /* Server sent post timeout message         */
 
-#define META(C)  (Key_META + C)
+#define META(c)  (Key_META + (c))
 #define Key_F(n)    (Key_F0 + (n))
 
 /* Prototipi funzioni in inkey.c */

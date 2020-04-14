@@ -216,9 +216,9 @@ int inkey_pager(int esegue, char *str, int *key)
 
 static int read_key(void)
 {
-	char buf[LBUF];
+	char buf[32];
 
-	read(0, buf, 1);
+	read(STDIN_FILENO, buf, 1);
 	int key = (unsigned char)buf[0];
 	if (key == Key_ESC) {
 		key = getmeta(buf);
@@ -229,17 +229,19 @@ static int read_key(void)
 }
 
 /*
- * Funzione per la cattura delle sequenze di escape per i caratteri
- * speciali.
+ * Funzione per la cattura delle sequenze di escape per i caratteri  speciali.
+ * NOTE: see http://aperiodic.net/phil/archives/Geekery/term-function-keys.html
+ *       for the function key escape codes (not fully implemented yet).
  */
 static int getmeta(char *buf)
 {
 	read(STDIN_FILENO, buf+1, 1);
+
 #ifdef HAVE_CTI
 	switch(buf[1]) {
 	case 27:
 		return 0;
-	case 79: /* Alt-O */
+	case 79: /* ^[O */
 		read(STDIN_FILENO, buf+2, 1);
 		switch(buf[2]) {
 		case 'A':
@@ -255,10 +257,11 @@ static int getmeta(char *buf)
 		case 'd':
 			return(Key_LEFT);
 		}
-		if (buf[2] <= 'S' && buf[2] >= 'P')
-			return Key_F(buf[2] - 79);
+		/* ^[OP ^[OQ ^[OR ^[OS for F1-F4 (vt100) */
+		if ('P' <= buf[2] && buf[2] <= 'S')
+			return Key_F(buf[2] - 'O');
 		break;
-	case 91: /* Alt-[ */
+	case 91: /* ^[[ */
 		read(STDIN_FILENO, buf+2, 1);
 		switch(buf[2]) {
 		case 'A':
@@ -282,34 +285,46 @@ static int getmeta(char *buf)
 			read(STDIN_FILENO, buf+3, 1);
 		case 'H':
 			return Key_HOME;
-		case '[':
+		case '1': /* ^[[1 */
+		case '2': /* ^[[2 */
+		case '3': /* ^[[3 */
 			read(STDIN_FILENO, buf+3, 1);
-			if (buf[3] >= 'A' && buf[3] <= 'E')
-				return Key_F(buf[3] - 64);
-			break;
-		case '1':
-			read(STDIN_FILENO, buf+3, 1);
-			if (buf[3] >= '1' && buf[3] <= '5') {
-				read(STDIN_FILENO, buf+3, 1);
-				return Key_F(buf[3] - 48);
+			if (buf[3] == '~') {
+				switch(buf[2]) {
+				case '1': return Key_HOME;
+				case '2': return Key_INS;
+				case '3': return Key_DEL;
+				}
+				return 0;
 			}
-			if (buf[3] >= '7' && buf[3] <= '9') {
-				read(STDIN_FILENO, buf+3, 1);
-				return Key_F(buf[3] - 49);
+
+			read(STDIN_FILENO, buf+4, 1);
+			if (buf[4] == '~') {
+				int code = (buf[2] - '0')*10 + (buf[3] - '0');
+				switch(code) {
+				case 11: return Key_F(1);
+				case 12: return Key_F(2);
+				case 13: return Key_F(3);
+				case 14: return Key_F(4);
+				case 15: return Key_F(5);
+				case 17: return Key_F(6);
+				case 18: return Key_F(7);
+				case 19: return Key_F(8);
+				case 20: return Key_F(9);
+				case 21: return Key_F(10);
+				case 23: return Key_F(11);
+				case 24: return Key_F(12);
+				case 25: return Key_F(13);
+				case 26: return Key_F(14);
+				case 28: return Key_F(15);
+				case 29: return Key_F(16);
+				case 31: return Key_F(17);
+				case 32: return Key_F(18);
+				case 33: return Key_F(19);
+				case 34: return Key_F(20);
+				}
 			}
-			if (buf[3] == 126)
-				return Key_HOME;
-			break;
-		case '2':
-			read(STDIN_FILENO, buf+3, 1);
-			if (buf[3] == 126)
-				return Key_INS;
-			break;
-		case '3':
-			read(STDIN_FILENO, buf+3, 1);
-			if (buf[3] == 126)
-				return Key_DEL;
-			break;
+			return 0;
 		case '5':
 			read(STDIN_FILENO, buf+3, 1);
 		case 'V':
@@ -323,59 +338,6 @@ static int getmeta(char *buf)
 		}
 		break;
 	}
-#if 0
-	if (key_npage && !strncmp(buf, key_npage, strlen(key_npage)))
-		return Key_PAGEDOWN;
-
-	if (key_ppage && !strncmp(buf, key_ppage, strlen(key_ppage)))
-		return Key_PAGEUP;
-
-	if (key_up && !strncmp(buf, key_up, strlen(key_up)))
-		return Key_UP;
-
-	if (key_down && !strncmp(buf, key_down, strlen(key_down)))
-		return Key_DOWN;
-
-	if (key_right && !strncmp(buf, key_right, strlen(key_right)))
-		return Key_RIGHT;
-
-	if (key_left && !strncmp(buf, key_left, strlen(key_left)))
-		return Key_LEFT;
-
-	if (key_home && !strncmp(buf, key_home, strlen(key_home)))
-		return Key_HOME;
-
-	if (key_end && !strncmp(buf, key_end, strlen(key_end)))
-		return Key_END;
-
-	if (key_f1 && !strncmp(buf, key_f1, strlen(key_f1)))
-		return Key_F(1);
-
-	if (key_f2 && !strncmp(buf, key_f2, strlen(key_f2)))
-		return Key_F(2);
-
-	if (key_f3 && !strncmp(buf, key_f3, strlen(key_f3)))
-		return Key_F(3);
-
-	if (key_f4 && !strncmp(buf, key_f4, strlen(key_f4)))
-		return Key_F(4);
-
-	if (key_f5 && !strncmp(buf, key_f5, strlen(key_f5)))
-		return Key_F(5);
-
-	if (key_f6 && !strncmp(buf, key_f6, strlen(key_f6)))
-		return Key_F(6);
-
-	if (key_f7 && !strncmp(buf, key_f7, strlen(key_f7)))
-		return Key_F(7);
-
-	if (key_f8 && !strncmp(buf, key_f8, strlen(key_f8)))
-		return Key_F(8);
-
-	if (key_ic && !strncmp(buf, key_ic, strlen(key_ic)))
-		return Key_INS;
-
-#endif
 #endif
 
 	return META(buf[1]);
