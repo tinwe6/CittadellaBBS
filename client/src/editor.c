@@ -151,13 +151,13 @@ typedef enum {
 #define COL_HEAD_ERROR COLOR(RED, GRAY, ATTR_BOLD)
 
 /* Per avere informazione sul debugging definire EDITOR_DEBUG */
-#undef EDITOR_DEBUG
-//#define EDITOR_DEBUG
+//#undef EDITOR_DEBUG
+#define EDITOR_DEBUG
 
 #ifdef EDITOR_DEBUG
-# define DEB(t, s) Editor_Debug_Status((t),(s))
+# define DEB(...) console_printf(__VA_ARGS__)
 #else
-# define DEB(t, s)
+# define DEB(...)
 #endif
 
 /* Prototipi funzioni in questo file */
@@ -220,8 +220,12 @@ static void help_edit(Editor_Text *t);
 static int Editor_Ask_Abort(Editor_Text *t);
 static void refresh_line_curs(int *pos, int *curs);
 #ifdef EDITOR_DEBUG
-static void Editor_Debug_Status(Editor_Text *t, char *str);
-static void Editor_Debug_Show_Copy_Buffer(Editor_Text *t);
+static void console_init(void);
+static void console_toggle(void);
+static void console_printf(const char *fmt, ...);
+static void console_show_copy_buffer(Editor_Text *t);
+static void console_update(Editor_Text *t);
+static void console_set_status(char *fmt, ...);
 static void sanity_checks(Editor_Text *t);
 #endif
 
@@ -420,7 +424,9 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	}
 	Editor_Refresh(&t, 0);
 
-	DEB(&t, "---");
+#ifdef EDITOR_DEBUG
+	console_init();
+#endif
 
 	bool fine = false;
 	do {
@@ -490,28 +496,41 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
         wrap = true and wrap = false, why? */
 {
 	int status = GL_NORMAL;    /* stato dell'editor             */
+#ifdef EDITOR_DEBUG
+	int last_key = 0;
+#endif
 
 	IGNORE_UNUSED_PARAMETER(wrap);
 
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
         do {
+
 #ifdef EDITOR_DEBUG
 		sanity_checks(t);
-		//DEB(t, "^");
-		Editor_Debug_Show_Copy_Buffer(t);
+		console_set_status("cl addr %p, status %d key %d",
+				   (void *)t->curr, status, last_key);
+		console_update(t);
 #endif
+
 		Editor_Head_Refresh(t, false);
 
-		/* TODO: SISTEMARE PROMPT ?
-                   prompt_txt = t->curr->str;
-                */
 		Editor_Hcurs = t->curr->pos + 1;
 
 		int key = inkey_sc(true);
 		bool addchar = false;
 
+#ifdef EDITOR_DEBUG
+		last_key = key;
+		for (int k = 0; k < 20; k++) {
+			if (key == Key_F(k)) {
+				DEB("F%d pressed [code %d]", k, key);
+			}
+		}
+#endif
+
 		if (key == Key_Window_Changed) {
+			DEB("Terminal window resized (WINCH)");
 			if (t->term_nrows < NRIGHE) {
 				/* the terminal has grown vertically */
 				int extra_rows = NRIGHE - t->term_nrows;
@@ -649,7 +668,8 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 
 		case Key_F(2): /* Applica colore e attributi correnti */
 			if ((t->curr->pos < t->curr->len) &&
-                            (Editor_Get_MDNum(t->curr->col[t->curr->pos])==0)) {
+                            (Editor_Get_MDNum(t->curr->col[t->curr->pos]) == 0)
+			    ) {
 				t->curr->col[t->curr->pos] = t->curr_col;
 				putchar(t->curr->str[t->curr->pos]);
                                 if (t->insert != MODE_ASCII_ART)
@@ -695,6 +715,13 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			} else
 				Beep();
 			break;
+
+#ifdef EDITOR_DEBUG
+		case Key_F(12):
+			console_toggle();
+			console_update(t);
+			break;
+#endif
 
 		case Ctrl('U'): /* Cancella tutto il testo della riga */
                         Editor_Free_MD(t, t->curr);
@@ -875,6 +902,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 		}
 		if (status != GL_NORMAL) {
 			key = gl_extchar(status);
+			DEB("Extended glyph %d key %d", status, key);
 			if (key != -1) {
 				addchar = true;
 			} else {
@@ -1191,17 +1219,17 @@ static void Editor_Yank(Editor_Text *t)
 			t->curr->pos = 0;
 			t->curr->next->pos = 0;
 			Editor_Refresh(t, Editor_Vcurs);
-			DEB(t, "Y-1");
+			DEB("Yank-1");
 		} else if (cursor_at_line_end) {
 			/* do nothing */
-			DEB(t, "Y-2");
+			DEB("Yank-2");
 		} else {
 			Editor_Insert_Line_Here(t);
 			t->curr = t->curr->prev;
 			t->curr->pos = 0;
 			t->curr->next->pos = 0;
 			Editor_Refresh(t, Editor_Vcurs);
-			DEB(t, "Y-3");
+			DEB("Yank-3");
 		}
 	}
 
@@ -1576,23 +1604,11 @@ static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
 	if (line->prev) {
 		line->prev->next = line->next;
 	}
+
 	assert(t->first->prev == NULL);
 	assert(t->last->next == NULL);
-	//DEB(t, "delete line OK");
+	DEB("Delete line (addr %p)", (void *)line);
 
-	/*
-	if (line->next) {
-		line->next->prev = line->prev;
-	} else {
-		t->last = line->prev;
-	}
-
-	if (line->prev) {
-		line->prev->next = line->next;
-	} else {
-		t->first = line->next;
-	}
-	*/
 	free(line);
 }
 
@@ -1777,7 +1793,7 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 		above->len += len;
 		below->len -= len;
 		if (below->len <= 0) {
-			DEB(t, "delete below");
+			DEB("Delete below");
 			Editor_Delete_Line(t, below);
 			//ret = MERGE_BELOW_EMPTY; /* CHECK */
 		}
@@ -2883,30 +2899,125 @@ static void text2editor(Editor_Text *t, struct text *txt)
 /**************************************************************************/
 #ifdef EDITOR_DEBUG
 
-static void Editor_Debug_Status(Editor_Text *t, char *str)
+#define CONSOLE_ROWS 5
+
+static char console[CONSOLE_ROWS][LBUF];
+static int console_line = 0;
+static char console_status[LBUF];
+static bool console_display_on = true;
+static bool console_dirty = false;
+static bool console_force_refresh = false;
+
+static void console_init(void)
 {
-	static char debug_str[LBUF] = {0};
+	console_line = 0;
+	for (int i = 0; i < CONSOLE_ROWS; i++) {
+		console[i][0] = 0;
+	}
+	console_status[0] = 0;
+	console_printf("Editor debug console started.");
+}
+
+static void console_toggle(void)
+{
+	console_display_on = !console_display_on;
+	console_printf("Console display: %s", console_display_on ? "On":"Off");
+	console_force_refresh = true;
+}
+
+static void console_scroll(void)
+{
+	for (int i = 0; i < CONSOLE_ROWS - 1; i++) {
+		strcpy(console[i], console[i + 1]);
+	}
+}
+
+static void console_printf(const char *fmt, ...)
+{
+	va_list ap;
+
+	console_scroll();
+	va_start(ap, fmt);
+	int len = snprintf(console[CONSOLE_ROWS - 1], sizeof(console[0]),
+			   "%d.", console_line);
+	vsnprintf(console[CONSOLE_ROWS - 1] + len, sizeof(console[0]), fmt, ap);
+	va_end(ap);
+	console_line++;
+	console_dirty = true;
+}
+
+static void console_set_status(char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsnprintf(console_status, sizeof(console_status), fmt, ap);
+	va_end(ap);
+	console_dirty = true;
+}
+
+static void console_show_copy_buffer(Editor_Text *t)
+{
+	static int num_rows = 0;
+	int row = CONSOLE_ROWS;
+
+	if (t->buf_riga) {
+		cti_mv(0, row++);
+		setcolor(C_EDITOR_DEBUG);
+		erase_current_line();
+		printf("----- copy buffer -----");
+		for (Editor_Line *line = t->buf_first; line; line=line->next) {
+			if (row == Editor_Pos - 1) {
+				break;
+			}
+			cti_mv(0, row++);
+			erase_current_line();
+			for (int i = 0; (i<NCOL-2) && (line->str[i]!=0); i++) {
+				putchar(line->str[i]);
+			}
+		}
+		if (row < Editor_Pos - 1) {
+			cti_mv(0, row++);
+			erase_current_line();
+			printf("--- end copy buffer ---");
+		}
+	}
+	int rows_written = row;
+	while(row < num_rows) {
+		cti_mv(0, row++);
+		erase_current_line();
+	}
+	num_rows = rows_written;
+}
+
+static void console_update(Editor_Text *t)
+{
+	if (!(console_force_refresh
+	      || (console_display_on && console_dirty))) {
+		return;
+	}
+	console_force_refresh = false;
 
 	if (editor_reached_full_size) {
 		window_push(0, NRIGHE - 1);
 	}
 
-	if (*str) {
-		strcpy(debug_str, str);
+	setcolor(C_EDITOR_DEBUG);
+	for (int i = 0; i != CONSOLE_ROWS; i++) {
+		cti_mv(0, i);
+		erase_current_line();
+		printf("%s", console[i]);
 	}
 
-	/* cti_mv(0, Editor_Pos - 2); */
-	cti_mv(0, 0);
-	setcolor(C_EDITOR_DEBUG);
-	erase_current_line();
-	printf("Debug Status: %s [ws: %d]", debug_str,
-	       debug_get_winstack_index());
+	console_show_copy_buffer(t);
 
-	cti_mv(0, 1);
+	cti_mv(0, Editor_Pos - 2);
 	int ws_count = debug_get_winstack_index();
 	int first, last;
 	debug_get_current_win(&first, &last);
-	printf("C %d,%d; ", first, last);
+	printf("Status: %s [ws: %d]", console_status,
+	       debug_get_winstack_index());
+	printf(" Win - C %d,%d; ", first, last);
 	for (int i = 0; i != ws_count; i++) {
 		debug_get_winstack(i, &first, &last);
 		printf("%d %d,%d; ", i, first, last);
@@ -2917,48 +3028,10 @@ static void Editor_Debug_Status(Editor_Text *t, char *str)
 	}
 	setcolor(t->curr_col);
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
-}
 
-static void Editor_Debug_Show_Copy_Buffer(Editor_Text *t)
-{
-	static int num_rows = 0;
-
-	if (editor_reached_full_size) {
-		window_push(0, NRIGHE - 1);
-	}
-
-	int row = 3;
-
-	if (t->buf_riga) {
-		cti_mv(0, row++);
-		setcolor(C_EDITOR_DEBUG);
-		erase_current_line();
-		printf("----- copy buffer -----");
-		for (Editor_Line *line = t->buf_first; line; line=line->next) {
-			cti_mv(0, row++);
-			erase_current_line();
-			for (int i = 0; (i<NCOL-2) && (line->str[i]!=0); i++) {
-				putchar(line->str[i]);
-			}
-		}
-		cti_mv(0, row++);
-		erase_current_line();
-		printf("--- end copy buffer ---");
-	}
-	int rows_written = row;
-	while(row < num_rows) {
-		cti_mv(0, row++);
-		erase_current_line();
-	}
 	fflush(stdout);
 
-	if (editor_reached_full_size) {
-		window_pop();
-	}
-	setcolor(t->curr_col);
-	cti_mv(t->curr->pos + 1, Editor_Vcurs);
-
-	num_rows = rows_written;
+	console_dirty = false;
 }
 
 static void sanity_checks(Editor_Text *t)
