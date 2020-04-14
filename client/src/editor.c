@@ -1087,27 +1087,46 @@ static void Editor_Key_Delete(Editor_Text *t)
 /* Cancella il carattere sottostante al cursore. */
 static void Editor_Delete(Editor_Text *t)
 {
-	int i, tmpcol;
-
+	assert(t->curr);
 	if (t->curr->pos == t->curr->len) {
 		if (t->curr->next) {
-		        /* len = t->curr->len; */
-			if (Editor_Merge_Lines(t))
+			/* TODO: code duplicated in Editor_Backspace() */
+			Editor_Line *below = t->curr->next;
+			switch (Editor_Merge_Lines(t)) {
+			case MERGE_REGULAR:
+			case MERGE_EXTRA_SPACE:
+			case MERGE_BELOW_EMPTY:
 				Editor_Refresh(t, Editor_Vcurs);
-			/* t->curr->pos = (len > 0) ? len+1 : 0; */
+				break;
+			case MERGE_ABOVE_EMPTY:
+				t->curr = below;
+				t->curr->pos = 0;
+				Editor_Refresh(t, Editor_Vcurs);
+				break;
+			case MERGE_NOTHING:
+				assert(false);
+				break;
+			}
 			setcolor(t->curr_col);
-		} else
+		} else {
 			Beep();
+		}
 		return;
 	}
-	memmove(t->curr->str+t->curr->pos, t->curr->str+t->curr->pos+1,
-		(t->curr->len-t->curr->pos)*sizeof(int));
-	memmove(t->curr->col+t->curr->pos, t->curr->col+t->curr->pos+1,
-		(t->curr->len-t->curr->pos)*sizeof(int));
-	t->curr->str[--t->curr->len] = '\0';
+	int *src_str = t->curr->str + t->curr->pos + 1;
+	int *src_col = t->curr->col + t->curr->pos + 1;
+	int *dest_str = t->curr->str + t->curr->pos;
+	int *dest_col = t->curr->col + t->curr->pos;
+	size_t bytes = (t->curr->len-t->curr->pos)*sizeof(int);
+	memmove(dest_str, src_str, bytes);
+	memmove(dest_col, src_col, bytes);
+	t->curr->len--;
+	/* t->curr->str[--t->curr->len] = '\0'; */
 
-	tmpcol = t->curr_col;
-	for (i = t->curr->pos; i < t->curr->len; i++) {
+	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
+	/*
+	int tmpcol = t->curr_col;
+	for (int i = t->curr->pos; i < t->curr->len; i++) {
 		if (tmpcol != t->curr->col[i]) {
 			setcolor(t->curr->col[i]);
 			tmpcol = t->curr->col[i];
@@ -1116,7 +1135,9 @@ static void Editor_Delete(Editor_Text *t)
 	}
 	putchar(' ');
 	if (tmpcol != t->curr_col)
-		setcolor(t->curr_col);
+	        setcolor(t->curr_col);
+	*/
+	setcolor(t->curr_col);
 	cti_mv(t->curr->pos+1, Editor_Vcurs);
 }
 
@@ -1584,7 +1605,8 @@ static void Editor_Copy_Line(Editor_Text *t)
 	new_line->str[new_line->len] = '\0';
 }
 
-/* Elimina la riga *line */
+/* Removes 'line' from the text list and frees it. Does not change the
+ * current line t->curr: it's the caller's responsibility.              */
 static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
 {
         for (Editor_Line *tmp = line->next; tmp; tmp = tmp->next) {
@@ -1690,14 +1712,16 @@ static int Editor_Wrap_Word(Editor_Text *t)
 
 	if (t->curr->pos > len) {
 		nl->pos = t->curr->pos - len - 1;
-		if (parolone)
+		if (parolone) {
 			nl->pos++;
+		}
 		t->curr = nl;
 		if (Editor_Vcurs != NRIGHE-1) {
 			Editor_Vcurs++;
 			cti_mv(t->curr->pos + 1, Editor_Vcurs);
-		} else
+		} else {
 			Editor_Scroll_Up(NRIGHE-1);
+		}
 		line_refresh(t->curr->prev, Editor_Vcurs - 1, 0);
 	}
 
@@ -1722,6 +1746,7 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 					   Editor_Line *below)
 {
 	if (above == NULL || below == NULL) {
+		DEB("Merge nothing");
 		return MERGE_NOTHING;
 	}
 
@@ -1835,8 +1860,9 @@ static void Editor_Scroll_Up(int stop)
 		scroll_up();
 		window_pop();
 		cti_mv(0, stop);
-	} else /* Scrolla tutto il testo */
+	} else { /* Scrolla tutto il testo */
 		scroll_up();
+	}
 }
 
 /* Scrolla il giu' la regione di testo tra start e stop */
@@ -2450,8 +2476,9 @@ static void line_refresh(Editor_Line *line, int vpos, int start)
 		col = COLOR(YELLOW, BLACK, ATTR_BOLD);
 		setcolor(col);
 		putchar('>');
-	} else
+	} else {
 		cti_mv(start+1, vpos);
+	}
 	for (i = start; i < line->len; i++) {
 		if (line->col[i] != col) {
 			col = line->col[i];
@@ -2460,12 +2487,16 @@ static void line_refresh(Editor_Line *line, int vpos, int start)
 		putchar(line->str[i]);
 	}
 
-	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
+	setcolor(C_DEFAULT);
+	erase_to_eol();
+	/*
 	for ( ; i < NCOL - 1; i++) {
 		putchar(' ');
 	}
+	*/
 
-	setcolor(col);
+	//setcolor(col);
+	//setcolor(t->curr_col);
 	cti_mv(line->pos+1, Editor_Vcurs);
 }
 
