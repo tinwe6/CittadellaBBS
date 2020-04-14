@@ -175,20 +175,17 @@ void esegui_segnali(bool *window_changed, bool *fast_mode)
 		 * the user will usually have done resizing; if not he will
 		 * have to resize the window again.
 		 */
-		/*
-		 * TODO: is there any way to detect when the user is done? */
+		/* TODO: is there any way to detect when the user is done? */
 #define WINCH_TIMEOUT_MS 500
 #define MSEC_TO_USEC 1000
 		if (t_elapsed.tv_usec > WINCH_TIMEOUT_MS*MSEC_TO_USEC
 		    || t_elapsed.tv_sec > 1) {
 			if (cti_record_term_change()) {
-				//write(STDOUT_FILENO, "<OK>", 4);
 				t_sigwinch = (struct timeval){0};
 				if (window_changed) {
 					window_has_changed = true;
 				}
 			} else {
-				//write(STDOUT_FILENO, "r", 1);
 				/* if it didn't work, try again next time */
 				t_sigwinch = t_now;
 			}
@@ -196,24 +193,12 @@ void esegui_segnali(bool *window_changed, bool *fast_mode)
 		}
 	}
 
-	/*
-	if (new_signals > (SIG_ALARM|SIG_WINCH|SIG_HUP)) {
-		printf("new signals %d -- impossible! \n", new_signals);
-	}
-	*/
-
 	if (new_signals) {
-		//write(STDOUT_FILENO, "S", 1);
-		//printf("Sig mask = %d...\n", new_signals);
 		if (new_signals & SIG_HUP) {
-			//write(STDOUT_FILENO, "H", 1);
-			set_scroll_full();
-			// assert(false);
 			pulisci_ed_esci(TERMINATE_SIGNAL);
 			/* no return */
 		}
 		if (new_signals & SIG_ALARM) {
-			//write(STDOUT_FILENO, "A", 1);
 			if (send_keepalive) {
 				serv_puts("NOOP");
 			}
@@ -221,7 +206,6 @@ void esegui_segnali(bool *window_changed, bool *fast_mode)
 			alarm(KEEPALIVE_INTERVAL);
 		}
 		if (new_signals & SIG_WINCH) {
-			//write(STDOUT_FILENO, "W", 1);
 			gettimeofday(&t_sigwinch, NULL);
 		}
 		new_signals = SIG_CLEAR;

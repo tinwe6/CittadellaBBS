@@ -65,6 +65,7 @@ void cti_term_init(void);
 void cti_term_exit(void);
 bool cti_record_term_change(void);
 void cti_clear_screen(void);
+void set_scroll_full(void);
 void reset_scroll_region(void);
 void init_window(void);
 void window_push(int first_row, int last_row);

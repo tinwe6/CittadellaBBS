@@ -902,6 +902,7 @@ void pulisci_ed_esci(exit_mode mode)
         char buf[LBUF];
 	unsigned long in, out, cmd, online;
 
+	reset_scroll_region();
 	setcolor(C_NORMAL);
         if (mode == SHOW_EXIT_BANNER && !client_cfg.no_banner) {
                 /* Display logout banner */

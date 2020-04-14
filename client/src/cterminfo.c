@@ -279,6 +279,7 @@ void reset_scroll_region(void)
 {
 	if (scroll_region_is_defined) {
 		set_scroll_full();
+		cti_ll();
 	}
 }
 

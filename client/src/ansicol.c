@@ -30,8 +30,7 @@ const char hbold_def[] = "\x1b[1m";
 const char hstop_def[] = "\x1b[22m";
 const char hbgdfl[]    = "\x1b[49m";
 const char hfgdfl[]    = "\x1b[39m";
-const char hreset[]    = "\x1b[0;38;49m";
-const char hcoldfl[]   = "\x1b[38;49m";
+const char hreset[]    = "\x1b[0;39;49m";
 const char hempty[]    = "";
 
 struct col_stack {
@@ -300,15 +299,11 @@ static void ansi_update_color(int fg, int bg, int at)
         fflush(stdout);
 }
 
-void ansi_reset(void) /* deprecated : use setcolor(C_DEFAULT); instead! */
+/* Restore the default color of the terminal; only when leaving the client. */
+void ansi_reset(void)
 {
 	setcolor(C_DEFAULT);
 	printf("%s", hreset);
-}
-
-void ansi_color_reset(void)
-{
-	printf("%s", hcoldfl);
 }
 
 void ansi_clear_bold(void)
