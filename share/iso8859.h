@@ -125,15 +125,16 @@
 #define Key_y_DIAERESIS   255 /* &yuml   */
 
 /* char is signed long on some platforms, we first cast it to unsigned char */
-#define is_isoch(c) ((unsigned char)(c) >= Key_NOBREAK_SPACE)
+#define is_isoch(c) (((unsigned int)(c) >= Key_NOBREAK_SPACE)          \
+		     && ((unsigned int)(c) <= Key_y_DIAERESIS))
 
-#define is_letter(c) (((c >= 'A') && (c <= 'Z'))                        \
-                      || ((c >= 'a') && (c <= 'z'))		        \
-                      || (((unsigned char)(c) >= Key_A_GRAVE)           \
-                          && ((unsigned char)(c) <= Key_O_DIAERESIS ))  \
-                      || (((unsigned char)(c) >= Key_O_SLASH)           \
-                          && ((unsigned char)(c) <= Key_o_DIAERESIS))   \
-                      || ((unsigned char)(c) >= Key_o_SLASH)            \
+#define is_letter(c) (((c >= 'A') && (c <= 'Z'))                       \
+                      || ((c >= 'a') && (c <= 'z'))		       \
+                      || (((unsigned int)(c) >= Key_A_GRAVE)           \
+                          && ((unsigned int)(c) <= Key_O_DIAERESIS ))  \
+                      || (((unsigned int)(c) >= Key_O_SLASH)           \
+                          && ((unsigned int)(c) <= Key_o_DIAERESIS))   \
+                      || ((unsigned int)(c) >= Key_o_SLASH)            \
                       )
 
 #endif /* iso8859.h */
