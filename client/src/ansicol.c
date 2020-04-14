@@ -162,7 +162,7 @@ void color2cml(char *str, int col)
 	fg = CC_FG(col);
 	bg = CC_BG(col);
 	at = CC_ATTR(col);
-	
+
         sprintf(str, "<fg=%d;", fg);
         if (bg != COL_NOCHANGE)
                 sprintf(str+strlen(str), "bg=%d;", bg);
@@ -197,15 +197,15 @@ void push_color(void)
 
 void pull_color(void)
 {
-	struct col_stack * col;
-
 	if (USE_COLORS) {
-		if (ansicol_stack == NULL)
+		if (ansicol_stack == NULL) {
+			assert(false);
 			return;
+		}
 		ansi_update_color(ansicol_stack->fg, ansicol_stack->bg,
 				  ansicol_stack->at);
 
-		col = ansicol_stack;
+		struct col_stack *col = ansicol_stack;
 		ansicol_stack = col->next;
 		Free(col);
 	}

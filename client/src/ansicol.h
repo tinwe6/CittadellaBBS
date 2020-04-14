@@ -26,7 +26,6 @@
 #define CC_FG(CODE)     ((CODE) & 0x0f)
 #define CC_BG(CODE)     (((CODE) >> 4) & 0x0f)
 #define CC_ATTR(CODE)   (((CODE) >> 8) & 0xff)
-/* #define CC_ATTR(CODE)   (((CODE) >> 8) & 0x2f) */
 
 /* Definizione Colori */
 
@@ -39,7 +38,7 @@
 #define COL_MAGENTA       0x5
 #define COL_CYAN          0x6
 #define COL_GRAY          0x7
-#define COL_DEFAULT       0x9      /* Colore di default */
+/* #define COL_DEFAULT       0x9*/ /* Colore di default - Unused */
 #define COL_NOCHANGE      0xf
 
 /* Default background color */
@@ -50,7 +49,7 @@
 #define COL_DEFBG    COL_BLACK
 #else
 /* Per background bianco (LK, it's for you!) */
-#define COL_DEFFG    COL_BLACK 
+#define COL_DEFFG    COL_BLACK
 #define COL_DEFBG    COL_GRAY
 #endif
 
@@ -132,7 +131,7 @@
 /* #define C_DEFAULT       COLOR(COL_DEFAULT, COL_DEFAULT, ATTR_RESET) */
 #define C_DEFAULT       COLOR(COL_DEFFG, COL_DEFBG, ATTR_RESET)
 #define C_BOLD          COLOR(COL_DEFFG, COL_DEFBG, ATTR_BOLD)
-#define C_RES_BG_AT     COLOR(COL_NOCHANGE, COL_DEFBG, ATTR_BOLD)
+#define C_RES_BG_AT     COLOR(COL_NOCHANGE, COL_DEFBG, ATTR_NOCHANGE)
 #include "colors.h"
 
 /* Variabili globali */

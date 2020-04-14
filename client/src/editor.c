@@ -30,9 +30,6 @@
   maybe simply not allow to edit chars reserved for the attachment using the
   ASCII art mode.
 
-  When hitting Enter on space between two words to break the line in two,
-  eliminate the leading space in the new line.
-
 */
 
 
@@ -129,12 +126,12 @@ typedef enum {
  *                  liberi   mdnum   attr    bgcol   fgvol
  */
 #define Editor_Fg_Color(t, c)                                             \
-	Editor_Set_Color((t), COLOR((c & 0xf), CC_BG((t)->curs_col),      \
-						CC_ATTR((t)->curs_col)))
+	Editor_Set_Color((t), COLOR((c) & 0xf, CC_BG((t)->curs_col),	  \
+				    CC_ATTR((t)->curs_col)))
 
 #define Editor_Bg_Color(t, c)                                             \
-	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col), (c & 0xf),      \
-						CC_ATTR((t)->curs_col)))
+	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col), (c) & 0xf,	  \
+				    CC_ATTR((t)->curs_col)))
 
 #define Editor_Attr_Color(t, a)                                           \
 	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col),                 \
@@ -143,7 +140,7 @@ typedef enum {
 #define Editor_Attr_Toggle(t, a)                                          \
 	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col),                 \
                                     CC_BG((t)->curs_col),                 \
-                              CC_ATTR((t)->curs_col) ^ (a & ATTR_MASK)))
+			            CC_ATTR((t)->curs_col)^((a) & ATTR_MASK)))
 
 #define Editor_Get_MDNum(c)      ((c >> 16) & 0xff)
 #define Editor_Set_MDNum(c, m)   ( c = (m << 16) | (c & 0xffff) )
@@ -232,6 +229,11 @@ static void sanity_checks(Editor_Text *t);
 static inline void erase_current_line(void)
 {
 	printf("\r" ERASE_TO_EOL "\r");
+}
+
+static inline void erase_to_eol(void)
+{
+	printf(ERASE_TO_EOL);
 }
 
 /*
@@ -365,7 +367,6 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	/* Inizializza schermo */
 	cti_term_init();
 	init_window();
-	push_color();
 
 	editor_reached_full_size = false;
 
@@ -404,6 +405,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
         md_init(mdlist);
         t.mdlist = mdlist;
 
+	push_color();
 	setcolor(t.curr_col);
 
 	/* Inserisce nell'editor il testo del quote o hold */
@@ -422,7 +424,10 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 
 	bool fine = false;
 	do {
-		switch((ret = get_line_wrap(&t, true))) {
+		ret = get_line_wrap(&t, true);
+		pull_color();
+
+		switch(ret) {
 		case EDIT_ABORT:
 			cti_ll();
 			printf(ERASE_TO_EOL "\rAbort.\n");
@@ -462,6 +467,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	if (editor_reached_full_size) {
 		window_pop();
 	}
+
 	{
 		int first, last;
 		assert(debug_get_winstack_index() == 0);
@@ -470,7 +476,6 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	}
 
 	cti_term_exit();
-	pull_color();
 
 	return ret;
 }
@@ -933,19 +938,33 @@ static void Editor_Key_Enter(Editor_Text *t)
 {
         Editor_Insert_Line(t);
 	if (t->curr->pos < t->curr->len) {
-		Editor_Line *new_line = t->curr->next;
-		memcpy(new_line->str, t->curr->str + t->curr->pos,
-		       (t->curr->len - t->curr->pos + 1) * sizeof(int));
-		memcpy(new_line->col, t->curr->col + t->curr->pos,
-		       (t->curr->len - t->curr->pos + 1) * sizeof(int));
-		new_line->len = t->curr->len - t->curr->pos;
-		t->curr->len = t->curr->pos;
-		// TODO: final \0 is needed?
-                setcolor(C_DEFAULT);
-		// TODO: Eliminate the loop, use ansi
-		for(int i = 0; i < new_line->len; i++) {
-			putchar(' ');
+		/* the new line starts with the first non-blank character */
+		int src_offset = t->curr->pos;
+		while(*(t->curr->str + src_offset) == ' '
+		      && src_offset < t->curr->len) {
+			src_offset++;
 		}
+		/* copy from src_offset to the end of line into the new line */
+		Editor_Line *new_line = t->curr->next;
+		int *dest_str = new_line->str;
+		int *dest_col = new_line->col;
+		int *src_str = t->curr->str + src_offset;
+		int *src_col = t->curr->col + src_offset;
+		size_t bytes = (t->curr->len - src_offset)*sizeof(int);
+		memcpy(dest_str, src_str, bytes);
+		memcpy(dest_col, src_col, bytes);
+		new_line->len = t->curr->len - src_offset;
+
+		/* eliminate trailing space in above line */
+		t->curr->len = t->curr->pos;
+		while (t->curr->len > 0
+		       && *(t->curr->str + t->curr->len - 1) == ' ') {
+			t->curr->len--;
+		}
+
+		cti_mv(t->curr->len + 1, Editor_Vcurs);
+                setcolor(C_DEFAULT);
+		erase_to_eol();
 	}
         t->curr->next->pos = 0;
         t->curr->pos = 0;
@@ -975,22 +994,18 @@ static void Editor_Key_Backspace(Editor_Text *t)
 /* Effettua un backspace */
 static void Editor_Backspace(Editor_Text *t)
 {
-	DEB(t, "editor_backspace_*******************");
 	/* if the cursor is at the line start, merge with the line above */
 	if (t->curr->pos == 0) {
 		if (t->curr->prev) {
-			//Editor_Line *above = t->curr->prev;
 			int above_len = t->curr->prev->len;
 			Editor_Line *below = t->curr;
 			Editor_Up(t); /* make t->curr the line above */
 			switch (Editor_Merge_Lines(t)) {
 			case MERGE_EXTRA_SPACE:
-				//DEB(t, "extra");
 				t->curr->pos = above_len + 1;
 				Editor_Refresh(t, Editor_Vcurs);
 				break;
 			case MERGE_ABOVE_EMPTY:
-				//DEB(t, "above");
 				/* The above line was deleted */
 				t->curr = below;
 				t->curr->pos = 0;
@@ -998,13 +1013,10 @@ static void Editor_Backspace(Editor_Text *t)
 				break;
 			case MERGE_REGULAR:
 			case MERGE_BELOW_EMPTY:
-				//DEB(t, "regular");
-				//DEB(t, "below");
 				t->curr->pos = above_len;
 				Editor_Refresh(t, Editor_Vcurs);
 				break;
 			case MERGE_NOTHING: /*  Can I even get here?? */
-				//DEB(t, "nothing");
 				t->curr->pos = above_len;
 				line_refresh(t->curr, Editor_Vcurs, 0);
 				break;
@@ -1156,13 +1168,8 @@ static void Editor_Kill_Line(Editor_Text *t)
 
 		/* Update the screen accordingly */
 		setcolor(C_DEFAULT);
-		printf(ERASE_TO_EOL);
+		erase_to_eol();
 		setcolor(t->curr_col);
-		/*
-		  for (int i = t->curr->pos; i < t->curr->len; i++) {
-		  putchar(' ');
-		  }
-		*/
 	}
 	t->copy = true;
 }
@@ -1737,11 +1744,18 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 	/* If a substring fits, move it above. */
 	if (len > 0) {
 		int ret;
-		/* BUG HAS HERE */
 		if (need_extra_space) {
 			assert(above->len > 0);
 			above->str[above->len] = ' ';
-			above->col[above->len] = above->col[above->len - 1];
+			/* If the end of the above line and the start of the
+			   below line have same background color, use that for
+			   the space, otherwise use the default bg color. */
+			if (CC_BG(above->col[above->len - 1])
+			    == CC_BG(below->col[0])) {
+				above->col[above->len] = below->col[0];
+			} else {
+				above->col[above->len] = C_DEFAULT;
+			}
 			above->len++;
 			ret = MERGE_EXTRA_SPACE;
 		} else {
@@ -2167,7 +2181,7 @@ static void Editor_Insert_File(Editor_Text *t)
                 }
                 filenum = extract_ulong(buf+4, 0); /* no. prenotazione */
 
-                // TODO check the flagsflags
+                // TODO check the flags
                 flags = 0;
 
 		if (editor_reached_full_size) {
@@ -2247,12 +2261,6 @@ static void Editor_Insert_Text(Editor_Text *t)
 	int len, wlen, color, i;
         int c = 0;
 
-
-	/*
-        if (editor_reached_full_size) {
-		window_push(0, NRIGHE - 1);
-	}
-	*/
 	fill_line(Editor_Pos, COL_HEAD_ERROR);
         file_path[0] = 0;
         if (getline_scroll("<b>Inserisci file:</b> ", COL_HEAD_MD, file_path,
@@ -2284,7 +2292,8 @@ static void Editor_Insert_Text(Editor_Text *t)
                                         t->curr->len = cml2editor(buf, t->curr->str, t->curr->col, &len, t->max, &color, t->mdlist);
                                         t->curr->pos = 0;
                                         t->curr->flag = 1;
-                                        if (t->curr->len >= t->max) { /* wrap word */
+                                        if (t->curr->len >= t->max) {
+						/* wrap word */
                                                 //Editor_Key_Enter(t);
                                                 Editor_Insert_Line(t);
 
@@ -2434,9 +2443,12 @@ static void line_refresh(Editor_Line *line, int vpos, int start)
 		}
 		putchar(line->str[i]);
 	}
+
 	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
-	for ( ; i < NCOL - 1; i++)
+	for ( ; i < NCOL - 1; i++) {
 		putchar(' ');
+	}
+
 	setcolor(col);
 	cti_mv(line->pos+1, Editor_Vcurs);
 }
@@ -2529,7 +2541,7 @@ static void Editor_Head(Editor_Text *t)
 	printf(status_back, insmode[(int)t->insert], t->curr->num, t->riga,
 	       t->curr->pos + 1);
 	pull_color();
-	/* TODO: what is the role of the following '\n' (which is needed) */
+	/* TODO: what is the role of the following '\n' (and it is needed!) */
 	putchar('\n');
 }
 
@@ -2568,8 +2580,9 @@ static void Editor_Refresh_All(Editor_Text *t)
 	  window, sometimes doing an extra scroll up. Erasing the line above
 	  the status bar is fine because it is anyway not used.
 	*/
+	setcolor(C_DEFAULT);
 	cti_mv(0, Editor_Pos - 1);
-	printf(ERASE_TO_EOL);
+	erase_to_eol();
 
 	Editor_Head_Refresh(t, true);
 	Editor_Refresh(t, 0);
