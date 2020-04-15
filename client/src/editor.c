@@ -143,19 +143,10 @@ typedef struct Editor_Text_t {
 	char insert;  /* 1 se in insert mode, 0 altrimenti        */
 	int curs_col; /* Colore corrente del cursore              */
 	int curr_col; /* Ultimo settaggio di colore sul terminale */
-        /* Dati del testo che si sta editando                     */
-	TextBuf *text;
-#if 0
-	Editor_Line *first;   /* Prima riga del testo             */
-	Editor_Line *last;    /* Ultima riga                      */
-        int riga;             /* Numero righe del testo           */
-#endif
-	Editor_Line *curr;    /* Riga corrente                    */
+	TextBuf *text;     /* text buffer                         */
+	TextBuf *killbuf;  /* kill buffer storing kill text       */
+	Editor_Line *curr; /* current line (where cursor is)      */
 	int term_nrows;       /* Num rows in terminal             */
-        /* Dati del testo nel copy bufferando                     */
-	Editor_Line *buf_first; /* Prima riga del testo           */
-	Editor_Line *buf_last;  /* Ultima riga                    */
-        int buf_riga;           /* Numero righe del testo         */
         bool buf_pasted;  /* true se il buffer e' stato incollato */
         bool copy; /* true se aggiunto riga al copy buf nell'ultima op */
         /* struttura per i metadata */
@@ -441,16 +432,17 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	textbuf_init(t.text);
 	t.curr = t.text->first;
 
+	/* Initialize an empty kill buffer */
+	t.killbuf = textbuf_new();
+	assert(t.killbuf->first == NULL && t.killbuf->last == NULL);
+	assert(t.killbuf->riga == 0);
+
+	t.buf_pasted = false;
+        t.copy = false;
+
 	t.insert = MODE_INSERT;
 	t.curs_col = color ? color : C_DEFAULT;
 	t.curr_col = t.curs_col;
-
-        /* Inizializza il buffer di copia */
-        t.buf_first = NULL;
-        t.buf_last = NULL;
-	t.buf_riga = 0;
-	t.buf_pasted = false;
-        t.copy = false;
 
         /* Inizializza il metadata */
         md_init(mdlist);
@@ -1300,7 +1292,7 @@ static void Editor_Kill_Line(Editor_Text *t)
 /* Process <Y>ank */
 static void Editor_Yank(Editor_Text *t)
 {
-        if (t->buf_riga == 0) { /* copy buffer is empty */
+        if (t->killbuf->riga == 0) { /* copy buffer is empty */
                 return;
 	}
 	/* unless the cursor sits in an empty line, insert a new empty
@@ -1330,7 +1322,7 @@ static void Editor_Yank(Editor_Text *t)
 
 	assert(t->curr->len == 0);
 	assert(t->curr->pos == 0);
-        for (Editor_Line *src = t->buf_first; src; ) {
+        for (Editor_Line *src = t->killbuf->first; src; ) {
                 Editor_Line *new_line = t->curr;
 		memcpy(new_line->str, src->str, src->len*sizeof(int));
 		memcpy(new_line->col, src->col, src->len*sizeof(int));
@@ -1658,15 +1650,15 @@ static void Editor_Copy_Line(Editor_Text *t)
 	/* Allocate a new line and append it at the end of the buffer list */
 	CREATE(new_line, Editor_Line, 1, 0);
         new_line->next = NULL;
-        if (t->buf_riga == 0) {
+        if (t->killbuf->riga == 0) {
                 new_line->prev = NULL;
-                t->buf_first = new_line;
+                t->killbuf->first = new_line;
         } else {
-                new_line->prev = t->buf_last;
-                t->buf_last->next = new_line;
+                new_line->prev = t->killbuf->last;
+                t->killbuf->last->next = new_line;
         }
-        t->buf_last = new_line;
-	t->buf_riga++;
+        t->killbuf->last = new_line;
+	t->killbuf->riga++;
 
 	/* copy the contents of current line starting from cursor */
 	Editor_Line *src = t->curr;
@@ -2733,17 +2725,17 @@ static void Editor_Free_Copy_Buffer(Editor_Text *t)
 {
 	Editor_Line *tmp;
 
-	for (Editor_Line *line = t->buf_first; line; line = tmp) {
+	for (Editor_Line *line = t->killbuf->first; line; line = tmp) {
 		tmp = line->next;
                 if (!t->buf_pasted) {
                         Editor_Free_MD(t, line);
 		}
 		free(line);
 	}
-        t->buf_riga = 0;
+        t->killbuf->riga = 0;
         t->buf_pasted = false;
-        t->buf_first = NULL;
-        t->buf_last = NULL;
+        t->killbuf->first = NULL;
+        t->killbuf->last = NULL;
 }
 
 /* Refresh the displayed text, from terminal row 'start' to the bottom of the
@@ -3192,13 +3184,13 @@ static void console_show_copy_buffer(Editor_Text *t)
 	static int num_rows = 0;
 	int row = CONSOLE_ROWS;
 
-	if (t->buf_riga) {
+	if (t->killbuf->riga) {
 		cti_mv(0, row++);
 		setcolor(YELLOW);
 		erase_current_line();
 		printf("----- copy buffer -----");
 		setcolor(L_YELLOW);
-		for (Editor_Line *line = t->buf_first; line; line=line->next) {
+		for (Editor_Line *line = t->killbuf->first; line; line=line->next) {
 			if (row == Editor_Pos - 1) {
 				break;
 			}
@@ -3320,43 +3312,43 @@ static void sanity_checks(Editor_Text *t)
 	/* Test the copy buffer sanity */
  SANITY_COPY_BUFFER:
 
-	if (t->buf_first == NULL) {
-		assert(t->buf_last == NULL);
+	if (t->killbuf->first == NULL) {
+		assert(t->killbuf->last == NULL);
 		return;
 	}
-	assert(t->buf_first->prev == NULL);
-	assert(t->buf_last->next == NULL);
+	assert(t->killbuf->first->prev == NULL);
+	assert(t->killbuf->last->next == NULL);
 
 	{
 		int num = 1;
-		Editor_Line *line = t->buf_first;
+		Editor_Line *line = t->killbuf->first;
 		for (;;) {
 			//assert(line->num == num);
 			if (line->next == NULL) {
-				assert(line == t->buf_last);
+				assert(line == t->killbuf->last);
 				break;
 			}
 			if (line->prev) {
 				assert(line->prev->next == line);
 			} else {
-				assert(line == t->buf_first);
+				assert(line == t->killbuf->first);
 			}
 			num++;
 			line = line->next;
 		}
-		assert(t->buf_riga == num);
+		assert(t->killbuf->riga == num);
 	}
 	{
-		Editor_Line *line = t->buf_last;
+		Editor_Line *line = t->killbuf->last;
 		for (;;) {
 			if (line->prev == NULL) {
-				assert(line == t->buf_first);
+				assert(line == t->killbuf->first);
 				break;
 			}
 			if (line->next) {
 				assert(line->next->prev == line);
 			} else {
-				assert(line == t->buf_last);
+				assert(line == t->killbuf->last);
 			}
 			line = line->prev;
 		}
