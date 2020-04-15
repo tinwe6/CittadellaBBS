@@ -89,6 +89,24 @@ typedef struct Editor_Line_t {
 	struct Editor_Line_t *next; /* Linea successiva              */
 } Editor_Line;
 
+static Editor_Line *line_new(void)
+{
+	Editor_Line *line;
+	CREATE(line, Editor_Line, 1, 0);
+	*line = (Editor_Line){0};
+	return line;
+}
+
+void lines_update_nums(Editor_Line *line)
+{
+	int num = line->prev ? line->prev->num : 0;
+
+	while(line) {
+		line->num = ++num;
+		line = line->next;
+	}
+}
+
 /*********************************************************************/
 
 typedef struct TextBuf_t {
@@ -135,6 +153,104 @@ void textbuf_init(TextBuf *buf)
 	buf->first->prev = NULL;
 	buf->lines_count = 1;
 }
+
+void textbuf_sanity_check(TextBuf *buf)
+{
+	Editor_Line *line = buf->first;
+	if (line == NULL) {
+		assert(buf->last == NULL);
+		assert(buf->lines_count == 0);
+		return;
+	}
+
+	/* Check line numbers and lines_count */
+	int num = 0;
+	while (line) {
+		num++;
+		assert(line->num == num);
+		line = line->next;
+	}
+	assert(buf->lines_count == num);
+
+	/* Check list links */
+	line = buf->first;
+	assert(line->prev == NULL);
+	for (;;) {
+		if (line->prev == NULL) {
+			assert(line == buf->first);
+		} else {
+			assert(line->prev->next == line);
+		}
+		if (line->next == NULL) {
+			assert(line == buf->last);
+			break;
+		}
+		assert(line->next->prev == line);
+		line = line->next;
+	}
+}
+
+/* Append a new line at bottom of text buffer */
+static Editor_Line * textbuf_append_new_line(TextBuf *buf)
+{
+	Editor_Line *line = line_new();
+
+	line->prev = buf->last;
+	line->next = NULL;
+	if (buf->first == NULL) {
+		buf->first = line;
+	} else {
+		buf->last->next = line;
+	}
+	buf->last = line;
+	buf->lines_count++;
+	line->num = buf->lines_count;
+
+	return line;
+}
+
+/* Insert a new line below 'line' */
+static Editor_Line * textbuf_insert_line_below(TextBuf *buf, Editor_Line *line)
+{
+	Editor_Line *new_line = line_new();
+
+	new_line->prev = line;
+	new_line->next = line->next;
+	line->next = new_line;
+	if (new_line->next) {
+		new_line->next->prev = new_line;
+	} else {
+		buf->last = new_line;
+	}
+
+	lines_update_nums(new_line);
+	buf->lines_count++;
+	assert(buf->last->num == buf->lines_count);
+
+	return new_line;
+}
+
+/* Insert a new line above 'line' */
+static Editor_Line * textbuf_insert_line_above(TextBuf *buf, Editor_Line *line)
+{
+	Editor_Line *new_line = line_new();
+
+	new_line->prev = line->prev;
+	new_line->next = line;
+	line->prev = new_line;
+	if (new_line->prev) {
+		new_line->prev->next = new_line;
+	} else {
+		buf->first = new_line;
+	}
+
+	lines_update_nums(new_line);
+	buf->lines_count++;
+	assert(buf->last->num == buf->lines_count);
+
+	return new_line;
+}
+
 
 /*********************************************************************/
 
@@ -217,7 +333,7 @@ static void Editor_Delete_Word(Editor_Text *t);
 static void Editor_Delete_Next_Word(Editor_Text *t);
 static void Editor_Newline(Editor_Text *t);
 static void Editor_Insert_Line(Editor_Text *t);
-static void Editor_Insert_Line_Here(Editor_Text *t);
+static void Editor_Insert_Line_Above(Editor_Text *t);
 static void Editor_Copy_Line(Editor_Text *t);
 static void Editor_Delete_Line(Editor_Text *t, Editor_Line *l);
 static int Editor_Wrap_Word(Editor_Text *t);
@@ -547,6 +663,8 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
         do {
 
 #ifdef EDITOR_DEBUG
+		textbuf_sanity_check(t->text);
+		textbuf_sanity_check(t->killbuf);
 		sanity_checks(t);
 		console_set_status("[l%p r%2d] stat %d k %3d",
 				   (void *)t->curr, t->curr->num, status,
@@ -1311,7 +1429,7 @@ static void Editor_Yank(Editor_Text *t)
 			/* do nothing */
 			DEB("Yank-2");
 		} else {
-			Editor_Insert_Line_Here(t);
+			Editor_Insert_Line_Above(t);
 			t->curr = t->curr->prev;
 			t->curr->pos = 0;
 			t->curr->next->pos = 0;
@@ -1590,48 +1708,14 @@ static void Editor_Newline(Editor_Text *t)
  */
 static void Editor_Insert_Line(Editor_Text *t)
 {
-	Editor_Line *new_line;
-	int num;
-
-	CREATE(new_line, Editor_Line, 1, 0);
-	new_line->len = 0;
-	new_line->prev = t->curr;
-	new_line->next = t->curr->next;
-	t->curr->next = new_line;
-	if (new_line->next) {
-		new_line->next->prev = new_line;
-	} else {
-		t->text->last = new_line;
-	}
-	num = t->curr->num;
-	for (Editor_Line *l = new_line; l; l = l->next) {
-		l->num = ++num;
-	}
-	t->text->lines_count++;
+	textbuf_insert_line_below(t->text, t->curr);
 }
 
 /* Insert a new line above the current line, without changing the
  * current line. */
-static void Editor_Insert_Line_Here(Editor_Text *t)
+static void Editor_Insert_Line_Above(Editor_Text *t)
 {
-	Editor_Line *new_line;
-
-	CREATE(new_line, Editor_Line, 1, 0);
-	new_line->len = 0;
-	new_line->prev = t->curr->prev;
-	new_line->next = t->curr;
-	t->curr->prev = new_line;
-	if (new_line->prev) {
-		new_line->prev->next = new_line;
-	} else {
-		t->text->first = new_line;
-	}
-
-	int num = t->curr->num;
-	for (Editor_Line *line = new_line; line; line = line->next) {
-		line->num = num++;
-	}
-	t->text->lines_count++;
+	textbuf_insert_line_above(t->text, t->curr);
 }
 
 /*
@@ -1641,34 +1725,21 @@ static void Editor_Insert_Line_Here(Editor_Text *t)
  */
 static void Editor_Copy_Line(Editor_Text *t)
 {
-	Editor_Line *new_line;
-
         if (t->copy == false) {
                 Editor_Free_Copy_Buffer(t);
 	}
 
-	/* Allocate a new line and append it at the end of the buffer list */
-	CREATE(new_line, Editor_Line, 1, 0);
-        new_line->next = NULL;
-        if (t->killbuf->lines_count == 0) {
-                new_line->prev = NULL;
-                t->killbuf->first = new_line;
-        } else {
-                new_line->prev = t->killbuf->last;
-                t->killbuf->last->next = new_line;
-        }
-        t->killbuf->last = new_line;
-	t->killbuf->lines_count++;
+	Editor_Line *line = textbuf_append_new_line(t->killbuf);
 
 	/* copy the contents of current line starting from cursor */
 	Editor_Line *src = t->curr;
 	int *str = src->str + src->pos;
 	int *col = src->col + src->pos;
 	int count = src->len - src->pos;
-	memcpy(new_line->str, str, count*sizeof(int));
-	memcpy(new_line->col, col, count*sizeof(int));
-        new_line->len = count;
-	new_line->str[new_line->len] = '\0';
+	memcpy(line->str, str, count*sizeof(int));
+	memcpy(line->col, col, count*sizeof(int));
+        line->len = count;
+	// line->str[line->len] = '\0';
 }
 
 /* Removes 'line' from the text list and frees it. Does not change the
