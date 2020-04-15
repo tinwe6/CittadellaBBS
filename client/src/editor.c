@@ -95,7 +95,7 @@ typedef struct TextBuf_t {
 	Editor_Line *first;   /* first line                       */
 	Editor_Line *last;    /* last line                        */
 	Editor_Line *curr;    /* current line                     */
-        int riga;             /* number of lines                  */
+        int lines_count;      /* number of lines in the list      */
 } TextBuf;
 
 /* Allocate a TextBuf structure */
@@ -133,7 +133,7 @@ void textbuf_init(TextBuf *buf)
 	buf->first->flag = 1;
 	buf->first->next = NULL;
 	buf->first->prev = NULL;
-	buf->riga = 1;
+	buf->lines_count = 1;
 }
 
 /*********************************************************************/
@@ -435,7 +435,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	/* Initialize an empty kill buffer */
 	t.killbuf = textbuf_new();
 	assert(t.killbuf->first == NULL && t.killbuf->last == NULL);
-	assert(t.killbuf->riga == 0);
+	assert(t.killbuf->lines_count == 0);
 
 	t.buf_pasted = false;
         t.copy = false;
@@ -492,7 +492,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 			fine = true;
 			break;
 		}
-	} while ((t.text->riga < max_linee) && (!fine));
+	} while ((t.text->lines_count < max_linee) && (!fine));
 
 	/* TODO: how can ret be EDIT_NEWLINE? it can't... what's the point
          	 of the next block?      */
@@ -1292,7 +1292,7 @@ static void Editor_Kill_Line(Editor_Text *t)
 /* Process <Y>ank */
 static void Editor_Yank(Editor_Text *t)
 {
-        if (t->killbuf->riga == 0) { /* copy buffer is empty */
+        if (t->killbuf->lines_count == 0) { /* copy buffer is empty */
                 return;
 	}
 	/* unless the cursor sits in an empty line, insert a new empty
@@ -1607,7 +1607,7 @@ static void Editor_Insert_Line(Editor_Text *t)
 	for (Editor_Line *l = new_line; l; l = l->next) {
 		l->num = ++num;
 	}
-	t->text->riga++;
+	t->text->lines_count++;
 }
 
 /* Insert a new line above the current line, without changing the
@@ -1631,7 +1631,7 @@ static void Editor_Insert_Line_Here(Editor_Text *t)
 	for (Editor_Line *line = new_line; line; line = line->next) {
 		line->num = num++;
 	}
-	t->text->riga++;
+	t->text->lines_count++;
 }
 
 /*
@@ -1650,7 +1650,7 @@ static void Editor_Copy_Line(Editor_Text *t)
 	/* Allocate a new line and append it at the end of the buffer list */
 	CREATE(new_line, Editor_Line, 1, 0);
         new_line->next = NULL;
-        if (t->killbuf->riga == 0) {
+        if (t->killbuf->lines_count == 0) {
                 new_line->prev = NULL;
                 t->killbuf->first = new_line;
         } else {
@@ -1658,7 +1658,7 @@ static void Editor_Copy_Line(Editor_Text *t)
                 t->killbuf->last->next = new_line;
         }
         t->killbuf->last = new_line;
-	t->killbuf->riga++;
+	t->killbuf->lines_count++;
 
 	/* copy the contents of current line starting from cursor */
 	Editor_Line *src = t->curr;
@@ -1678,7 +1678,7 @@ static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
         for (Editor_Line *tmp = line->next; tmp; tmp = tmp->next) {
 		tmp->num--;
 	}
-	t->text->riga--;
+	t->text->lines_count--;
 
 	if (line == t->text->first) {
 		t->text->first = line->next;
@@ -2732,7 +2732,7 @@ static void Editor_Free_Copy_Buffer(Editor_Text *t)
 		}
 		free(line);
 	}
-        t->killbuf->riga = 0;
+        t->killbuf->lines_count = 0;
         t->buf_pasted = false;
         t->killbuf->first = NULL;
         t->killbuf->last = NULL;
@@ -2777,7 +2777,7 @@ static void Editor_Head(Editor_Text *t)
 	push_color();
 	setcolor(C_EDITOR);
 	printf(status_front);
-	printf(status_back, insmode[(int)t->insert], t->curr->num, t->text->riga,
+	printf(status_back, insmode[(int)t->insert], t->curr->num, t->text->lines_count,
 	       t->curr->pos + 1);
 	pull_color();
 	/* TODO: what is the role of the following '\n' (and it is needed!) */
@@ -2800,7 +2800,7 @@ static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh)
                 cti_mv(strlen(status_front), Editor_Pos);
 	}
 
-	printf(status_back, insmode[(int) t->insert], t->curr->num, t->text->riga,
+	printf(status_back, insmode[(int) t->insert], t->curr->num, t->text->lines_count,
 	       t->curr->pos+1);
 
 	if (editor_reached_full_size) {
@@ -3184,7 +3184,7 @@ static void console_show_copy_buffer(Editor_Text *t)
 	static int num_rows = 0;
 	int row = CONSOLE_ROWS;
 
-	if (t->killbuf->riga) {
+	if (t->killbuf->lines_count) {
 		cti_mv(0, row++);
 		setcolor(YELLOW);
 		erase_current_line();
@@ -3291,7 +3291,7 @@ static void sanity_checks(Editor_Text *t)
 			num++;
 			line = line->next;
 		}
-		assert(t->text->riga == num);
+		assert(t->text->lines_count == num);
 	}
 	{
 		Editor_Line *line = t->text->last;
@@ -3336,7 +3336,7 @@ static void sanity_checks(Editor_Text *t)
 			num++;
 			line = line->next;
 		}
-		assert(t->killbuf->riga == num);
+		assert(t->killbuf->lines_count == num);
 	}
 	{
 		Editor_Line *line = t->killbuf->last;
