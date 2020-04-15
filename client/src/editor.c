@@ -78,18 +78,18 @@ bool editor_reached_full_size;
 #define MODE_OVERWRITE  1
 #define MODE_ASCII_ART  2
 
-typedef struct Editor_Line_ {
-	int str[MAX_EDITOR_COL];   /* Stringa in input              */
-	int col[MAX_EDITOR_COL];   /* Colori associati ai caratteri */
-	int num;                   /* Numero riga                   */
-	int pos;                   /* Posizione del cursore         */
-	int len;                   /* Lunghezza della stringa       */
-	char flag;                 /* 1 se contiene testo           */
-	struct Editor_Line_ *prev; /* Linea precedente              */
-	struct Editor_Line_ *next; /* Linea successiva              */
+typedef struct Editor_Line_t {
+	int str[MAX_EDITOR_COL];    /* Stringa in input              */
+	int col[MAX_EDITOR_COL];    /* Colori associati ai caratteri */
+	int num;                    /* Numero riga                   */
+	int pos;                    /* Posizione del cursore         */
+	int len;                    /* Lunghezza della stringa       */
+	char flag;                  /* 1 se contiene testo           */
+	struct Editor_Line_t *prev; /* Linea precedente              */
+	struct Editor_Line_t *next; /* Linea successiva              */
 } Editor_Line;
 
-typedef struct Editor_Text_ {
+typedef struct Editor_Text_t {
 	int max;      /* Numero massimo di colonne nel testo      */
 	char insert;  /* 1 se in insert mode, 0 altrimenti        */
 	int curs_col; /* Colore corrente del cursore              */
@@ -508,8 +508,9 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 
 #ifdef EDITOR_DEBUG
 		sanity_checks(t);
-		console_set_status("cl addr %p, status %d key %d",
-				   (void *)t->curr, status, last_key);
+		console_set_status("[l%p r%2d] stat %d k %3d",
+				   (void *)t->curr, t->curr->num, status,
+				   last_key);
 		console_update(t);
 #endif
 
@@ -530,7 +531,8 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 #endif
 
 		if (key == Key_Window_Changed) {
-			DEB("Terminal window resized (WINCH)");
+			DEB("Terminal window resized (WINCH) to %dx%d",
+			    NCOL, NRIGHE);
 			if (t->term_nrows < NRIGHE) {
 				/* the terminal has grown vertically */
 				int extra_rows = NRIGHE - t->term_nrows;
@@ -2994,9 +2996,10 @@ static void console_show_copy_buffer(Editor_Text *t)
 
 	if (t->buf_riga) {
 		cti_mv(0, row++);
-		setcolor(C_EDITOR_DEBUG);
+		setcolor(YELLOW);
 		erase_current_line();
 		printf("----- copy buffer -----");
+		setcolor(L_YELLOW);
 		for (Editor_Line *line = t->buf_first; line; line=line->next) {
 			if (row == Editor_Pos - 1) {
 				break;
@@ -3007,6 +3010,7 @@ static void console_show_copy_buffer(Editor_Text *t)
 				putchar(line->str[i]);
 			}
 		}
+		setcolor(YELLOW);
 		if (row < Editor_Pos - 1) {
 			cti_mv(0, row++);
 			erase_current_line();
@@ -3033,26 +3037,31 @@ static void console_update(Editor_Text *t)
 		window_push(0, NRIGHE - 1);
 	}
 
-	setcolor(C_EDITOR_DEBUG);
+	setcolor(COL_RED);
 	for (int i = 0; i != CONSOLE_ROWS; i++) {
 		cti_mv(0, i);
 		erase_current_line();
+		if (i == CONSOLE_ROWS - 1) {
+			setcolor(L_RED);
+		}
 		printf("%s", console[i]);
 	}
 
 	console_show_copy_buffer(t);
 
 	cti_mv(0, Editor_Pos - 2);
+	setcolor(COLOR(COL_GRAY, COL_RED, ATTR_BOLD));
 	int ws_count = debug_get_winstack_index();
 	int first, last;
 	debug_get_current_win(&first, &last);
-	printf("Status: %s [ws: %d]", console_status,
-	       debug_get_winstack_index());
-	printf(" Win - C %d,%d; ", first, last);
+	printf("%s [fs %c rows %d] W(%d,%d)$%d", console_status,
+	       editor_reached_full_size ? 'y' : 'n', t->term_nrows, first,
+	       last, debug_get_winstack_index());
 	for (int i = 0; i != ws_count; i++) {
 		debug_get_winstack(i, &first, &last);
-		printf("%d %d,%d; ", i, first, last);
+		printf("(%d,%d)", first, last);
 	}
+	erase_to_eol();
 
 	if (editor_reached_full_size) {
 		window_pop();
