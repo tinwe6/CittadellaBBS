@@ -426,6 +426,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 
 #ifdef EDITOR_DEBUG
 	console_init();
+	DEB("t.max = %d", t.max);
 #endif
 
 	bool fine = false;
@@ -536,8 +537,16 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			if (t->term_nrows < NRIGHE) {
 				/* the terminal has grown vertically */
 				int extra_rows = NRIGHE - t->term_nrows;
+				/*
 				Editor_Pos += extra_rows;
 				Editor_Vcurs += extra_rows;
+				*/
+				init_window();
+				if (editor_reached_full_size) {
+					window_pop();
+				} else {
+
+				}
 			} else {
 				int extra_rows = t->term_nrows - NRIGHE;
 				if (Editor_Pos - extra_rows < MSG_WIN_SIZE) {
@@ -926,41 +935,51 @@ static void Editor_Putchar(Editor_Text *t, int c)
 {
 	int i;
 
-	if ((t->insert == MODE_INSERT) && (t->curr->pos != t->curr->len)) {
-		memmove(t->curr->str + t->curr->pos + 1,
-			t->curr->str + t->curr->pos,
-			(t->curr->len - t->curr->pos) * sizeof(int));
-		memmove(t->curr->col + t->curr->pos + 1,
-			t->curr->col + t->curr->pos,
-			(t->curr->len - t->curr->pos) * sizeof(int));
+	//	if ((t->insert == MODE_INSERT) && (t->curr->pos != t->curr->len)) {
+	if (t->insert == MODE_INSERT) {
+		assert(t->curr->len >= t->curr->pos);
+
+		int *src_str = t->curr->str + t->curr->pos;
+		int *src_col = t->curr->col + t->curr->pos;
+		int *dest_str = t->curr->str + t->curr->pos + 1;
+		int *dest_col = t->curr->col + t->curr->pos + 1;
+		size_t bytes = (t->curr->len - t->curr->pos)*sizeof(int);
+		memmove(dest_str, src_str, bytes);
+		memmove(dest_col, src_col, bytes);
 		t->curr->len++;
 	}
 	t->curr->str[t->curr->pos] = c;
 	t->curr->col[t->curr->pos] = t->curs_col;
 
 	if (t->insert == MODE_ASCII_ART) {
+		/* TODO check this branch */
 		putchar(c);
 		if (t->curr->pos > t->curr->len) {
 			printf("\nO-OH!!!!!!!!!!!! Avvisa il tuo sviluppatore di fiducia!!!\n");
+			assert(false);
 		}
-		if (t->curr->pos == t->curr->len)
+		if (t->curr->pos == t->curr->len) {
 			t->curr->len++;
+		}
 		return;
 	}
 
 	t->curr->pos++;
-	if (t->curr->pos > t->curr->len)
+	if (t->curr->pos > t->curr->len) {
+		assert(t->insert != MODE_INSERT);
 		t->curr->len++;
-	for (i = t->curr->pos-1; i < t->curr->len; i++) {
+	}
+	for (i = t->curr->pos - 1; i < t->curr->len; i++) {
 		if (t->curr->col[i] != t->curr_col) {
 			t->curr_col = t->curr->col[i];
 			setcolor(t->curr_col);
 		}
 		putchar(t->curr->str[i]);
 	}
-	if (t->curr->len >= t->max)
+	if (t->curr->len >= t->max) {
 		Editor_Wrap_Word(t);
-	cti_mv(t->curr->pos+1, Editor_Vcurs);
+	}
+	cti_mv(t->curr->pos + 1, Editor_Vcurs);
 }
 
 /* Processa <Enter> */
@@ -1046,7 +1065,10 @@ static void Editor_Backspace(Editor_Text *t)
 				t->curr->pos = above_len;
 				Editor_Refresh(t, Editor_Vcurs);
 				break;
-			case MERGE_NOTHING: /*  Can I even get here?? */
+			case MERGE_NOTHING:
+				/* This happens if the first word in the line
+				   below does not fit above: simply move the
+				   cursor at the end of the line above.      */
 				t->curr->pos = above_len;
 				line_refresh(t->curr, Editor_Vcurs, 0);
 				break;
@@ -1106,7 +1128,7 @@ static void Editor_Delete(Editor_Text *t)
 				Editor_Refresh(t, Editor_Vcurs);
 				break;
 			case MERGE_NOTHING:
-				assert(false);
+				/* not enough space to move first word below */
 				break;
 			}
 			setcolor(t->curr_col);
@@ -1385,7 +1407,7 @@ static void Editor_Curs_Right(Editor_Text *t)
 			cti_mv(t->curr->pos+1, Editor_Vcurs);
 			return;
 		}
-		if (t->curr->len >= t->max-1) {
+		if (t->curr->len >= t->max - 1) {
 			if (!t->curr->next)
 				Editor_Insert_Line(t);
 			Editor_Down(t);
@@ -1517,7 +1539,7 @@ static void Editor_Newline(Editor_Text *t)
 		EdTerm_Scroll_Down();
 		cti_mv(0, Editor_Vcurs);
 	} else {
-		Editor_Scroll_Up(NRIGHE-1);
+		Editor_Scroll_Up(NRIGHE - 1);
 	}
 }
 
@@ -1639,97 +1661,199 @@ static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
 /*
  * Sposta l'ultima parola della riga corrente alla riga successiva se c'e`
  * posto, altrimenti in una nuova riga che inserisce.
- * Ritorna 1 se ha effettuato l'operazione, 0 se non c'e` posto.
+ * Returns true if a line was added below the current line, otherwise false.
  */
 static int Editor_Wrap_Word(Editor_Text *t)
 {
-	Editor_Line *nl;
-	int len, wlen = 1, parolone = FALSE;
-        int mdnum;
+	bool added_line = false;
 
-	len = t->curr->len;
-	if (t->curr->next == NULL)
-		Editor_Insert_Line(t);
-	nl = t->curr->next;
+	DEB("Wrap_Word pos %d len %d", t->curr->pos, t->curr->len);
 
-        while ((wlen <= len) && (t->curr->str[len-wlen] == ' '))
-                wlen++;
+	int len = t->curr->len;
 
-        mdnum = Editor_Get_MDNum(t->curr->col[len-wlen]);
-        if (mdnum) { /* Wrappa l'allegato in blocco */
-                while ((Editor_Get_MDNum(t->curr->col[len-wlen]) == mdnum)
-                       && (wlen <= len))
-                        wlen++;
-        } else { /* Normale algoritmo per la parola */
-                while ((wlen <= len) && (t->curr->str[len-wlen] != ' '))
-                        wlen++;
-        }
-
-	if (wlen >= len) {/* un'unico lungo parolone senza senso... */
-		wlen = len - t->curr->pos + 1;
-		if (wlen <= 0)
-			wlen = 1;
-		if (wlen > len)
-			wlen = 10;
-		parolone = TRUE;
+	/* Find the position of the last character in the line */
+	int last = len - 1;
+	while (last > 0 && t->curr->str[last] == ' ') {
+		last--;
 	}
 
-	if ((nl->len + wlen + 1) >= t->max) {
+	/* eliminate the white space at the end of the line if any */
+	if (last + 1 < t->max && t->curr->pos < t->curr->len) {
+		/* No need to wrap */
+		DEB("Stripped ending space instead of wrapping");
+		t->curr->len = t->max - 1;
+		line_refresh(t->curr, Editor_Vcurs, 0);
+		cti_mv(t->curr->pos + 1, Editor_Vcurs);
+		return 1;
+	}
+	len = t->curr->len;
+
+	/* Find the starting position of the last word */
+	int first = last;
+        int mdnum = Editor_Get_MDNum(t->curr->col[last]);
+        if (mdnum) { /* if there's an attachment, treat it as a single word */
+                while ((Editor_Get_MDNum(t->curr->col[first]) == mdnum)
+                       && (first > 0)) {
+                        first--;
+		}
+        } else {
+                while ((first > 0) && (t->curr->str[first - 1] != ' ')) {
+                        first--;
+		}
+        }
+	int first_blank = first;
+	while (first_blank && t->curr->str[first_blank - 1] == ' ') {
+		first_blank--;
+	}
+
+	{
+		/*
+	                first_blank    last
+	                      v          v
+                    "This is a    sentence  "
+                     ^            ^         ^
+                     0           first     len
+		*/
+		int *str = t->curr->str;
+		assert(first_blank == 0 || str[first_blank] == ' ');
+		assert(str[first] != ' ');
+		assert(first == 0 || str[first - 1] == ' ');
+		assert(str[last] != ' ');
+		assert(last == t->curr->len - 1 || str[last + 1] == ' ');
+	}
+
+	/* NOTE wlen is word length + 1 for the space in front of it */
+	int word_len = last - first + 1;
+	int wlen = last - first + 2;
+	DEB("Wrap_Word pos (%d, %d) wlen ", first, last, wlen);
+
+	bool parolone = false;
+	if (word_len == t->max) {
+		/* TODO */
+	    //if (wlen >= len) {/* un'unico lungo parolone senza senso... */
+		DEB("Word_Wrap: oversized word");
+		wlen = len - t->curr->pos + 1;
+		if (wlen <= 0) {
+			wlen = 1;
+		}
+		if (wlen > len) {
+			wlen = 10;
+		}
+		parolone = true;
+	}
+
+	if (t->curr->next == NULL) {
+		Editor_Insert_Line(t);
+		added_line = true;
+	}
+	Editor_Line *nl = t->curr->next;
+	bool need_extra_space = nl->len && nl->str[0] != ' ';
+	int extra_len = need_extra_space ? 1 : 0;
+	int total_len = word_len + extra_len;
+	if ((nl->len + total_len) >= t->max) {
 		/* La parola non ci sta nella riga successiva */
 		Editor_Insert_Line(t);
+		added_line = true;
 		nl = t->curr->next;
+
+		need_extra_space = false;
+		extra_len = 0;
+		total_len = word_len;
+
+		/*
 		Editor_Scroll_Down(Editor_Vcurs + 1, NRIGHE-1);
 		line_refresh(t->curr->next, Editor_Vcurs + 1, 0);
 		setcolor(t->curr_col);
 		cti_mv(t->curr->pos + 1, Editor_Vcurs);
+		*/
 	}
-	len -= wlen; /* Tolgo la parola */
+
+	/* cut the word (and leading space) from current line */
+	len = first_blank;
+
+	{
+		char str[LBUF] = {0};
+		int i;
+		for (i = 0; i != nl->len; i++) {
+			str[i] = (char)nl->str[i];
+		}
+		str[i] = 0;
+		DEB(str);
+	}
 
 	if (nl->len > 0) {
-		/* Riga succ. non vuota: sposto il contenuto */
-		memmove(nl->str + wlen, nl->str,
-			nl->len * sizeof(int));
-		memmove(nl->col + wlen, nl->col,
-			nl->len * sizeof(int));
-		nl->str[wlen-1] = ' ';
-                if (Editor_Get_MDNum(nl->col[wlen]) == 0)
-                        nl->col[wlen-1] = nl->col[wlen];
-                else
-                        nl->col[wlen-1] = C_DEFAULT;
-		nl->len += wlen;
-	} else
-		nl->len = wlen - 1;
-
-	if (parolone) {
-		nl->len++;
-		memcpy(nl->str, t->curr->str+len, wlen * sizeof(int));
-		memcpy(nl->col, t->curr->col+len, wlen * sizeof(int));
-	} else {
-		/* Ricopio la parola */
-		memcpy(nl->str, t->curr->str+len+1, (wlen-1) * sizeof(int));
-		memcpy(nl->col, t->curr->col+len+1, (wlen-1) * sizeof(int));
+		DEB("move %d char dest pos %d", nl->len, total_len);
+		/* move content of next string to make place */
+		memmove(nl->str + total_len, nl->str, nl->len*sizeof(int));
+		memmove(nl->col + total_len, nl->col, nl->len*sizeof(int));
+		if (need_extra_space) {
+			nl->str[total_len - 1] = ' ';
+			/* TODO set correct colot */
+			nl->col[total_len - 1] = C_DEFAULT;
+		}
+		// TODO fix this
+#if 0
+                if (Editor_Get_MDNum(nl->col[wlen]) == 0) {
+                        nl->col[wlen - 1] = nl->col[wlen];
+		} else {
+                        nl->col[wlen - 1] = C_DEFAULT;
+		}
+#endif
 	}
 
+	{
+		char str[LBUF] = {0};
+		int i;
+		for (i = 0; i != nl->len; i++) {
+			str[i] = (char)nl->str[i];
+		}
+		str[i] = 0;
+		DEB(str);
+	}
+
+	nl->len += total_len;
+	assert(t->curr->next == nl);
+
+	/* copy the word at beginning of line below */
+	if (parolone) {
+		nl->len++;
+		memcpy(nl->str, t->curr->str + len, wlen*sizeof(int));
+		memcpy(nl->col, t->curr->col + len, wlen*sizeof(int));
+	} else {
+		DEB("move %d char from pos %d", word_len, first);
+		/* Ricopio la parola */
+		memcpy(nl->str, t->curr->str + first, word_len*sizeof(int));
+		memcpy(nl->col, t->curr->col + first, word_len*sizeof(int));
+		{
+			char str[LBUF] = {0};
+			for (int i = 0; i != nl->len; i++) {
+				str[i] = (char)nl->str[i];
+			}
+			DEB(str);
+		}
+	}
 	t->curr->len = len;
 
 	if (t->curr->pos > len) {
+		/* the cursor was in the part of the line that was wrapped */
 		nl->pos = t->curr->pos - len - 1;
 		if (parolone) {
 			nl->pos++;
 		}
 		t->curr = nl;
-		if (Editor_Vcurs != NRIGHE-1) {
+		if (Editor_Vcurs != NRIGHE - 1) {
 			Editor_Vcurs++;
 			cti_mv(t->curr->pos + 1, Editor_Vcurs);
 		} else {
-			Editor_Scroll_Up(NRIGHE-1);
+			Editor_Scroll_Up(NRIGHE - 1);
 		}
 		line_refresh(t->curr->prev, Editor_Vcurs - 1, 0);
 	}
 
 	Editor_Refresh(t, Editor_Vcurs);
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
-	return 1;
+
+	return added_line;
 }
 
 /*
@@ -1769,13 +1893,13 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 				 && below->str[0] != ' ');
 	int extra_space = need_extra_space ? 1 : 0;
 	/* Remaining space available in the above line */
-	int avail_chars = t->max - above->len - extra_space;
+	int avail_chars = t->max - 1 - above->len - extra_space;
 
 	/* Find out how much of the string below can be appended to the
 	   string above without breaking any word */
 	int len = 0;
 	if (avail_chars < below->len) {
-		for (int i = 0; i < avail_chars; i++) {
+		for (int i = 0; i <= avail_chars; i++) {
 			if (below->str[i] == ' ') {
 				len = i;
 			}
@@ -1811,14 +1935,14 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 		int *rest_str = below->str + len + 1;
 		int *rest_col = below->col + len + 1;
 		size_t bytes_to_copy = len*sizeof(int);
-		size_t remaining_bytes = (below->len - len)*sizeof(int);
+		size_t remaining_bytes = (below->len - len - 1)*sizeof(int);
 		memcpy(dest_str, src_str, bytes_to_copy);
 		memcpy(dest_col, src_col, bytes_to_copy);
 		memmove(src_str, rest_str, remaining_bytes);
 		memmove(src_col, rest_col, remaining_bytes);
 
 		above->len += len;
-		below->len -= len;
+		below->len -= len + 1;
 		if (below->len <= 0) {
 			DEB("Delete below");
 			Editor_Delete_Line(t, below);
@@ -1835,34 +1959,54 @@ static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t)
 	return text_merge_lines(t, t->curr, t->curr->next);
 }
 
-/* Scrolla in su di una riga dello schermo. Se l'editor raggiunge la dimensione
- * massima, setta la finestra di scrolling sullo spazio disponibile.         */
-static void Editor_Scroll_Up(int stop)
+/*
+ * Scroll the upper parte of the screen (from row 0 to last_row) up one row.
+ * If the the editor has already reached its maximum extension, only scrolls
+ * the text window, otherwise everything is scrolled up.
+ * If the editor reaches as a result its maximum extension, set the scrolling
+ * window for the text.
+ * NOTE: it is called by Editor_Newline() if the cursor is on the bottom row,
+ *       by Editor_Wrap_Word() if wrapping a word on the bottom row,
+ *       by Editor_Down() with cursor on bottom row (from Key_Down, Key_Right)
+ *       In all these case the argument is NRIGHE - 1.
+ *       The call from Editor_Scroll_Down() seems never executed...
+ */
+static void Editor_Scroll_Up(int last_row)
 {
+	DEB("Editor_Scroll_Up(%d)", last_row);
+	assert(last_row == NRIGHE - 1);
+
 	if (!editor_reached_full_size) {
-		if (Editor_Pos > MSG_WIN_SIZE) { /*L'editor e' ancora piccino*/
+		if (Editor_Pos > MSG_WIN_SIZE) { /* editor is still tiny*/
 			Editor_Pos--;
-			if (stop != NRIGHE-1) {
-				window_push(0, stop);
-				cti_mv(0, stop);
+			if (last_row != NRIGHE - 1) {
+				assert(false);
+#if 0
+				window_push(0, last_row);
+				cti_mv(0, last_row);
 				scroll_up();
 				window_pop();
-				cti_mv(0, stop);
+				cti_mv(0, last_row);
+#endif
 			}
 			scroll_up();
-		} else { /* Estensione massima dell'editor: setta finestra */
-			window_push(Editor_Pos + 1, stop);
+		} else { /* Max editor extension reached! */
+			assert(true);
+			window_push(Editor_Pos + 1, last_row);
 			editor_reached_full_size = true;
-			cti_mv(0, stop);
+			cti_mv(0, last_row);
 			scroll_up();
 		}
-	} else if (stop != NRIGHE - 1){ /* E' una sottofinestra */
-		window_push(Editor_Pos + 1, stop);
-		cti_mv(0, stop);
+	} else if (last_row != NRIGHE - 1){ /* scroll the subwindow */
+		assert(false);
+#if 0
+		window_push(Editor_Pos + 1, last_row);
+		cti_mv(0, last_row);
 		scroll_up();
 		window_pop();
-		cti_mv(0, stop);
-	} else { /* Scrolla tutto il testo */
+		cti_mv(0, last_row);
+#endif
+	} else { /* scrolla the whole text window */
 		scroll_up();
 	}
 }
@@ -1870,14 +2014,21 @@ static void Editor_Scroll_Up(int stop)
 /* Scrolla il giu' la regione di testo tra start e stop */
 static void Editor_Scroll_Down(int start, int stop)
 {
+	assert(editor_reached_full_size);
 	if (editor_reached_full_size) {
+		DEB("Editor_Scroll_Down() calls scroll_down()");
 		window_push(start, stop);
 		cti_mv(0, start);
 		scroll_down();
 		window_pop();
 	} else {
+#if 0
+		DEB("Editor_Scroll_Down() calls Editor_Scroll_Up()");
 		Editor_Scroll_Up(start - 1);
 		Editor_Vcurs--;
+		/* TODO can this branch be executed? */
+		assert(false);
+#endif
 	}
 	cti_mv(Editor_Hcurs, Editor_Vcurs);
 }
@@ -1899,8 +2050,8 @@ static void Editor_Up(Editor_Text *t)
 static void Editor_Down(Editor_Text *t)
 {
 	t->curr = t->curr->next;
-	if (Editor_Vcurs == NRIGHE-1) {
-		Editor_Scroll_Up(NRIGHE-1);
+	if (Editor_Vcurs == NRIGHE - 1) {
+		Editor_Scroll_Up(NRIGHE - 1);
 	} else {
 		Editor_Vcurs++;
 	}
