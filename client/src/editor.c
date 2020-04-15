@@ -89,16 +89,68 @@ typedef struct Editor_Line_t {
 	struct Editor_Line_t *next; /* Linea successiva              */
 } Editor_Line;
 
+/*********************************************************************/
+
+typedef struct TextBuf_t {
+	Editor_Line *first;   /* first line                       */
+	Editor_Line *last;    /* last line                        */
+	Editor_Line *curr;    /* current line                     */
+        int riga;             /* number of lines                  */
+} TextBuf;
+
+/* Allocate a TextBuf structure */
+TextBuf * textbuf_new(void)
+{
+	TextBuf *buf;
+	CREATE(buf, TextBuf, 1, 0);
+	return buf;
+}
+
+/* Free the lines list and then free the TextBuf */
+void textbuf_free(TextBuf *buf)
+{
+	assert(buf);
+
+	while (buf->first) {
+		Editor_Line *line = buf->first;
+		buf->first = line->next;
+		Free(line);
+	}
+
+	Free(buf);
+}
+
+/* Initialize the text buffer with a single, empty line. */
+void textbuf_init(TextBuf *buf)
+{
+	assert(buf->first == NULL && buf->last == NULL);
+
+	CREATE(buf->first, Editor_Line, 1, 0);
+	buf->last = buf->first;
+	buf->first->num = 1;
+	buf->first->pos = 0;
+	buf->first->len = 0;
+	buf->first->flag = 1;
+	buf->first->next = NULL;
+	buf->first->prev = NULL;
+	buf->riga = 1;
+}
+
+/*********************************************************************/
+
 typedef struct Editor_Text_t {
 	int max;      /* Numero massimo di colonne nel testo      */
 	char insert;  /* 1 se in insert mode, 0 altrimenti        */
 	int curs_col; /* Colore corrente del cursore              */
 	int curr_col; /* Ultimo settaggio di colore sul terminale */
         /* Dati del testo che si sta editando                     */
+	TextBuf *text;
+#if 0
 	Editor_Line *first;   /* Prima riga del testo             */
 	Editor_Line *last;    /* Ultima riga                      */
-	Editor_Line *curr;    /* Riga corrente                    */
         int riga;             /* Numero righe del testo           */
+#endif
+	Editor_Line *curr;    /* Riga corrente                    */
 	int term_nrows;       /* Num rows in terminal             */
         /* Dati del testo nel copy bufferando                     */
 	Editor_Line *buf_first; /* Prima riga del testo           */
@@ -191,7 +243,9 @@ static void Editor_PageDown(Editor_Text *t);
 static void Editor_PageUp(Editor_Text *t);
 static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t);
 static void Editor_Scroll_Up(int stop);
+#if 0
 static void Editor_Scroll_Down(int start, int stop);
+#endif
 static void Editor_Up(Editor_Text *t);
 static void Editor_Down(Editor_Text *t);
 static void Editor_Set_Color(Editor_Text *t, int c);
@@ -382,21 +436,14 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	prompt_tmp = prompt_curr;
 	prompt_curr = P_EDITOR;
 
-	/* Inizializza il testo da editare */
-	t.riga = 1;
+	/* Initialize text to be edited */
+	t.text = textbuf_new();
+	textbuf_init(t.text);
+	t.curr = t.text->first;
+
 	t.insert = MODE_INSERT;
 	t.curs_col = color ? color : C_DEFAULT;
 	t.curr_col = t.curs_col;
-
-	CREATE(t.first, Editor_Line, 1, 0);
-	t.curr = t.first;
-	t.last = t.first;
-	t.first->num = 1;
-	t.first->pos = 0;
-	t.first->len = 0;
-	t.first->flag = 1;
-	t.first->next = NULL;
-	t.first->prev = NULL;
 
         /* Inizializza il buffer di copia */
         t.buf_first = NULL;
@@ -417,7 +464,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	txt_clear(txt);
 
 	/* Visualizza l'header dell'editor ed eventualmente il testo */
-	t.curr = t.first;
+	t.curr = t.text->first;
 	Editor_Head(&t);
 	while(t.curr->next) {
 		Editor_Newline(&t);
@@ -453,7 +500,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 			fine = true;
 			break;
 		}
-	} while ((t.riga < max_linee) && (!fine));
+	} while ((t.text->riga < max_linee) && (!fine));
 
 	/* TODO: how can ret be EDIT_NEWLINE? it can't... what's the point
          	 of the next block?      */
@@ -467,7 +514,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 		}
 	}
 
-	Editor2CML(t.first, txt, color, t.mdlist);
+	Editor2CML(t.text->first, txt, color, t.mdlist);
 	Editor_Free(&t);
 	prompt_curr = prompt_tmp;
 
@@ -536,7 +583,10 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			    NCOL, NRIGHE);
 			if (t->term_nrows < NRIGHE) {
 				/* the terminal has grown vertically */
+				/*
 				int extra_rows = NRIGHE - t->term_nrows;
+				*/
+
 				/*
 				Editor_Pos += extra_rows;
 				Editor_Vcurs += extra_rows;
@@ -625,14 +675,14 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			break;
 		case Key_HOME:
 			/* case META('<'): */
-			t->curr = t->first;
+			t->curr = t->text->first;
 			t->curr->pos = 0;
 			Editor_Vcurs = Editor_Pos+1;
 			Editor_Refresh(t, 0);
 			break;
 		case Key_END:
 			/* case META('>'): */
-			t->curr = t->last;
+			t->curr = t->text->last;
 			t->curr->pos = t->curr->len;
 			Editor_Vcurs = NRIGHE-1;
 			Editor_Refresh(t, 0);
@@ -1487,7 +1537,7 @@ static void Editor_PageUp(Editor_Text *t)
 		t->curr = t->curr->prev;
 	}
 	if (t->curr->num < (NRIGHE - 1 - Editor_Pos)) {
-		t->curr = t->first;
+		t->curr = t->text->first;
 		Editor_Vcurs = Editor_Pos + 1;
 	} else {
 		Editor_Vcurs = NRIGHE - 1;
@@ -1509,8 +1559,8 @@ static void Editor_PageDown(Editor_Text *t)
 	}
 	for (i = Editor_Vcurs; (i < NRIGHE) && t->curr->next; i++)
 		t->curr = t->curr->next;
-	if (t->last->num - t->curr->num < NRIGHE - Editor_Pos - 2) {
-		t->curr = t->last;
+	if (t->text->last->num - t->curr->num < NRIGHE - Editor_Pos - 2) {
+		t->curr = t->text->last;
 		Editor_Vcurs = NRIGHE-1;
 	} else
 		Editor_Vcurs = Editor_Pos+1;
@@ -1559,13 +1609,13 @@ static void Editor_Insert_Line(Editor_Text *t)
 	if (new_line->next) {
 		new_line->next->prev = new_line;
 	} else {
-		t->last = new_line;
+		t->text->last = new_line;
 	}
 	num = t->curr->num;
 	for (Editor_Line *l = new_line; l; l = l->next) {
 		l->num = ++num;
 	}
-	t->riga++;
+	t->text->riga++;
 }
 
 /* Insert a new line above the current line, without changing the
@@ -1582,14 +1632,14 @@ static void Editor_Insert_Line_Here(Editor_Text *t)
 	if (new_line->prev) {
 		new_line->prev->next = new_line;
 	} else {
-		t->first = new_line;
+		t->text->first = new_line;
 	}
 
 	int num = t->curr->num;
 	for (Editor_Line *line = new_line; line; line = line->next) {
 		line->num = num++;
 	}
-	t->riga++;
+	t->text->riga++;
 }
 
 /*
@@ -1636,13 +1686,13 @@ static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
         for (Editor_Line *tmp = line->next; tmp; tmp = tmp->next) {
 		tmp->num--;
 	}
-	t->riga--;
+	t->text->riga--;
 
-	if (line == t->first) {
-		t->first = line->next;
+	if (line == t->text->first) {
+		t->text->first = line->next;
 	}
-	if (line == t->last) {
-		t->last = line->prev;
+	if (line == t->text->last) {
+		t->text->last = line->prev;
 	}
 	if (line->next) {
 		line->next->prev = line->prev;
@@ -1651,8 +1701,8 @@ static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
 		line->prev->next = line->next;
 	}
 
-	assert(t->first->prev == NULL);
-	assert(t->last->next == NULL);
+	assert(t->text->first->prev == NULL);
+	assert(t->text->last->next == NULL);
 	DEB("Delete line (addr %p)", (void *)line);
 
 	free(line);
@@ -2011,6 +2061,7 @@ static void Editor_Scroll_Up(int last_row)
 	}
 }
 
+#if 0
 /* Scrolla il giu' la regione di testo tra start e stop */
 static void Editor_Scroll_Down(int start, int stop)
 {
@@ -2032,6 +2083,7 @@ static void Editor_Scroll_Down(int start, int stop)
 	}
 	cti_mv(Editor_Hcurs, Editor_Vcurs);
 }
+#endif
 
 /* Moves the cursor to the line above and updates the display */
 static void Editor_Up(Editor_Text *t)
@@ -2594,7 +2646,7 @@ static void Editor_Save_Text(Editor_Text *t)
                 if (fp != NULL) {
                         col = C_DEFAULT;
                         fprintf(fp, "<cml>\n");
-                        for (line = t->first; line; line = line->next) {
+                        for (line = t->text->first; line; line = line->next) {
                                 out = editor2cml(line->str, line->col, &col, line->len, t->mdlist);
                                 fprintf(fp, "%s\n", out);
                                 Free(out);
@@ -2656,12 +2708,7 @@ static void line_refresh(Editor_Line *line, int vpos, int start)
 /* Libera la memoria allocata al testo. */
 static void Editor_Free(Editor_Text *t)
 {
-	Editor_Line *l, *tmp;
-
-	for (l = t->first; l; l = tmp) {
-		tmp = l->next;
-		free(l);
-	}
+	textbuf_free(t->text);
         Editor_Free_Copy_Buffer(t);
 }
 
@@ -2738,7 +2785,7 @@ static void Editor_Head(Editor_Text *t)
 	push_color();
 	setcolor(C_EDITOR);
 	printf(status_front);
-	printf(status_back, insmode[(int)t->insert], t->curr->num, t->riga,
+	printf(status_back, insmode[(int)t->insert], t->curr->num, t->text->riga,
 	       t->curr->pos + 1);
 	pull_color();
 	/* TODO: what is the role of the following '\n' (and it is needed!) */
@@ -2761,7 +2808,7 @@ static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh)
                 cti_mv(strlen(status_front), Editor_Pos);
 	}
 
-	printf(status_back, insmode[(int) t->insert], t->curr->num, t->riga,
+	printf(status_back, insmode[(int) t->insert], t->curr->num, t->text->riga,
 	       t->curr->pos+1);
 
 	if (editor_reached_full_size) {
@@ -3227,44 +3274,44 @@ static void console_update(Editor_Text *t)
 
 static void sanity_checks(Editor_Text *t)
 {
-	if (t->first == NULL) {
-		assert(t->last == NULL);
+	if (t->text->first == NULL) {
+		assert(t->text->last == NULL);
 		assert(t->curr == NULL);
 		goto SANITY_COPY_BUFFER;
 	}
-	assert(t->first->prev == NULL);
-	assert(t->last->next == NULL);
+	assert(t->text->first->prev == NULL);
+	assert(t->text->last->next == NULL);
 
 	{
 		int num = 1;
-		Editor_Line *line = t->first;
+		Editor_Line *line = t->text->first;
 		for (;;) {
 			assert(line->num == num);
 			if (line->next == NULL) {
-				assert(line == t->last);
+				assert(line == t->text->last);
 				break;
 			}
 			if (line->prev) {
 				assert(line->prev->next == line);
 			} else {
-				assert(line == t->first);
+				assert(line == t->text->first);
 			}
 			num++;
 			line = line->next;
 		}
-		assert(t->riga == num);
+		assert(t->text->riga == num);
 	}
 	{
-		Editor_Line *line = t->last;
+		Editor_Line *line = t->text->last;
 		for (;;) {
 			if (line->prev == NULL) {
-				assert(line == t->first);
+				assert(line == t->text->first);
 				break;
 			}
 			if (line->next) {
 				assert(line->next->prev == line);
 			} else {
-				assert(line == t->last);
+				assert(line == t->text->last);
 			}
 			line = line->prev;
 		}
