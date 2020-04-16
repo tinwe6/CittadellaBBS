@@ -23,7 +23,7 @@
 
   Check what 'flag' does. If it is to stay make it a bool and rename it.
 
-  Do we require an ending 0 for the Editor_Line.str strings? It is written in
+  Do we require an ending 0 for the Line.str strings? It is written in
   some places, but not always.
 
   Do not allow to insert attachments in ASCII art mode as it can mess up. Or
@@ -88,26 +88,26 @@ bool editor_reached_full_size;
 #define MODE_OVERWRITE  1
 #define MODE_ASCII_ART  2
 
-typedef struct Editor_Line_t {
+typedef struct Line_t {
 	int str[MAX_EDITOR_COL];    /* Stringa in input              */
 	int col[MAX_EDITOR_COL];    /* Colori associati ai caratteri */
 	int num;                    /* Numero riga                   */
 	int pos;                    /* Posizione del cursore         */
 	int len;                    /* Lunghezza della stringa       */
 	char flag;                  /* 1 se contiene testo           */
-	struct Editor_Line_t *prev; /* Linea precedente              */
-	struct Editor_Line_t *next; /* Linea successiva              */
-} Editor_Line;
+	struct Line_t *prev; /* Linea precedente              */
+	struct Line_t *next; /* Linea successiva              */
+} Line;
 
-static Editor_Line *line_new(void)
+static Line *line_new(void)
 {
-	Editor_Line *line;
-	CREATE(line, Editor_Line, 1, 0);
-	*line = (Editor_Line){0};
+	Line *line;
+	CREATE(line, Line, 1, 0);
+	*line = (Line){0};
 	return line;
 }
 
-void lines_update_nums(Editor_Line *line)
+void lines_update_nums(Line *line)
 {
 	int num = line->prev ? line->prev->num : 0;
 
@@ -118,7 +118,7 @@ void lines_update_nums(Editor_Line *line)
 }
 
 /* Copy contents of line src to line dest. The contents of src are lost. */
-void line_copy(Editor_Line *dest, Editor_Line *src)
+void line_copy(Line *dest, Line *src)
 {
 	assert(dest != src);
 
@@ -127,7 +127,7 @@ void line_copy(Editor_Line *dest, Editor_Line *src)
 	dest->len = src->len;
 }
 
-void line_copy_from(Editor_Line *dest, Editor_Line *src, int src_offset)
+void line_copy_from(Line *dest, Line *src, int src_offset)
 {
 	assert(dest != src);
 	assert(src_offset >= 0);
@@ -138,7 +138,7 @@ void line_copy_from(Editor_Line *dest, Editor_Line *src, int src_offset)
 	dest->len = count;
 }
 
-void line_remove_index(Editor_Line *line, int pos)
+void line_remove_index(Line *line, int pos)
 {
 	assert(pos >= 0 && line->len > pos);
 	if (pos < line->len - 1) {
@@ -149,7 +149,7 @@ void line_remove_index(Editor_Line *line, int pos)
 	line->len--;
 }
 
-void line_insert_index(Editor_Line *line, int pos)
+void line_insert_index(Line *line, int pos)
 {
 	assert(pos >= 0 && line->len >= pos);
 	size_t bytes = (line->len - pos)*sizeof(int);
@@ -159,7 +159,7 @@ void line_insert_index(Editor_Line *line, int pos)
 }
 
 /* Remove from line the characters in the interval [begin, end) */
-void line_remove_interval(Editor_Line *line, int begin, int end)
+void line_remove_interval(Line *line, int begin, int end)
 {
 	assert(begin >= 0 && begin < end && end <= line->len);
 	if (end == line->len) {
@@ -177,9 +177,9 @@ void line_remove_interval(Editor_Line *line, int begin, int end)
 /*********************************************************************/
 
 typedef struct TextBuf_t {
-	Editor_Line *first;   /* first line                       */
-	Editor_Line *last;    /* last line                        */
-	//Editor_Line *curr;    /* current line                     */
+	Line *first;   /* first line                       */
+	Line *last;    /* last line                        */
+	//Line *curr;    /* current line                     */
         int lines_count;      /* number of lines in the list      */
 } TextBuf;
 
@@ -192,7 +192,7 @@ typedef struct Editor_Text_t {
 	int curr_col; /* Ultimo settaggio di colore sul terminale */
 	TextBuf *text;     /* text buffer                         */
 	TextBuf *killbuf;  /* kill buffer storing kill text       */
-	Editor_Line *curr; /* current line (where cursor is)      */
+	Line *curr; /* current line (where cursor is)      */
 	int term_nrows;       /* Num rows in terminal             */
         bool buf_pasted;  /* true se il buffer e' stato incollato */
         bool copy; /* true se aggiunto riga al copy buf nell'ultima op */
@@ -243,13 +243,13 @@ static inline int attr_set_mdnum(int c, int mdnum)
 
 #define ATTR_SET_MDNUM(c, m) do { (c) = attr_set_mdnum((c), (m)); } while(0)
 
-static inline int line_get_mdnum(Editor_Line *line, int pos)
+static inline int line_get_mdnum(Line *line, int pos)
 {
 	int c = line->col[pos];
 	return (c >> 16) & 0xff;
 }
 
-static inline void line_set_mdnum(Editor_Line *line, int pos, int mdnum)
+static inline void line_set_mdnum(Line *line, int pos, int mdnum)
 {
 	int c = line->col[pos];
 	line->col[pos] = (mdnum << 16) | (c & 0xffff);
@@ -307,16 +307,16 @@ static void Editor_Insert_User(Editor_Text *t);
 static void Editor_Insert_File(Editor_Text *t);
 static void Editor_Insert_Text(Editor_Text *t);
 static void Editor_Save_Text(Editor_Text *t);
-static void line_refresh(Editor_Line *line, int vpos, int start);
+static void line_refresh(Line *line, int vpos, int start);
 static void clear_line(int vpos);
 static void Editor_Free(Editor_Text *t);
-static void Editor_Free_MD(Editor_Text *t, Editor_Line *l);
+static void Editor_Free_MD(Editor_Text *t, Line *l);
 static void Editor_Free_Copy_Buffer(Editor_Text *t);
 static void Editor_Refresh(Editor_Text *t, int start);
 static void Editor_Head(Editor_Text *t);
 static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh);
 static void Editor_Refresh_All(Editor_Text *t);
-static void Editor2CML(Editor_Line *line, struct text *txt, int col,
+static void Editor2CML(Line *line, struct text *txt, int col,
                        Metadata_List *mdlist);
 static void text2editor(Editor_Text *t, struct text *txt, int color,
                         int max_col);
@@ -383,7 +383,7 @@ void textbuf_free(TextBuf *buf)
 	assert(buf);
 
 	while (buf->first) {
-		Editor_Line *line = buf->first;
+		Line *line = buf->first;
 		buf->first = line->next;
 		Free(line);
 	}
@@ -393,7 +393,7 @@ void textbuf_free(TextBuf *buf)
 
 void textbuf_sanity_check(TextBuf *buf)
 {
-	Editor_Line *line = buf->first;
+	Line *line = buf->first;
 	if (line == NULL) {
 		assert(buf->last == NULL);
 		assert(buf->lines_count == 0);
@@ -428,9 +428,9 @@ void textbuf_sanity_check(TextBuf *buf)
 }
 
 /* Append a new line at bottom of text buffer */
-static Editor_Line * textbuf_append_new_line(TextBuf *buf)
+static Line * textbuf_append_new_line(TextBuf *buf)
 {
-	Editor_Line *line = line_new();
+	Line *line = line_new();
 
 	line->prev = buf->last;
 	line->next = NULL;
@@ -447,9 +447,9 @@ static Editor_Line * textbuf_append_new_line(TextBuf *buf)
 }
 
 /* Insert a new line below 'line' */
-static Editor_Line * textbuf_insert_line_below(TextBuf *buf, Editor_Line *line)
+static Line * textbuf_insert_line_below(TextBuf *buf, Line *line)
 {
-	Editor_Line *new_line = line_new();
+	Line *new_line = line_new();
 
 	new_line->prev = line;
 	new_line->next = line->next;
@@ -468,9 +468,9 @@ static Editor_Line * textbuf_insert_line_below(TextBuf *buf, Editor_Line *line)
 }
 
 /* Insert a new line above 'line' */
-static Editor_Line * textbuf_insert_line_above(TextBuf *buf, Editor_Line *line)
+static Line * textbuf_insert_line_above(TextBuf *buf, Line *line)
 {
-	Editor_Line *new_line = line_new();
+	Line *new_line = line_new();
 
 	new_line->prev = line->prev;
 	new_line->next = line;
@@ -489,9 +489,9 @@ static Editor_Line * textbuf_insert_line_above(TextBuf *buf, Editor_Line *line)
 }
 
 /* Removes 'line' from the text buffer list and frees it. */
-static void textbuf_delete_line(TextBuf *buf, Editor_Line *line)
+static void textbuf_delete_line(TextBuf *buf, Line *line)
 {
-        for (Editor_Line *tmp = line->next; tmp; tmp = tmp->next) {
+        for (Line *tmp = line->next; tmp; tmp = tmp->next) {
 		tmp->num--;
 	}
 	buf->lines_count--;
@@ -1262,7 +1262,7 @@ static void Editor_Putchar(Editor_Text *t, int c)
  * and the rest is moved in a new line, that is inserted below the original
  * line in the text list. Any trailing space in the above line and any
  * leading space in the below line is eliminated.                           */
-void textbuf_break_line(TextBuf *buf, Editor_Line *line, int pos)
+void textbuf_break_line(TextBuf *buf, Line *line, int pos)
 {
 	textbuf_insert_line_below(buf, line);
 	if (pos < line->len) {
@@ -1324,7 +1324,7 @@ static void Editor_Backspace(Editor_Text *t)
 	if (t->curr->pos == 0) {
 		if (t->curr->prev) {
 			int above_len = t->curr->prev->len;
-			Editor_Line *below = t->curr;
+			Line *below = t->curr;
 			Editor_Up(t); /* make t->curr the line above */
 			switch (Editor_Merge_Lines(t)) {
 			case MERGE_EXTRA_SPACE:
@@ -1387,7 +1387,7 @@ static void Editor_Delete(Editor_Text *t)
 	if (t->curr->pos == t->curr->len) {
 		if (t->curr->next) {
 			/* TODO: code duplicated in Editor_Backspace() */
-			Editor_Line *below = t->curr->next;
+			Line *below = t->curr->next;
 			switch (Editor_Merge_Lines(t)) {
 			case MERGE_REGULAR:
 			case MERGE_EXTRA_SPACE:
@@ -1483,7 +1483,7 @@ static void Editor_Delete_Next_Word(Editor_Text *t)
 static void Editor_Kill_Line(Editor_Text *t)
 {
 	if ((t->curr->len == 0) && t->curr->next) {
-		Editor_Line *next_line = t->curr->next;
+		Line *next_line = t->curr->next;
 		textbuf_delete_line(t->text, t->curr);
 		t->curr = next_line;
 		t->curr->pos = 0;
@@ -1538,7 +1538,7 @@ static void Editor_Yank(Editor_Text *t)
 
 	assert(t->curr->len == 0);
 	assert(t->curr->pos == 0);
-        for (Editor_Line *src = t->killbuf->first; src; ) {
+        for (Line *src = t->killbuf->first; src; ) {
 		line_copy(t->curr, src);
 		t->curr->pos = src->len;
                 line_refresh(t->curr, Editor_Vcurs, 0);
@@ -1820,7 +1820,7 @@ static void Editor_Copy_To_Kill_Buffer(Editor_Text *t)
                 Editor_Free_Copy_Buffer(t);
 	}
 
-	Editor_Line *line = textbuf_append_new_line(t->killbuf);
+	Line *line = textbuf_append_new_line(t->killbuf);
 
 	/* copy the contents of current line starting from cursor */
 	line_copy_from(line, t->curr, t->curr->pos);
@@ -1914,7 +1914,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 		textbuf_insert_line_below(t->text, t->curr);
 		added_line = true;
 	}
-	Editor_Line *nl = t->curr->next;
+	Line *nl = t->curr->next;
 	bool need_extra_space = nl->len && nl->str[0] != ' ';
 	int extra_len = need_extra_space ? 1 : 0;
 	int total_len = word_len + extra_len;
@@ -2036,8 +2036,8 @@ static int Editor_Wrap_Word(Editor_Text *t)
  * Returns an Editor_Merge_Result value specifying how the merge was
  * performed (see the enum definition for the descriptions).
  */
-static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
-					   Editor_Line *below)
+static Merge_Lines_Result text_merge_lines(Editor_Text *t, Line *above,
+					   Line *below)
 {
 	if (above == NULL || below == NULL) {
 		DEB("Merge nothing");
@@ -2625,7 +2625,7 @@ static void Editor_Insert_Text(Editor_Text *t)
 {
         char file_path[LBUF], *filename, buf[LBUF];
         FILE *fp;
-        Editor_Line *nl;
+        Line *nl;
 	int len, wlen, color, i;
         int c = 0;
 
@@ -2750,7 +2750,7 @@ static void Editor_Save_Text(Editor_Text *t)
 {
         char file_path[LBUF], *filename, *out;
         FILE *fp;
-        Editor_Line *line;
+        Line *line;
         int col;
         int c = 0;
 
@@ -2795,7 +2795,7 @@ static void Editor_Save_Text(Editor_Text *t)
  * Ristampa la linea 'line' nella riga 'vpos' dello schermo a partire
  * dal carattere in posizione start
  */
-static void line_refresh(Editor_Line *line, int vpos, int start)
+static void line_refresh(Line *line, int vpos, int start)
 {
 	int i, col = 0;
 
@@ -2836,7 +2836,7 @@ static void Editor_Free(Editor_Text *t)
 }
 
 /* Elimina il metadata associato alla linea l */
-static void Editor_Free_MD(Editor_Text *t, Editor_Line *l)
+static void Editor_Free_MD(Editor_Text *t, Line *l)
 {
         for (int i = 0; i < l->len; i++) {
                 int mdnum = line_get_mdnum(l, i);
@@ -2860,9 +2860,9 @@ static void Editor_Free_Copy_Buffer(Editor_Text *t)
 
 	*/
 
-	Editor_Line *tmp;
+	Line *tmp;
 
-	for (Editor_Line *line = t->killbuf->first; line; line = tmp) {
+	for (Line *line = t->killbuf->first; line; line = tmp) {
 		tmp = line->next;
                 if (!t->buf_pasted) {
                         Editor_Free_MD(t, line);
@@ -2886,7 +2886,7 @@ static void Editor_Refresh(Editor_Text *t, int start)
 	}
 
 	/* find the first line to be refreshed */
-	Editor_Line *line = t->curr;
+	Line *line = t->curr;
 	for (i = Editor_Vcurs; i > start && line->prev; i--) {
 		line = line->prev;
 	}
@@ -2984,7 +2984,7 @@ static int Editor_Ask_Abort(Editor_Text *t)
 	return true;
 }
 
-static void Editor2CML(Editor_Line *line, struct text *txt, int col,
+static void Editor2CML(Line *line, struct text *txt, int col,
                        Metadata_List *mdlist)
 {
 	char *out;
@@ -3002,7 +3002,7 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
                         int max_col)
 {
         Metadata_List *mdlist;
-	Editor_Line *nl;
+	Line *nl;
 	char *str;
 	int len, wlen;
 
@@ -3158,7 +3158,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp)
 /***************************************************************************/
 
 #if 0 /* Unused */
-static void editor2text(Editor_Line *line, struct text *txt)
+static void editor2text(Line *line, struct text *txt)
 {
 	int i, pos, col;
 	char str[LBUF];
@@ -3195,7 +3195,7 @@ static void editor2text(Editor_Line *line, struct text *txt)
 
 static void Editor_Wrap_Word_noecho(Editor_Text *t)
 {
-	Editor_Line *nl;
+	Line *nl;
 	int len, wlen = 0;
 
 	len = t->curr->len;
@@ -3327,7 +3327,7 @@ static void console_show_copy_buffer(Editor_Text *t)
 		erase_current_line();
 		printf("----- copy buffer -----");
 		setcolor(L_YELLOW);
-		for (Editor_Line *line = t->killbuf->first; line; line=line->next) {
+		for (Line *line = t->killbuf->first; line; line=line->next) {
 			if (row == Editor_Pos - 1) {
 				break;
 			}
@@ -3413,7 +3413,7 @@ static void sanity_checks(Editor_Text *t)
 
 	{
 		int num = 1;
-		Editor_Line *line = t->text->first;
+		Line *line = t->text->first;
 		for (;;) {
 			assert(line->num == num);
 			if (line->next == NULL) {
@@ -3431,7 +3431,7 @@ static void sanity_checks(Editor_Text *t)
 		assert(t->text->lines_count == num);
 	}
 	{
-		Editor_Line *line = t->text->last;
+		Line *line = t->text->last;
 		for (;;) {
 			if (line->prev == NULL) {
 				assert(line == t->text->first);
@@ -3458,7 +3458,7 @@ static void sanity_checks(Editor_Text *t)
 
 	{
 		int num = 1;
-		Editor_Line *line = t->killbuf->first;
+		Line *line = t->killbuf->first;
 		for (;;) {
 			//assert(line->num == num);
 			if (line->next == NULL) {
@@ -3476,7 +3476,7 @@ static void sanity_checks(Editor_Text *t)
 		assert(t->killbuf->lines_count == num);
 	}
 	{
-		Editor_Line *line = t->killbuf->last;
+		Line *line = t->killbuf->last;
 		for (;;) {
 			if (line->prev == NULL) {
 				assert(line == t->killbuf->first);
