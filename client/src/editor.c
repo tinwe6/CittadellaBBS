@@ -74,6 +74,16 @@ bool editor_reached_full_size;
 #include "utility.h"
 #include "generic_cmd.h"
 
+/* Per avere informazione sul debugging definire EDITOR_DEBUG */
+//#undef EDITOR_DEBUG
+#define EDITOR_DEBUG
+
+#ifdef EDITOR_DEBUG
+# define DEB(...) console_printf(__VA_ARGS__)
+#else
+# define DEB(...)
+#endif
+
 #define MODE_INSERT     0
 #define MODE_OVERWRITE  1
 #define MODE_ASCII_ART  2
@@ -107,14 +117,231 @@ void lines_update_nums(Editor_Line *line)
 	}
 }
 
+/* Copy contents of line src to line dest. The contents of src are lost. */
+void line_copy(Editor_Line *dest, Editor_Line *src)
+{
+	assert(dest != src);
+
+	memcpy(dest->str, src->str, src->len*sizeof(int));
+	memcpy(dest->col, src->col, src->len*sizeof(int));
+	dest->len = src->len;
+}
+
+void line_copy_from(Editor_Line *dest, Editor_Line *src, int src_offset)
+{
+	assert(dest != src);
+	assert(src_offset >= 0);
+	int count = src->len - src_offset;
+	assert(count >= 0);
+	memcpy(dest->str, src->str + src_offset, count*sizeof(int));
+	memcpy(dest->col, src->col + src_offset, count*sizeof(int));
+	dest->len = count;
+}
+
+void line_remove_index(Editor_Line *line, int pos)
+{
+	assert(pos >= 0 && line->len > pos);
+	if (pos < line->len - 1) {
+		size_t bytes = (line->len - pos)*sizeof(int);
+		memmove(line->str + pos, line->str + pos + 1, bytes);
+		memmove(line->col + pos, line->col + pos + 1, bytes);
+	}
+	line->len--;
+}
+
+void line_insert_index(Editor_Line *line, int pos)
+{
+	assert(pos >= 0 && line->len >= pos);
+	size_t bytes = (line->len - pos)*sizeof(int);
+	memmove(line->str + pos + 1, line->str + pos, bytes);
+	memmove(line->col + pos + 1, line->col + pos, bytes);
+	line->len++;
+}
+
+/* Remove from line the characters in the interval [begin, end) */
+void line_remove_interval(Editor_Line *line, int begin, int end)
+{
+	assert(begin >= 0 && begin < end && end <= line->len);
+	if (end == line->len) {
+		line->len = begin;
+	} else {
+		int count = line->len - end;
+		memmove(line->str + begin, line->str + end, count*sizeof(int));
+		memmove(line->col + begin, line->col + end, count*sizeof(int));
+ 		line->len -= end - begin;
+	}
+}
+
+#include "tests.c"
+
 /*********************************************************************/
 
 typedef struct TextBuf_t {
 	Editor_Line *first;   /* first line                       */
 	Editor_Line *last;    /* last line                        */
-	Editor_Line *curr;    /* current line                     */
+	//Editor_Line *curr;    /* current line                     */
         int lines_count;      /* number of lines in the list      */
 } TextBuf;
+
+/*********************************************************************/
+
+typedef struct Editor_Text_t {
+	int max;      /* Numero massimo di colonne nel testo      */
+	char insert;  /* 1 se in insert mode, 0 altrimenti        */
+	int curs_col; /* Colore corrente del cursore              */
+	int curr_col; /* Ultimo settaggio di colore sul terminale */
+	TextBuf *text;     /* text buffer                         */
+	TextBuf *killbuf;  /* kill buffer storing kill text       */
+	Editor_Line *curr; /* current line (where cursor is)      */
+	int term_nrows;       /* Num rows in terminal             */
+        bool buf_pasted;  /* true se il buffer e' stato incollato */
+        bool copy; /* true se aggiunto riga al copy buf nell'ultima op */
+        Metadata_List *mdlist; /* metadata and attachments        */
+} Editor_Text;
+
+/* Editor_Merge_Lines() result codes */
+typedef enum {
+	MERGE_NOTHING     = 0, /* The text was not modified                */
+	MERGE_ABOVE_EMPTY = 1, /* The line above was empty and was deleted */
+	MERGE_BELOW_EMPTY = 2, /* The line balow was empty and was deleted */
+	MERGE_EXTRA_SPACE = 3, /* An extra space was added befoer merging  */
+	MERGE_REGULAR     = 4, /* No extra space needed; merge performed   */
+} Merge_Lines_Result;
+
+
+/* Macro per settare i colori, attributi e mdnum
+ * Col ha la seguente struttura
+ *     intero  =     8 bit | 8 bit | 8 bit | 4 bit | 4bit
+ *                  liberi   mdnum   attr    bgcol   fgvol
+ */
+#define Editor_Fg_Color(t, c)                                             \
+	Editor_Set_Color((t), COLOR((c) & 0xf, CC_BG((t)->curs_col),	  \
+				    CC_ATTR((t)->curs_col)))
+
+#define Editor_Bg_Color(t, c)                                             \
+	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col), (c) & 0xf,	  \
+				    CC_ATTR((t)->curs_col)))
+
+#define Editor_Attr_Color(t, a)                                           \
+	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col),                 \
+                                    CC_BG((t)->curs_col), (a)))           \
+
+#define Editor_Attr_Toggle(t, a)                                          \
+	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col),                 \
+                                    CC_BG((t)->curs_col),                 \
+			            CC_ATTR((t)->curs_col)^((a) & ATTR_MASK)))
+
+#define Editor_Get_MDNum(c)      ((c >> 16) & 0xff)
+#define Editor_Set_MDNum(c, m)   ( c = (m << 16) | (c & 0xffff) )
+
+/* Colori */
+#define COL_HEAD_MD COLOR(WHITE, RED, ATTR_BOLD)
+#define COL_EDITOR_HEAD COLOR(YELLOW, BLUE, ATTR_BOLD)
+#define COL_HEAD_ERROR COLOR(RED, GRAY, ATTR_BOLD)
+
+/* Prototipi funzioni in questo file */
+int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
+		  int color, Metadata_List *mdlist);
+static int get_line_wrap(Editor_Text *t, bool wrap);
+static void Editor_Putchar(Editor_Text *t, int c);
+static void Editor_Key_Enter(Editor_Text *t);
+static void Editor_Key_Backspace(Editor_Text *t);
+static void Editor_Backspace(Editor_Text *t);
+static void Editor_Key_Delete(Editor_Text *t);
+static void Editor_Delete(Editor_Text *t);
+static void Editor_Delete_Word(Editor_Text *t);
+static void Editor_Delete_Next_Word(Editor_Text *t);
+static void Editor_Newline(Editor_Text *t);
+static void Editor_Copy_To_Kill_Buffer(Editor_Text *t);
+static int Editor_Wrap_Word(Editor_Text *t);
+static void Editor_Kill_Line(Editor_Text *t);
+static void Editor_Yank(Editor_Text *t);
+static void Editor_Key_Tab(Editor_Text *t);
+static void Editor_Key_Up(Editor_Text *t);
+static void Editor_Key_Down(Editor_Text *t);
+static void Editor_Key_Right(Editor_Text *t);
+static void Editor_Curs_Right(Editor_Text *t);
+static void Editor_Key_Left(Editor_Text *t);
+static void Editor_Curs_Left(Editor_Text *t);
+static void Editor_PageDown(Editor_Text *t);
+static void Editor_PageUp(Editor_Text *t);
+static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t);
+static void Editor_Scroll_Up(int stop);
+#if 0
+static void Editor_Scroll_Down(int start, int stop);
+#endif
+static void Editor_Up(Editor_Text *t);
+static void Editor_Down(Editor_Text *t);
+static void Editor_Set_Color(Editor_Text *t, int c);
+static void Editor_Insert_Metadata(Editor_Text *t);
+static void Editor_Insert_Link(Editor_Text *t);
+static void Editor_Insert_PostRef(Editor_Text *t);
+static void Editor_Insert_Room(Editor_Text *t);
+static void Editor_Insert_User(Editor_Text *t);
+static void Editor_Insert_File(Editor_Text *t);
+static void Editor_Insert_Text(Editor_Text *t);
+static void Editor_Save_Text(Editor_Text *t);
+static void line_refresh(Editor_Line *line, int vpos, int start);
+static void clear_line(int vpos);
+static void Editor_Free(Editor_Text *t);
+static void Editor_Free_MD(Editor_Text *t, Editor_Line *l);
+static void Editor_Free_Copy_Buffer(Editor_Text *t);
+static void Editor_Refresh(Editor_Text *t, int start);
+static void Editor_Head(Editor_Text *t);
+static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh);
+static void Editor_Refresh_All(Editor_Text *t);
+static void Editor2CML(Editor_Line *line, struct text *txt, int col,
+                       Metadata_List *mdlist);
+static void text2editor(Editor_Text *t, struct text *txt, int color,
+                        int max_col);
+static void help_edit(Editor_Text *t);
+static int Editor_Ask_Abort(Editor_Text *t);
+static void refresh_line_curs(int *pos, int *curs);
+#ifdef EDITOR_DEBUG
+static void console_init(void);
+static void console_toggle(void);
+static void console_printf(const char *fmt, ...);
+static void console_show_copy_buffer(Editor_Text *t);
+static void console_update(Editor_Text *t);
+static void console_set_status(char *fmt, ...);
+static void sanity_checks(Editor_Text *t);
+#endif
+
+/* Erase current line, using current color, and leave cursor in column 0. */
+static inline void erase_current_line(void)
+{
+	printf("\r" ERASE_TO_EOL "\r");
+}
+
+static inline void erase_to_eol(void)
+{
+	printf(ERASE_TO_EOL);
+}
+
+/*
+ * Fills line vpos with spaces with background color 'color' and leaves
+ * the cursor in that row, at column 0.
+ */
+static void fill_line(int vpos, int color)
+{
+	cti_mv(0, vpos);
+	setcolor(color);
+	printf(ERASE_TO_EOL "\r");
+}
+
+/*
+ * Erases line vpos filling it with spaces of default color.
+ */
+static inline void clear_line(int vpos)
+{
+	cti_mv(0, vpos);
+	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
+	printf(ERASE_TO_EOL);
+}
+
+
+/******************************************************************/
+/* TextBuf functions */
 
 /* Allocate a TextBuf structure */
 TextBuf * textbuf_new(void)
@@ -136,22 +363,6 @@ void textbuf_free(TextBuf *buf)
 	}
 
 	Free(buf);
-}
-
-/* Initialize the text buffer with a single, empty line. */
-void textbuf_init(TextBuf *buf)
-{
-	assert(buf->first == NULL && buf->last == NULL);
-
-	CREATE(buf->first, Editor_Line, 1, 0);
-	buf->last = buf->first;
-	buf->first->num = 1;
-	buf->first->pos = 0;
-	buf->first->len = 0;
-	buf->first->flag = 1;
-	buf->first->next = NULL;
-	buf->first->prev = NULL;
-	buf->lines_count = 1;
 }
 
 void textbuf_sanity_check(TextBuf *buf)
@@ -251,176 +462,52 @@ static Editor_Line * textbuf_insert_line_above(TextBuf *buf, Editor_Line *line)
 	return new_line;
 }
 
-
-/*********************************************************************/
-
-typedef struct Editor_Text_t {
-	int max;      /* Numero massimo di colonne nel testo      */
-	char insert;  /* 1 se in insert mode, 0 altrimenti        */
-	int curs_col; /* Colore corrente del cursore              */
-	int curr_col; /* Ultimo settaggio di colore sul terminale */
-	TextBuf *text;     /* text buffer                         */
-	TextBuf *killbuf;  /* kill buffer storing kill text       */
-	Editor_Line *curr; /* current line (where cursor is)      */
-	int term_nrows;       /* Num rows in terminal             */
-        bool buf_pasted;  /* true se il buffer e' stato incollato */
-        bool copy; /* true se aggiunto riga al copy buf nell'ultima op */
-        /* struttura per i metadata */
-        Metadata_List *mdlist;
-} Editor_Text;
-
-/* Editor_Merge_Lines() result codes */
-typedef enum {
-	MERGE_NOTHING = 0,     /* The text was not modified */
-	MERGE_ABOVE_EMPTY = 1, /* The line above was empty and was deleted */
-	MERGE_BELOW_EMPTY = 2, /* The line balow was empty and was deleted */
-	MERGE_EXTRA_SPACE = 3, /* An extra space was added befoer merging  */
-	MERGE_REGULAR     = 4, /* No extra space needed; merge performed   */
-} Merge_Lines_Result;
-
-
-/* Macro per settare i colori, attributi e mdnum
- * Col ha la seguente struttura
- *     intero  =     8 bit | 8 bit | 8 bit | 4 bit | 4bit
- *                  liberi   mdnum   attr    bgcol   fgvol
- */
-#define Editor_Fg_Color(t, c)                                             \
-	Editor_Set_Color((t), COLOR((c) & 0xf, CC_BG((t)->curs_col),	  \
-				    CC_ATTR((t)->curs_col)))
-
-#define Editor_Bg_Color(t, c)                                             \
-	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col), (c) & 0xf,	  \
-				    CC_ATTR((t)->curs_col)))
-
-#define Editor_Attr_Color(t, a)                                           \
-	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col),                 \
-                                    CC_BG((t)->curs_col), (a)))           \
-
-#define Editor_Attr_Toggle(t, a)                                          \
-	Editor_Set_Color((t), COLOR(CC_FG((t)->curs_col),                 \
-                                    CC_BG((t)->curs_col),                 \
-			            CC_ATTR((t)->curs_col)^((a) & ATTR_MASK)))
-
-#define Editor_Get_MDNum(c)      ((c >> 16) & 0xff)
-#define Editor_Set_MDNum(c, m)   ( c = (m << 16) | (c & 0xffff) )
-
-/* Colori */
-#define COL_HEAD_MD COLOR(WHITE, RED, ATTR_BOLD)
-#define COL_EDITOR_HEAD COLOR(YELLOW, BLUE, ATTR_BOLD)
-#define COL_HEAD_ERROR COLOR(RED, GRAY, ATTR_BOLD)
-
-/* Per avere informazione sul debugging definire EDITOR_DEBUG */
-//#undef EDITOR_DEBUG
-#define EDITOR_DEBUG
-
-#ifdef EDITOR_DEBUG
-# define DEB(...) console_printf(__VA_ARGS__)
-#else
-# define DEB(...)
-#endif
-
-/* Prototipi funzioni in questo file */
-int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
-		  int color, Metadata_List *mdlist);
-static int get_line_wrap(Editor_Text *t, bool wrap);
-static void Editor_Putchar(Editor_Text *t, int c);
-static void Editor_Key_Enter(Editor_Text *t);
-static void Editor_Key_Backspace(Editor_Text *t);
-static void Editor_Backspace(Editor_Text *t);
-static void Editor_Key_Delete(Editor_Text *t);
-static void Editor_Delete(Editor_Text *t);
-static void Editor_Delete_Word(Editor_Text *t);
-static void Editor_Delete_Next_Word(Editor_Text *t);
-static void Editor_Newline(Editor_Text *t);
-static void Editor_Insert_Line(Editor_Text *t);
-static void Editor_Insert_Line_Above(Editor_Text *t);
-static void Editor_Copy_Line(Editor_Text *t);
-static void Editor_Delete_Line(Editor_Text *t, Editor_Line *l);
-static int Editor_Wrap_Word(Editor_Text *t);
-static void Editor_Kill_Line(Editor_Text *t);
-static void Editor_Yank(Editor_Text *t);
-static void Editor_Key_Tab(Editor_Text *t);
-static void Editor_Key_Up(Editor_Text *t);
-static void Editor_Key_Down(Editor_Text *t);
-static void Editor_Key_Right(Editor_Text *t);
-static void Editor_Curs_Right(Editor_Text *t);
-static void Editor_Key_Left(Editor_Text *t);
-static void Editor_Curs_Left(Editor_Text *t);
-static void Editor_PageDown(Editor_Text *t);
-static void Editor_PageUp(Editor_Text *t);
-static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t);
-static void Editor_Scroll_Up(int stop);
-#if 0
-static void Editor_Scroll_Down(int start, int stop);
-#endif
-static void Editor_Up(Editor_Text *t);
-static void Editor_Down(Editor_Text *t);
-static void Editor_Set_Color(Editor_Text *t, int c);
-static void Editor_Insert_Metadata(Editor_Text *t);
-static void Editor_Insert_Link(Editor_Text *t);
-static void Editor_Insert_PostRef(Editor_Text *t);
-static void Editor_Insert_Room(Editor_Text *t);
-static void Editor_Insert_User(Editor_Text *t);
-static void Editor_Insert_File(Editor_Text *t);
-static void Editor_Insert_Text(Editor_Text *t);
-static void Editor_Save_Text(Editor_Text *t);
-static void line_refresh(Editor_Line *line, int vpos, int start);
-static void clear_line(int vpos);
-static void Editor_Free(Editor_Text *t);
-static void Editor_Free_MD(Editor_Text *t, Editor_Line *l);
-static void Editor_Free_Copy_Buffer(Editor_Text *t);
-static void Editor_Refresh(Editor_Text *t, int start);
-static void Editor_Head(Editor_Text *t);
-static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh);
-static void Editor_Refresh_All(Editor_Text *t);
-static void Editor2CML(Editor_Line *line, struct text *txt, int col,
-                       Metadata_List *mdlist);
-static void text2editor(Editor_Text *t, struct text *txt, int color,
-                        int max_col);
-static void help_edit(Editor_Text *t);
-static int Editor_Ask_Abort(Editor_Text *t);
-static void refresh_line_curs(int *pos, int *curs);
-#ifdef EDITOR_DEBUG
-static void console_init(void);
-static void console_toggle(void);
-static void console_printf(const char *fmt, ...);
-static void console_show_copy_buffer(Editor_Text *t);
-static void console_update(Editor_Text *t);
-static void console_set_status(char *fmt, ...);
-static void sanity_checks(Editor_Text *t);
-#endif
-
-/* Erase current line, using current color, and leave cursor in column 0. */
-static inline void erase_current_line(void)
+/* Removes 'line' from the text buffer list and frees it. */
+static void textbuf_delete_line(TextBuf *buf, Editor_Line *line)
 {
-	printf("\r" ERASE_TO_EOL "\r");
+        for (Editor_Line *tmp = line->next; tmp; tmp = tmp->next) {
+		tmp->num--;
+	}
+	buf->lines_count--;
+
+	if (line == buf->first) {
+		buf->first = line->next;
+	}
+	if (line == buf->last) {
+		buf->last = line->prev;
+	}
+	if (line->next) {
+		line->next->prev = line->prev;
+	}
+	if (line->prev) {
+		line->prev->next = line->next;
+	}
+
+	assert(buf->first->prev == NULL);
+	assert(buf->last->next == NULL);
+	DEB("Delete line (addr %p)", (void *)line);
+
+	Free(line);
 }
 
-static inline void erase_to_eol(void)
+/* Initialize the text buffer with a single, empty line. */
+void textbuf_init(TextBuf *buf)
 {
-	printf(ERASE_TO_EOL);
+	assert(buf->first == NULL && buf->last == NULL);
+
+	textbuf_append_new_line(buf);
+	buf->first->flag = 1;
+
+	assert(buf->last == buf->first);
+	assert(buf->first->num == 1);
+	assert(buf->first->pos == 0);
+	assert(buf->first->len == 0);
+	assert(buf->first->next == NULL);
+	assert(buf->first->prev == NULL);
+	assert(buf->lines_count == 1);
 }
 
-/*
- * Fills line vpos with spaces with background color 'color' and leaves
- * the cursor in that row, at column 0.
- */
-static void fill_line(int vpos, int color)
-{
-	cti_mv(0, vpos);
-	setcolor(color);
-	printf(ERASE_TO_EOL "\r");
-}
 
-/*
- * Erases line vpos filling it with spaces of default color.
- */
-static inline void clear_line(int vpos)
-{
-	cti_mv(0, vpos);
-	setcolor(COLOR(GRAY, BLACK, ATTR_DEFAULT));
-	printf(ERASE_TO_EOL);
-}
 
 /***************************************************************************/
 /*
@@ -523,6 +610,10 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	Editor_Text t;
         char prompt_tmp;
         int ret;
+
+#ifdef EDITOR_DEBUG
+	test();
+#endif
 
 	/* The abortp option is not available (and useless) when the option */
 	/* HAVE_CTI is set. The arg is keept only for compatibility with    */
@@ -739,6 +830,10 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 		case Key_INS:
 		case META('I'):
 			t->insert = (t->insert + 1) % 3;
+			if (t->insert == MODE_ASCII_ART
+			    && t->curr->pos == t->max - 1) {
+				t->curr->pos--;
+			}
 			break;
 		case Key_BS:
 			Editor_Key_Backspace(t);
@@ -794,6 +889,10 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			/* case META('>'): */
 			t->curr = t->text->last;
 			t->curr->pos = t->curr->len;
+			if (t->insert == MODE_ASCII_ART
+			    && t->curr->pos == t->max - 1) {
+				t->curr->pos--;
+			}
 			Editor_Vcurs = NRIGHE-1;
 			Editor_Refresh(t, 0);
 			break;
@@ -1090,46 +1189,37 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 }
 
 /****************************************************************************/
-/* Inserisce il carattere 'c' nella posizione corrente del testo. */
+/* Insert character 'c' at current test position, using the current color */
 static void Editor_Putchar(Editor_Text *t, int c)
 {
-	int i;
-
-	//	if ((t->insert == MODE_INSERT) && (t->curr->pos != t->curr->len)) {
 	if (t->insert == MODE_INSERT) {
-		assert(t->curr->len >= t->curr->pos);
-
-		int *src_str = t->curr->str + t->curr->pos;
-		int *src_col = t->curr->col + t->curr->pos;
-		int *dest_str = t->curr->str + t->curr->pos + 1;
-		int *dest_col = t->curr->col + t->curr->pos + 1;
-		size_t bytes = (t->curr->len - t->curr->pos)*sizeof(int);
-		memmove(dest_str, src_str, bytes);
-		memmove(dest_col, src_col, bytes);
-		t->curr->len++;
+		line_insert_index(t->curr, t->curr->pos);
+	} else {
+		if (t->insert == MODE_ASCII_ART
+		    && t->curr->pos >= t->max - 1) {
+			assert
+			Beep();
+			return;
+		}
+		/* if cursor past end of line, grow line by one char even in
+		 * overwrite and ASCII-Art modes. */
+		if (t->curr->pos == t->curr->len) {
+			t->curr->len++;
+		}
 	}
 	t->curr->str[t->curr->pos] = c;
 	t->curr->col[t->curr->pos] = t->curs_col;
 
+	if (t->insert != MODE_ASCII_ART) {
+		t->curr->pos++;
+	}
+
 	if (t->insert == MODE_ASCII_ART) {
-		/* TODO check this branch */
 		putchar(c);
-		if (t->curr->pos > t->curr->len) {
-			printf("\nO-OH!!!!!!!!!!!! Avvisa il tuo sviluppatore di fiducia!!!\n");
-			assert(false);
-		}
-		if (t->curr->pos == t->curr->len) {
-			t->curr->len++;
-		}
 		return;
 	}
 
-	t->curr->pos++;
-	if (t->curr->pos > t->curr->len) {
-		assert(t->insert != MODE_INSERT);
-		t->curr->len++;
-	}
-	for (i = t->curr->pos - 1; i < t->curr->len; i++) {
+	for (int i = t->curr->pos - 1; i < t->curr->len; i++) {
 		if (t->curr->col[i] != t->curr_col) {
 			t->curr_col = t->curr->col[i];
 			setcolor(t->curr_col);
@@ -1145,7 +1235,7 @@ static void Editor_Putchar(Editor_Text *t, int c)
 /* Processa <Enter> */
 static void Editor_Key_Enter(Editor_Text *t)
 {
-        Editor_Insert_Line(t);
+	textbuf_insert_line_below(t->text, t->curr);
 	if (t->curr->pos < t->curr->len) {
 		/* the new line starts with the first non-blank character */
 		int src_offset = t->curr->pos;
@@ -1154,15 +1244,7 @@ static void Editor_Key_Enter(Editor_Text *t)
 			src_offset++;
 		}
 		/* copy from src_offset to the end of line into the new line */
-		Editor_Line *new_line = t->curr->next;
-		int *dest_str = new_line->str;
-		int *dest_col = new_line->col;
-		int *src_str = t->curr->str + src_offset;
-		int *src_col = t->curr->col + src_offset;
-		size_t bytes = (t->curr->len - src_offset)*sizeof(int);
-		memcpy(dest_str, src_str, bytes);
-		memcpy(dest_col, src_col, bytes);
-		new_line->len = t->curr->len - src_offset;
+		line_copy_from(t->curr->next, t->curr, src_offset);
 
 		/* eliminate trailing space in above line */
 		t->curr->len = t->curr->pos;
@@ -1196,8 +1278,9 @@ static void Editor_Key_Backspace(Editor_Text *t)
                 } while ((t->curr->pos) &&
                      (mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos-1])));
                 mdop_delete(t->mdlist, mdnum);
-        } else
+        } else {
                 Editor_Backspace(t);
+	}
 }
 
 /* Effettua un backspace */
@@ -1241,15 +1324,9 @@ static void Editor_Backspace(Editor_Text *t)
 	}
 
 	/* Cancella il carattere precedente */
-	if (t->curr->pos != t->curr->len) {
-		int *src_str = t->curr->str + t->curr->pos;
-		int *src_col = t->curr->col + t->curr->pos;
-		size_t bytes = (t->curr->len - t->curr->pos)*sizeof(int);
-		memmove(src_str - 1, src_str, bytes);
-		memmove(src_col - 1, src_col, bytes);
-	}
-	t->curr->str[--t->curr->len] = '\0';
 	t->curr->pos--;
+	line_remove_index(t->curr, t->curr->pos);
+
 	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
 	setcolor(t->curr_col);
 }
@@ -1262,10 +1339,11 @@ static void Editor_Key_Delete(Editor_Text *t)
         if ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]))) {
                 do {
                         Editor_Delete(t);
-                } while (mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
+                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
                 mdop_delete(t->mdlist, mdnum);
-        } else
+        } else {
                 Editor_Delete(t);
+	}
 }
 
 /* Cancella il carattere sottostante al cursore. */
@@ -1297,15 +1375,7 @@ static void Editor_Delete(Editor_Text *t)
 		}
 		return;
 	}
-	int *src_str = t->curr->str + t->curr->pos + 1;
-	int *src_col = t->curr->col + t->curr->pos + 1;
-	int *dest_str = t->curr->str + t->curr->pos;
-	int *dest_col = t->curr->col + t->curr->pos;
-	size_t bytes = (t->curr->len-t->curr->pos)*sizeof(int);
-	memmove(dest_str, src_str, bytes);
-	memmove(dest_col, src_col, bytes);
-	t->curr->len--;
-	/* t->curr->str[--t->curr->len] = '\0'; */
+	line_remove_index(t->curr, t->curr->pos);
 
 	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
 	/*
@@ -1335,16 +1405,13 @@ static void Editor_Delete_Word(Editor_Text *t)
 		return;
 	}
 	tmp = t->curr->pos;
-	while ((t->curr->pos != 0) && (t->curr->str[t->curr->pos-1] == ' '))
+	while ((t->curr->pos != 0) && (t->curr->str[t->curr->pos-1] == ' ')) {
 		t->curr->pos--;
-	while ((t->curr->pos != 0) && (t->curr->str[t->curr->pos-1] != ' '))
+	}
+	while ((t->curr->pos != 0) && (t->curr->str[t->curr->pos-1] != ' ')) {
 		t->curr->pos--;
-	memmove(t->curr->str + t->curr->pos, t->curr->str + tmp,
-		(t->curr->len - tmp) * sizeof(int));
-	memmove(t->curr->col + t->curr->pos, t->curr->col + tmp,
-		(t->curr->len - tmp) * sizeof(int));
-	t->curr->len -= tmp - t->curr->pos;
-	t->curr->str[t->curr->len] = '\0';
+	}
+	line_remove_interval(t->curr, t->curr->pos, tmp);
 
 	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
 	setcolor(t->curr_col);
@@ -1357,21 +1424,19 @@ static void Editor_Delete_Next_Word(Editor_Text *t)
 
 	tmp = t->curr->pos;
 	while ((t->curr->pos != t->curr->len)
-	       && (t->curr->str[t->curr->pos+1] == ' '))
+	       && (t->curr->str[t->curr->pos+1] == ' ')) {
 		t->curr->pos++;
+	}
 	while ((t->curr->pos != t->curr->len)
-	       && (t->curr->str[t->curr->pos+1] != ' '))
+	       && (t->curr->str[t->curr->pos+1] != ' ')) {
 		t->curr->pos++;
+	}
 	while ((t->curr->pos != t->curr->len)
-	       && (t->curr->str[t->curr->pos+1] == ' '))
+	       && (t->curr->str[t->curr->pos+1] == ' ')) {
 		t->curr->pos++;
-	memmove(t->curr->str + tmp, t->curr->str + t->curr->pos,
-		(t->curr->len - t->curr->pos)*sizeof(int));
-	memmove(t->curr->col + tmp, t->curr->col + t->curr->pos,
-		(t->curr->len - t->curr->pos) * sizeof(int));
-	t->curr->len -= t->curr->pos - tmp;
+	}
+	line_remove_interval(t->curr, tmp, t->curr->pos);
 	t->curr->pos = tmp;
-	t->curr->str[t->curr->len] = '\0';
 
 	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
 	setcolor(t->curr_col);
@@ -1385,18 +1450,17 @@ static void Editor_Kill_Line(Editor_Text *t)
 {
 	if ((t->curr->len == 0) && t->curr->next) {
 		Editor_Line *next_line = t->curr->next;
-		Editor_Delete_Line(t, t->curr);
+		textbuf_delete_line(t->text, t->curr);
 		t->curr = next_line;
 		t->curr->pos = 0;
 		Editor_Refresh(t, Editor_Vcurs);
 	} else if (t->curr->pos == t->curr->len) {
 		Editor_Delete(t);
 	} else {
-		/* copy the line to the copy buffer */
-		Editor_Copy_Line(t);
+		Editor_Copy_To_Kill_Buffer(t);
 		/* Eliminate the text from the cursor to the end of line */
-		t->curr->str[t->curr->pos] = '\0';
 		t->curr->len = t->curr->pos;
+
 		/* cti_mv(t->curr->pos+1, Editor_Vcurs); */
 
 		/* Update the screen accordingly */
@@ -1429,7 +1493,7 @@ static void Editor_Yank(Editor_Text *t)
 			/* do nothing */
 			DEB("Yank-2");
 		} else {
-			Editor_Insert_Line_Above(t);
+			textbuf_insert_line_above(t->text, t->curr);
 			t->curr = t->curr->prev;
 			t->curr->pos = 0;
 			t->curr->next->pos = 0;
@@ -1441,11 +1505,8 @@ static void Editor_Yank(Editor_Text *t)
 	assert(t->curr->len == 0);
 	assert(t->curr->pos == 0);
         for (Editor_Line *src = t->killbuf->first; src; ) {
-                Editor_Line *new_line = t->curr;
-		memcpy(new_line->str, src->str, src->len*sizeof(int));
-		memcpy(new_line->col, src->col, src->len*sizeof(int));
-		new_line->len = src->len;
-		new_line->pos = src->len;
+		line_copy(t->curr, src);
+		t->curr->pos = src->len;
                 line_refresh(t->curr, Editor_Vcurs, 0);
                 src = src->next;
                 if (src) {
@@ -1461,17 +1522,17 @@ static void Editor_Yank(Editor_Text *t)
 static void Editor_Key_Tab(Editor_Text *t)
 {
 	if (t->insert == MODE_ASCII_ART) {
-		do
+		do {
 			Editor_Key_Right(t);
-		while (((t->curr->pos) % CLIENT_TABSIZE));
+		} while (((t->curr->pos) % CLIENT_TABSIZE));
 		return;
 	}
-	if ((t->max - t->curr->pos) < CLIENT_TABSIZE)
+	if ((t->max - t->curr->pos) < CLIENT_TABSIZE) {
 		Editor_Key_Enter(t);
-	else {
-		do
+	} else {
+		do {
 			Editor_Putchar(t, ' ');
-		while (((t->curr->pos) % TABSIZE));
+		} while (((t->curr->pos) % TABSIZE));
 	}
 }
 
@@ -1493,16 +1554,17 @@ static void Editor_Key_Up(Editor_Text *t)
 				t->curr->col[i] = C_DEFAULT;
 			}
 			t->curr->len = t->curr->pos + 1;
-		} else
+		} else {
 			t->curr->pos = t->curr->len;
+		}
 	}
 
         /* Se finisco in un oggetto metadata, vai indietro */
-        if ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos])))
+        if ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]))) {
                 do {
                         Editor_Curs_Right(t);
-                } while (mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
-
+                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
+	}
 
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
@@ -1513,12 +1575,13 @@ static void Editor_Key_Down(Editor_Text *t)
 	int i, mdnum;
 
 	if (t->insert == MODE_ASCII_ART) {
-		if (!t->curr->next)
-			Editor_Insert_Line(t);
+		if (!t->curr->next) {
+			textbuf_insert_line_below(t->text, t->curr);
+		}
 		Editor_Down(t);
 		t->curr->pos = t->curr->prev->pos;
 		if (t->curr->pos >= t->curr->len) {
-			for (i = t->curr->len; i <= t->curr->pos; i++){
+			for (i = t->curr->len; i <= t->curr->pos; i++) {
 				t->curr->str[i] = ' ';
 				t->curr->col[i] = C_DEFAULT;
 			}
@@ -1527,8 +1590,9 @@ static void Editor_Key_Down(Editor_Text *t)
 	} else if (t->curr->next) {
 		Editor_Down(t);
 		t->curr->pos = t->curr->prev->pos;
-		if (t->curr->pos > t->curr->len)
+		if (t->curr->pos > t->curr->len) {
 			t->curr->pos = t->curr->len;
+		}
         } else {
                 Beep();
                 return;
@@ -1538,7 +1602,7 @@ static void Editor_Key_Down(Editor_Text *t)
         if ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos])))
                 do {
                         Editor_Curs_Right(t);
-                } while (mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
+                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
 
         line_refresh(t->curr, Editor_Vcurs, 0);
         setcolor(t->curr_col);
@@ -1550,12 +1614,13 @@ static void Editor_Key_Right(Editor_Text *t)
         int mdnum;
 
         if ((t->curr->pos < t->curr->len)
-            && ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]))))
+            && ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos])))) {
                 do {
                         Editor_Curs_Right(t);
-                } while (mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
-        else
+                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
+	} else {
                 Editor_Curs_Right(t);
+	}
 }
 
 /* Push cursor right one character */
@@ -1568,8 +1633,9 @@ static void Editor_Curs_Right(Editor_Text *t)
 			return;
 		}
 		if (t->curr->len >= t->max - 1) {
-			if (!t->curr->next)
-				Editor_Insert_Line(t);
+			if (!t->curr->next) {
+				textbuf_insert_line_below(t->text, t->curr);
+			}
 			Editor_Down(t);
 			t->curr->pos = 0;
 			line_refresh(t->curr, Editor_Vcurs, 0);
@@ -1597,8 +1663,9 @@ static void Editor_Curs_Right(Editor_Text *t)
 		t->curr->pos = 0;
 		line_refresh(t->curr, Editor_Vcurs, 0);
 		setcolor(t->curr_col);
-	} else
+	} else {
 		Beep();
+	}
 }
 
 /* Key left: skips metadata objects */
@@ -1613,25 +1680,28 @@ static void Editor_Key_Left(Editor_Text *t)
                 do {
                         Editor_Curs_Left(t);
                 } while ((t->curr->pos) &&
-                    (mdnum1 == Editor_Get_MDNum(t->curr->col[t->curr->pos-1])));
-        } else
+                   (mdnum1 == Editor_Get_MDNum(t->curr->col[t->curr->pos-1])));
+        } else {
                 Editor_Curs_Left(t);
+	}
 }
 
 /* Push cursor left one character */
 static void Editor_Curs_Left(Editor_Text *t)
 {
-	if (t->curr->pos)
+	if (t->curr->pos) {
 		cti_mv(t->curr->pos--, Editor_Vcurs);
-	else if (t->curr->prev) {
+	} else if (t->curr->prev) {
 		Editor_Up(t);
 		t->curr->pos = t->curr->len;
-		if ((t->insert == MODE_ASCII_ART) && (t->curr->pos > 0))
+		if ((t->insert == MODE_ASCII_ART) && (t->curr->pos > 0)) {
 			t->curr->pos--;
+		}
 		line_refresh(t->curr, Editor_Vcurs, 0);
 		setcolor(t->curr_col);
-	} else
+	} else {
 		Beep();
+	}
 }
 
 /* Va alla pagina precedente */
@@ -1664,16 +1734,18 @@ static void Editor_PageDown(Editor_Text *t)
 	if (t->curr->next == NULL) {
 		Beep();
 		t->curr->pos = t->curr->len;
-		cti_mv(t->curr->pos+1, Editor_Vcurs);
+		cti_mv(t->curr->pos + 1, Editor_Vcurs);
 		return;
 	}
-	for (i = Editor_Vcurs; (i < NRIGHE) && t->curr->next; i++)
+	for (i = Editor_Vcurs; (i < NRIGHE) && t->curr->next; i++) {
 		t->curr = t->curr->next;
+	}
 	if (t->text->last->num - t->curr->num < NRIGHE - Editor_Pos - 2) {
 		t->curr = t->text->last;
-		Editor_Vcurs = NRIGHE-1;
-	} else
-		Editor_Vcurs = Editor_Pos+1;
+		Editor_Vcurs = NRIGHE - 1;
+	} else {
+		Editor_Vcurs = Editor_Pos + 1;
+	}
 	t->curr->pos = 0;
 	Editor_Refresh(t, 0);
 }
@@ -1682,7 +1754,7 @@ static void Editor_PageDown(Editor_Text *t)
  * resulting in an empty line on the current row. */
 void EdTerm_Scroll_Down(void)
 {
-	window_push(Editor_Vcurs, NRIGHE-1);
+	window_push(Editor_Vcurs, NRIGHE - 1);
 	cti_mv(0, Editor_Vcurs);
 	scroll_down();
 	window_pop();
@@ -1694,7 +1766,7 @@ static void Editor_Newline(Editor_Text *t)
 	assert(t->curr->next);
 
 	t->curr = t->curr->next;
-	if (Editor_Vcurs != NRIGHE-1) {
+	if (Editor_Vcurs != NRIGHE - 1) {
 		Editor_Vcurs++;
 		EdTerm_Scroll_Down();
 		cti_mv(0, Editor_Vcurs);
@@ -1704,26 +1776,11 @@ static void Editor_Newline(Editor_Text *t)
 }
 
 /*
- * Insert a new line below the current line. The current line is not modified.
- */
-static void Editor_Insert_Line(Editor_Text *t)
-{
-	textbuf_insert_line_below(t->text, t->curr);
-}
-
-/* Insert a new line above the current line, without changing the
- * current line. */
-static void Editor_Insert_Line_Above(Editor_Text *t)
-{
-	textbuf_insert_line_above(t->text, t->curr);
-}
-
-/*
  * Copies the text in the current line (t->curr) from the cursor position to
- * the end into a new line that is appended to the copy buffer. The current
+ * the end into a new line that is appended to the kill buffer. The current
  * line is not modified.
  */
-static void Editor_Copy_Line(Editor_Text *t)
+static void Editor_Copy_To_Kill_Buffer(Editor_Text *t)
 {
         if (t->copy == false) {
                 Editor_Free_Copy_Buffer(t);
@@ -1732,43 +1789,7 @@ static void Editor_Copy_Line(Editor_Text *t)
 	Editor_Line *line = textbuf_append_new_line(t->killbuf);
 
 	/* copy the contents of current line starting from cursor */
-	Editor_Line *src = t->curr;
-	int *str = src->str + src->pos;
-	int *col = src->col + src->pos;
-	int count = src->len - src->pos;
-	memcpy(line->str, str, count*sizeof(int));
-	memcpy(line->col, col, count*sizeof(int));
-        line->len = count;
-	// line->str[line->len] = '\0';
-}
-
-/* Removes 'line' from the text list and frees it. Does not change the
- * current line t->curr: it's the caller's responsibility.              */
-static void Editor_Delete_Line(Editor_Text *t, Editor_Line *line)
-{
-        for (Editor_Line *tmp = line->next; tmp; tmp = tmp->next) {
-		tmp->num--;
-	}
-	t->text->lines_count--;
-
-	if (line == t->text->first) {
-		t->text->first = line->next;
-	}
-	if (line == t->text->last) {
-		t->text->last = line->prev;
-	}
-	if (line->next) {
-		line->next->prev = line->prev;
-	}
-	if (line->prev) {
-		line->prev->next = line->next;
-	}
-
-	assert(t->text->first->prev == NULL);
-	assert(t->text->last->next == NULL);
-	DEB("Delete line (addr %p)", (void *)line);
-
-	free(line);
+	line_copy_from(line, t->curr, t->curr->pos);
 }
 
 /*
@@ -1856,7 +1877,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 	}
 
 	if (t->curr->next == NULL) {
-		Editor_Insert_Line(t);
+		textbuf_insert_line_below(t->text, t->curr);
 		added_line = true;
 	}
 	Editor_Line *nl = t->curr->next;
@@ -1865,7 +1886,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 	int total_len = word_len + extra_len;
 	if ((nl->len + total_len) >= t->max) {
 		/* La parola non ci sta nella riga successiva */
-		Editor_Insert_Line(t);
+		textbuf_insert_line_below(t->text, t->curr);
 		added_line = true;
 		nl = t->curr->next;
 
@@ -1991,13 +2012,13 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 
 	/* If line above is empty, just eliminate it. */
 	if (above->len == 0) {
-		Editor_Delete_Line(t, above);
+		textbuf_delete_line(t->text, above);
 		return MERGE_ABOVE_EMPTY;
 	}
 
 	/* If the line below is empty, just eliminate it. */
 	if (below->len == 0) {
-		Editor_Delete_Line(t, below);
+		textbuf_delete_line(t->text, below);
 		return MERGE_BELOW_EMPTY;
 	}
 
@@ -2048,6 +2069,9 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 		int *rest_str = below->str + len + 1;
 		int *rest_col = below->col + len + 1;
 		size_t bytes_to_copy = len*sizeof(int);
+
+		// TODO this assertion can fail... but shouldn't
+		assert(below->len >= len + 1);
 		size_t remaining_bytes = (below->len - len - 1)*sizeof(int);
 		memcpy(dest_str, src_str, bytes_to_copy);
 		memcpy(dest_col, src_col, bytes_to_copy);
@@ -2058,7 +2082,7 @@ static Merge_Lines_Result text_merge_lines(Editor_Text *t, Editor_Line *above,
 		below->len -= len + 1;
 		if (below->len <= 0) {
 			DEB("Delete below");
-			Editor_Delete_Line(t, below);
+			textbuf_delete_line(t->text, below);
 			//ret = MERGE_BELOW_EMPTY; /* CHECK */
 		}
 		return ret;
@@ -2605,7 +2629,8 @@ static void Editor_Insert_Text(Editor_Text *t)
                                         if (t->curr->len >= t->max) {
 						/* wrap word */
                                                 //Editor_Key_Enter(t);
-                                                Editor_Insert_Line(t);
+						textbuf_insert_line_below(
+						            t->text, t->curr);
 
                                                 nl = t->curr->next;
                                                 wlen = 0;
@@ -2641,7 +2666,8 @@ static void Editor_Insert_Text(Editor_Text *t)
 					line_refresh(t->curr, Editor_Vcurs, 0);
 					setcolor(t->curr_col);
                                         //Editor_Key_Enter(t);
-                                        Editor_Insert_Line(t);
+					textbuf_insert_line_below(t->text,
+								  t->curr);
                                         Editor_Newline(t);
                                 }
 				line_refresh(t->curr, Editor_Vcurs, 0);
@@ -2794,6 +2820,14 @@ static void Editor_Free_MD(Editor_Text *t, Editor_Line *l)
 /* Libera la memoria allocata al buffer di copia. */
 static void Editor_Free_Copy_Buffer(Editor_Text *t)
 {
+	/*
+	  TODO
+
+	  Replace this with textbuf_free, but to do that first buf_pasted
+	  should be moved to the TextBuf structure.
+
+	*/
+
 	Editor_Line *tmp;
 
 	for (Editor_Line *line = t->killbuf->first; line; line = tmp) {
@@ -2954,7 +2988,7 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
 		t->curr->pos = 0;
 		t->curr->flag = 1;
                 if (t->curr->len >= max_col) { /* wrap word */
-                        Editor_Insert_Line(t);
+			textbuf_insert_line_below(t->text, t->curr);
                         nl = t->curr->next;
                         wlen = 0;
                         len = t->curr->len;
@@ -2977,7 +3011,7 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
                         nl->flag = 1;
                         t->curr = nl;
                 }
-		Editor_Insert_Line(t);
+		textbuf_insert_line_below(t->text, t->curr);
 		t->curr = t->curr->next;
 	}
 	/* qui devo eliminare l'ultima riga */
@@ -3135,14 +3169,14 @@ static void Editor_Wrap_Word_noecho(Editor_Text *t)
 	len = t->curr->len;
 	while ((len-wlen >= 0) && (t->curr->str[len-wlen] != ' '))
 		wlen++;
-	if (len-wlen < 0) {
-		Editor_Insert_Line(t);
+	if (len - wlen < 0) {
+		textbuf_insert_line_below(t->text, t->curr);
 		t->curr->next->pos = 0;
 		t->curr->pos = 0;
 		t->curr = t->curr->next;
 		return;
 	}
-	Editor_Insert_Line(t);
+	textbuf_insert_line_below(t->text, t->curr);
 	nl = t->curr->next;
 	len -= wlen;
 	memcpy(nl->str, t->curr->str+len+1, wlen * sizeof(int));
@@ -3180,7 +3214,7 @@ static void text2editor(Editor_Text *t, struct text *txt)
 			}
 		}
 		/* Newline */
-		Editor_Insert_Line(t);
+		textbuf_insert_line_below(t->text, t->curr);
 		t->curr->next->pos = 0;
 		t->curr->pos = 0;
 		t->curr = t->curr->next;
