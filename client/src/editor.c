@@ -231,8 +231,34 @@ typedef enum {
                                     CC_BG((t)->curs_col),                 \
 			            CC_ATTR((t)->curs_col)^((a) & ATTR_MASK)))
 
+static inline int attr_get_mdnum(int c)
+{
+	return (c >> 16) & 0xff;
+}
+
+static inline int attr_set_mdnum(int c, int mdnum)
+{
+	return (mdnum << 16) | (c & 0xffff);
+}
+
+#define ATTR_SET_MDNUM(c, m) do { (c) = attr_set_mdnum((c), (m)); } while(0)
+
+static inline int line_get_mdnum(Editor_Line *line, int pos)
+{
+	int c = line->col[pos];
+	return (c >> 16) & 0xff;
+}
+
+static inline void line_set_mdnum(Editor_Line *line, int pos, int mdnum)
+{
+	int c = line->col[pos];
+	line->col[pos] = (mdnum << 16) | (c & 0xffff);
+}
+
+/*
 #define Editor_Get_MDNum(c)      ((c >> 16) & 0xff)
 #define Editor_Set_MDNum(c, m)   ( c = (m << 16) | (c & 0xffff) )
+*/
 
 /* Colori */
 #define COL_HEAD_MD COLOR(WHITE, RED, ATTR_BOLD)
@@ -937,9 +963,8 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			break;
 
 		case Key_F(2): /* Applica colore e attributi correnti */
-			if ((t->curr->pos < t->curr->len) &&
-                            (Editor_Get_MDNum(t->curr->col[t->curr->pos]) == 0)
-			    ) {
+			if ((t->curr->pos < t->curr->len)
+                            && (line_get_mdnum(t->curr, t->curr->pos) == 0)) {
 				t->curr->col[t->curr->pos] = t->curr_col;
 				putchar(t->curr->str[t->curr->pos]);
                                 if (t->insert != MODE_ASCII_ART)
@@ -953,9 +978,9 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			if (t->curr->pos < t->curr->len) {
                                 int tmppos;
                                 for (tmppos = t->curr->pos;
-                                     (t->curr->pos < t->curr->len)
+                                    (t->curr->pos < t->curr->len)
                                     && (t->curr->str[t->curr->pos]!=' ')
-                          && (Editor_Get_MDNum(t->curr->col[t->curr->pos])==0);
+				    && (line_get_mdnum(t->curr, t->curr->pos) == 0);
                                      t->curr->pos++) {
                                         t->curr->col[t->curr->pos] = t->curr_col;
                                         putchar(t->curr->str[t->curr->pos]);
@@ -976,7 +1001,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
                                      (tmppos < t->curr->len) &&
                                              t->curr->str[t->curr->pos]!=' ';
                                      tmppos++) {
-                                        if (Editor_Get_MDNum(t->curr->col[tmppos]) == 0) {
+                                        if (line_get_mdnum(t->curr, tmppos) == 0) {
                                                 t->curr->col[tmppos] = t->curr_col;
                                                 putchar(t->curr->str[tmppos]);
                                         }
@@ -1279,13 +1304,13 @@ static void Editor_Key_Enter(Editor_Text *t)
 /* Effettua un backspace cancellando gli eventuali allegati */
 static void Editor_Key_Backspace(Editor_Text *t)
 {
-        int mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]);
+        int mdnum = line_get_mdnum(t->curr, t->curr->pos);
         if ((t->curr->pos)
-            && ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos-1])))) {
+            && ( (mdnum = line_get_mdnum(t->curr, t->curr->pos - 1)))) {
                 do {
                         Editor_Backspace(t);
-                } while (t->curr->pos && (mdnum == Editor_Get_MDNum(
-			                  t->curr->col[t->curr->pos - 1])));
+                } while (t->curr->pos
+			 && (mdnum == line_get_mdnum(t->curr, t->curr->pos - 1)));
                 mdop_delete(t->mdlist, mdnum);
         } else {
                 Editor_Backspace(t);
@@ -1343,13 +1368,13 @@ static void Editor_Backspace(Editor_Text *t)
 /* Cancella il carattere sottostante al cursore, eliminando gli allegati */
 static void Editor_Key_Delete(Editor_Text *t)
 {
-        int mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]);
+        int mdnum = line_get_mdnum(t->curr, t->curr->pos);
 
         if (mdnum) {
                 do {
                         Editor_Delete(t);
-                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
-                mdop_delete(t->mdlist, mdnum);
+                } while (mdnum == line_get_mdnum(t->curr, t->curr->pos));
+		mdop_delete(t->mdlist, mdnum);
         } else {
                 Editor_Delete(t);
 	}
@@ -1569,10 +1594,10 @@ static void Editor_Key_Up(Editor_Text *t)
 	}
 
         /* Se finisco in un oggetto metadata, vai indietro */
-        if ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]))) {
-                do {
+        if ( (mdnum = line_get_mdnum(t->curr, t->curr->pos))) {
+		do {
                         Editor_Curs_Right(t);
-                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
+                } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
 	}
 
 	line_refresh(t->curr, Editor_Vcurs, 0);
@@ -1608,10 +1633,10 @@ static void Editor_Key_Down(Editor_Text *t)
         }
 
         /* Se finisco in un oggetto metadata, vai indietro */
-        if ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos])))
+        if ( (mdnum = line_get_mdnum(t->curr, t->curr->pos)))
                 do {
                         Editor_Curs_Right(t);
-                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
+                } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
 
         line_refresh(t->curr, Editor_Vcurs, 0);
         setcolor(t->curr_col);
@@ -1623,10 +1648,10 @@ static void Editor_Key_Right(Editor_Text *t)
         int mdnum;
 
         if ((t->curr->pos < t->curr->len)
-            && ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos])))) {
+            && ( (mdnum = line_get_mdnum(t->curr, t->curr->pos)))) {
                 do {
                         Editor_Curs_Right(t);
-                } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
+                } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
 	} else {
                 Editor_Curs_Right(t);
 	}
@@ -1682,14 +1707,14 @@ static void Editor_Key_Left(Editor_Text *t)
 {
         int mdnum, mdnum1;
 
-        mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]);
+        mdnum = line_get_mdnum(t->curr, t->curr->pos);
         if ((t->curr->pos)
-            && ( (mdnum1 = Editor_Get_MDNum(t->curr->col[t->curr->pos-1]))
+            && ( (mdnum1 = line_get_mdnum(t->curr, t->curr->pos - 1))
                  != mdnum) && mdnum1) {
                 do {
                         Editor_Curs_Left(t);
                 } while ((t->curr->pos) &&
-                   (mdnum1 == Editor_Get_MDNum(t->curr->col[t->curr->pos-1])));
+                   (mdnum1 == line_get_mdnum(t->curr, t->curr->pos - 1)));
         } else {
                 Editor_Curs_Left(t);
 	}
@@ -1833,9 +1858,9 @@ static int Editor_Wrap_Word(Editor_Text *t)
 
 	/* Find the starting position of the last word */
 	int first = last;
-        int mdnum = Editor_Get_MDNum(t->curr->col[last]);
+        int mdnum = line_get_mdnum(t->curr, last);
         if (mdnum) { /* if there's an attachment, treat it as a single word */
-                while ((Editor_Get_MDNum(t->curr->col[first]) == mdnum)
+                while ((line_get_mdnum(t->curr, first) == mdnum)
                        && (first > 0)) {
                         first--;
 		}
@@ -1936,7 +1961,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 		}
 		// TODO fix this
 #if 0
-                if (Editor_Get_MDNum(nl->col[wlen]) == 0) {
+                if (line_get_mdnum(nl, wlen) == 0) {
                         nl->col[wlen - 1] = nl->col[wlen];
 		} else {
                         nl->col[wlen - 1] = C_DEFAULT;
@@ -2295,14 +2320,14 @@ static void Editor_Insert_PostRef(Editor_Text *t)
 
         tmpcol = t->curs_col;
         col = COLOR_ROOM;
-        Editor_Set_MDNum(col, id);
+        ATTR_SET_MDNUM(col, id);
         Editor_Set_Color(t, col);
         for (ptr = roomname+offset; *ptr; ptr++) {
                 Editor_Putchar(t, *ptr);
 	}
 
         col = COLOR_ROOMTYPE;
-        Editor_Set_MDNum(col, id);
+        ATTR_SET_MDNUM(col, id);
         Editor_Set_Color(t, col);
         if (offset) {
                 Editor_Putchar(t, ':');
@@ -2312,7 +2337,7 @@ static void Editor_Insert_PostRef(Editor_Text *t)
 
         if (local_number) {
                 col = COLOR_LOCNUM;
-                Editor_Set_MDNum(col, id);
+                ATTR_SET_MDNUM(col, id);
                 Editor_Set_Color(t, col);
                 Editor_Putchar(t, ' ');
                 Editor_Putchar(t, '#');
@@ -2355,7 +2380,7 @@ static void Editor_Insert_Room(Editor_Text *t)
 	int offset = 0;
 	if (roomname[0] == ':') { /* Blog room */
 		col = COLOR_ROOMTYPE;
-		Editor_Set_MDNum(col, id);
+		ATTR_SET_MDNUM(col, id);
 		Editor_Set_Color(t, col);
 		for (ptr = blog_display_pre; *ptr; ptr++) {
 			Editor_Putchar(t, *ptr);
@@ -2364,14 +2389,14 @@ static void Editor_Insert_Room(Editor_Text *t)
         }
 
         col = COLOR_ROOM;
-        Editor_Set_MDNum(col, id);
+        ATTR_SET_MDNUM(col, id);
         Editor_Set_Color(t, col);
         for (ptr = roomname + offset; *ptr; ptr++) {
                 Editor_Putchar(t, *ptr);
 	}
 
         col = COLOR_ROOMTYPE;
-        Editor_Set_MDNum(col, id);
+        ATTR_SET_MDNUM(col, id);
         Editor_Set_Color(t, col);
         Editor_Putchar(t, '>');
 
@@ -2406,7 +2431,7 @@ static void Editor_Insert_User(Editor_Text *t)
 
         tmpcol = t->curs_col;
         col = COLOR_USER;
-        Editor_Set_MDNum(col, id);
+        ATTR_SET_MDNUM(col, id);
         Editor_Set_Color(t, col);
         for (ptr = username; *ptr; ptr++) {
                 Editor_Putchar(t, *ptr);
@@ -2538,7 +2563,7 @@ static void Editor_Insert_File(Editor_Text *t)
                 tmpcol = t->curs_col;
                 filecol = COLOR_FILE;
 
-                Editor_Set_MDNum(filecol, id);
+                ATTR_SET_MDNUM(filecol, id);
                 Editor_Set_Color(t, filecol);
                 for (ptr = (t->mdlist->md[id-1])->content; *ptr; ptr++) {
                         if ((isascii(*ptr) && isprint(*ptr))
@@ -2580,7 +2605,7 @@ static void Editor_Insert_Link(Editor_Text *t)
                 Editor_Head_Refresh(t, true);
                 tmpcol = t->curs_col;
                 linkcol = COLOR_LINK;
-                Editor_Set_MDNum(linkcol, id);
+                ATTR_SET_MDNUM(linkcol, id);
                 Editor_Set_Color(t, linkcol);
                 for (ptr = label; *ptr; ptr++) {
                         if ((isascii(*ptr) && isprint(*ptr))
@@ -2813,15 +2838,13 @@ static void Editor_Free(Editor_Text *t)
 /* Elimina il metadata associato alla linea l */
 static void Editor_Free_MD(Editor_Text *t, Editor_Line *l)
 {
-        int mdnum, i;
-
-        for (i = 0; i < l->len; i++) {
-                mdnum = Editor_Get_MDNum(l->col[i]);
+        for (int i = 0; i < l->len; i++) {
+                int mdnum = line_get_mdnum(l, i);
                 if (mdnum) {
                         mdop_delete(t->mdlist, mdnum);
                         do
                                 i++;
-                        while (Editor_Get_MDNum(l->col[i]) == mdnum);
+                        while (line_get_mdnum(l, i) == mdnum);
                 }
         }
 }
