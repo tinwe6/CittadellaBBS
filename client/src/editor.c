@@ -117,25 +117,27 @@ void lines_update_nums(Line *line)
 	}
 }
 
-/* Copy contents of line src to line dest. The contents of src are lost. */
-void line_copy(Line *dest, Line *src)
+void line_copy(Line *dst, int dst_offset,  Line *src, int src_offset)
 {
-	assert(dest != src);
-
-	memcpy(dest->str, src->str, src->len*sizeof(int));
-	memcpy(dest->col, src->col, src->len*sizeof(int));
-	dest->len = src->len;
+	assert(dst != src);
+	assert(0 <= src_offset && src_offset <= src->len);
+	assert(0 <= dst_offset && dst_offset <= dst->len);
+	int count = src->len - src_offset;
+	int bytes = count*sizeof(int);
+	memcpy(dst->str + dst_offset, src->str + src_offset, bytes);
+	memcpy(dst->col + dst_offset, src->col + src_offset, bytes);
+	dst->len = dst_offset + count;
 }
 
-void line_copy_from(Line *dest, Line *src, int src_offset)
+/* Copy contents of line src to line dest. The contents of src are lost. */
+void line_copy_all(Line *dst, Line *src)
 {
-	assert(dest != src);
-	assert(src_offset >= 0);
-	int count = src->len - src_offset;
-	assert(count >= 0);
-	memcpy(dest->str, src->str + src_offset, count*sizeof(int));
-	memcpy(dest->col, src->col + src_offset, count*sizeof(int));
-	dest->len = count;
+	line_copy(dst, 0, src, 0);
+}
+
+void line_copy_from(Line *dst, Line *src, int src_offset)
+{
+	line_copy(dst, 0, src, src_offset);
 }
 
 void line_remove_index(Line *line, int pos)
@@ -255,11 +257,6 @@ static inline void line_set_mdnum(Line *line, int pos, int mdnum)
 	line->col[pos] = (mdnum << 16) | (c & 0xffff);
 }
 
-/*
-#define Editor_Get_MDNum(c)      ((c >> 16) & 0xff)
-#define Editor_Set_MDNum(c, m)   ( c = (m << 16) | (c & 0xffff) )
-*/
-
 /* Colori */
 #define COL_HEAD_MD COLOR(WHITE, RED, ATTR_BOLD)
 #define COL_EDITOR_HEAD COLOR(YELLOW, BLUE, ATTR_BOLD)
@@ -291,7 +288,6 @@ static void Editor_Key_Left(Editor_Text *t);
 static void Editor_Curs_Left(Editor_Text *t);
 static void Editor_PageDown(Editor_Text *t);
 static void Editor_PageUp(Editor_Text *t);
-static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t);
 static void Editor_Scroll_Up(int stop);
 #if 0
 static void Editor_Scroll_Down(int start, int stop);
@@ -514,6 +510,137 @@ static void textbuf_delete_line(TextBuf *buf, Line *line)
 	DEB("Delete line (addr %p)", (void *)line);
 
 	Free(line);
+}
+
+/* Breaks 'line' into two lines. The original line is cut at position 'pos',
+ * and the rest is moved in a new line, that is inserted below the original
+ * line in the text list. Any trailing space in the above line and any
+ * leading space in the below line is eliminated.                           */
+void textbuf_break_line(TextBuf *buf, Line *line, int pos)
+{
+	textbuf_insert_line_below(buf, line);
+	if (pos < line->len) {
+		/* the new line starts with the first non-blank character */
+		int src_offset = pos;
+		while(*(line->str + src_offset) == ' '
+		      && src_offset < line->len) {
+			src_offset++;
+		}
+		/* copy from src_offset to the end of line into the new line */
+		line_copy_from(line->next, line, src_offset);
+
+		/* eliminate trailing space in above line */
+		line->len = pos;
+		while (line->len > 0
+		       && *(line->str + line->len - 1) == ' ') {
+			line->len--;
+		}
+	}
+        line->next->pos = 0;
+	line->pos = 0;
+}
+
+/*
+ * Merges the line 'above' with the line 'below'. If everything fits on a
+ * single line the contents of the line below (if any) are appended to
+ * the above line and the line below is eliminated. Similarly, if the
+ * above line is empty, it is simply eliminated.
+ * Otherwise, moves as much as fits from the line below to the above
+ * line, inserting an extra space if needed to separate the words, and
+ * wrapping the line at word boundaries.
+ *
+ * Returns an Editor_Merge_Result value specifying how the merge was
+ * performed (see the enum definition for the descriptions).
+ */
+static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
+					      Line *below, int maxlen)
+{
+	if (above == NULL || below == NULL) {
+		DEB("Merge nothing");
+		return MERGE_NOTHING;
+	}
+
+	/* If line above is empty, just eliminate it. */
+	if (above->len == 0) {
+		textbuf_delete_line(buf, above);
+		return MERGE_ABOVE_EMPTY;
+	}
+
+	/* If the line below is empty, just eliminate it. */
+	if (below->len == 0) {
+		textbuf_delete_line(buf, below);
+		return MERGE_BELOW_EMPTY;
+	}
+
+	/* Is an extra space necessary to keep words separated after merge? */
+	bool need_extra_space = (above->str[above->len - 1] != ' '
+				 && below->str[0] != ' ');
+	int extra_space = need_extra_space ? 1 : 0;
+	/* Remaining space available in the above line */
+	int avail_chars = maxlen - 1 - above->len - extra_space;
+
+	/* Find out how much of the string below can be appended to the
+	   string above without breaking any word */
+	int len = 0;
+	if (avail_chars < below->len) {
+		for (int i = 0; i <= avail_chars; i++) {
+			if (below->str[i] == ' ') {
+				len = i;
+			}
+		}
+	} else {
+		len = below->len;
+	}
+
+	/* If a substring fits, move it above. */
+	if (len > 0) {
+		int ret;
+		if (need_extra_space) {
+			assert(above->len > 0);
+			above->str[above->len] = ' ';
+			/* If the end of the above line and the start of the
+			   below line have same background color, use that for
+			   the space, otherwise use the default bg color. */
+			if (CC_BG(above->col[above->len - 1])
+			    == CC_BG(below->col[0])) {
+				above->col[above->len] = below->col[0];
+			} else {
+				above->col[above->len] = C_DEFAULT;
+			}
+			above->len++;
+			ret = MERGE_EXTRA_SPACE;
+		} else {
+			ret = MERGE_REGULAR;
+		}
+
+
+		int *dest_str = above->str + above->len;
+		int *dest_col = above->col + above->len;
+		int *src_str = below->str;
+		int *src_col = below->col;
+		int *rest_str = below->str + len + 1;
+		int *rest_col = below->col + len + 1;
+		size_t bytes_to_copy = len*sizeof(int);
+
+		// TODO this assertion can fail... but shouldn't
+		assert(below->len >= len + 1);
+		size_t remaining_bytes = (below->len - len - 1)*sizeof(int);
+		memcpy(dest_str, src_str, bytes_to_copy);
+		memcpy(dest_col, src_col, bytes_to_copy);
+		memmove(src_str, rest_str, remaining_bytes);
+		memmove(src_col, rest_col, remaining_bytes);
+
+		above->len += len;
+		below->len -= len + 1;
+		if (below->len <= 0) {
+			DEB("Delete below");
+			textbuf_delete_line(buf, below);
+			//ret = MERGE_BELOW_EMPTY; /* CHECK */
+		}
+		return ret;
+	}
+	/* There's no room in the above line to fit something from below */
+	return MERGE_NOTHING;
 }
 
 /* Initialize the text buffer with a single, empty line. */
@@ -1258,34 +1385,6 @@ static void Editor_Putchar(Editor_Text *t, int c)
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
 }
 
-/* Breaks 'line' into two lines. The original line is cut at position 'pos',
- * and the rest is moved in a new line, that is inserted below the original
- * line in the text list. Any trailing space in the above line and any
- * leading space in the below line is eliminated.                           */
-void textbuf_break_line(TextBuf *buf, Line *line, int pos)
-{
-	textbuf_insert_line_below(buf, line);
-	if (pos < line->len) {
-		/* the new line starts with the first non-blank character */
-		int src_offset = pos;
-		while(*(line->str + src_offset) == ' '
-		      && src_offset < line->len) {
-			src_offset++;
-		}
-		/* copy from src_offset to the end of line into the new line */
-		line_copy_from(line->next, line, src_offset);
-
-		/* eliminate trailing space in above line */
-		line->len = pos;
-		while (line->len > 0
-		       && *(line->str + line->len - 1) == ' ') {
-			line->len--;
-		}
-	}
-        line->next->pos = 0;
-	line->pos = 0;
-}
-
 /* Processa <Enter> */
 static void Editor_Key_Enter(Editor_Text *t)
 {
@@ -1326,7 +1425,8 @@ static void Editor_Backspace(Editor_Text *t)
 			int above_len = t->curr->prev->len;
 			Line *below = t->curr;
 			Editor_Up(t); /* make t->curr the line above */
-			switch (Editor_Merge_Lines(t)) {
+			switch (textbuf_merge_lines(t->text, t->curr,
+						    t->curr->next, t->max)) {
 			case MERGE_EXTRA_SPACE:
 				t->curr->pos = above_len + 1;
 				Editor_Refresh(t, Editor_Vcurs);
@@ -1383,48 +1483,30 @@ static void Editor_Key_Delete(Editor_Text *t)
 /* Cancella il carattere sottostante al cursore. */
 static void Editor_Delete(Editor_Text *t)
 {
-	assert(t->curr);
-	if (t->curr->pos == t->curr->len) {
-		if (t->curr->next) {
-			/* TODO: code duplicated in Editor_Backspace() */
-			Line *below = t->curr->next;
-			switch (Editor_Merge_Lines(t)) {
-			case MERGE_REGULAR:
-			case MERGE_EXTRA_SPACE:
-			case MERGE_BELOW_EMPTY:
-				Editor_Refresh(t, Editor_Vcurs);
-				break;
-			case MERGE_ABOVE_EMPTY:
-				t->curr = below;
-				t->curr->pos = 0;
-				Editor_Refresh(t, Editor_Vcurs);
-				break;
-			case MERGE_NOTHING:
-				/* not enough space to move first word below */
-				break;
-			}
-			setcolor(t->curr_col);
-		} else {
-			Beep();
-		}
+	if (t->curr->pos == t->curr->len && t->curr == t->text->last) {
+		Beep();
 		return;
 	}
-	line_remove_index(t->curr, t->curr->pos);
 
-	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
-	/*
-	int tmpcol = t->curr_col;
-	for (int i = t->curr->pos; i < t->curr->len; i++) {
-		if (tmpcol != t->curr->col[i]) {
-			setcolor(t->curr->col[i]);
-			tmpcol = t->curr->col[i];
+	if (t->curr->pos == t->curr->len) {
+		Line *below = t->curr->next;
+		Merge_Lines_Result result =
+			textbuf_merge_lines(t->text, t->curr,
+					    t->curr->next, t->max);
+		if (result == MERGE_ABOVE_EMPTY) {
+			t->curr = below;
+			t->curr->pos = 0;
 		}
-		putchar(t->curr->str[i]);
+	} else {
+		line_remove_index(t->curr, t->curr->pos);
 	}
-	putchar(' ');
-	if (tmpcol != t->curr_col)
-	        setcolor(t->curr_col);
-	*/
+
+	Editor_Refresh(t, Editor_Vcurs);
+	/* NOTE: refresh useless if result MERGE_NOTHING */
+	/* ie. not enough space to move first word below */
+	/* also line_refresh(t->curr, Editor_Vcurs, t->curr->pos); is
+	 * sufficient if there was no merfe (pos < len ) */
+
 	setcolor(t->curr_col);
 	cti_mv(t->curr->pos+1, Editor_Vcurs);
 }
@@ -1539,7 +1621,7 @@ static void Editor_Yank(Editor_Text *t)
 	assert(t->curr->len == 0);
 	assert(t->curr->pos == 0);
         for (Line *src = t->killbuf->first; src; ) {
-		line_copy(t->curr, src);
+		line_copy_all(t->curr, src);
 		t->curr->pos = src->len;
                 line_refresh(t->curr, Editor_Vcurs, 0);
                 src = src->next;
@@ -2022,112 +2104,6 @@ static int Editor_Wrap_Word(Editor_Text *t)
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
 
 	return added_line;
-}
-
-/*
- * Merges the line 'above' with the line 'below'. If everything fits on a
- * single line the contents of the line below (if any) are appended to
- * the above line and the line below is eliminated. Similarly, if the
- * above line is empty, it is simply eliminated.
- * Otherwise, moves as much as fits from the line below to the above
- * line, inserting an extra space if needed to separate the words, and
- * wrapping the line at word boundaries.
- *
- * Returns an Editor_Merge_Result value specifying how the merge was
- * performed (see the enum definition for the descriptions).
- */
-static Merge_Lines_Result text_merge_lines(Editor_Text *t, Line *above,
-					   Line *below)
-{
-	if (above == NULL || below == NULL) {
-		DEB("Merge nothing");
-		return MERGE_NOTHING;
-	}
-
-	/* If line above is empty, just eliminate it. */
-	if (above->len == 0) {
-		textbuf_delete_line(t->text, above);
-		return MERGE_ABOVE_EMPTY;
-	}
-
-	/* If the line below is empty, just eliminate it. */
-	if (below->len == 0) {
-		textbuf_delete_line(t->text, below);
-		return MERGE_BELOW_EMPTY;
-	}
-
-	/* Is an extra space necessary to keep words separated after merge? */
-	bool need_extra_space = (above->str[above->len - 1] != ' '
-				 && below->str[0] != ' ');
-	int extra_space = need_extra_space ? 1 : 0;
-	/* Remaining space available in the above line */
-	int avail_chars = t->max - 1 - above->len - extra_space;
-
-	/* Find out how much of the string below can be appended to the
-	   string above without breaking any word */
-	int len = 0;
-	if (avail_chars < below->len) {
-		for (int i = 0; i <= avail_chars; i++) {
-			if (below->str[i] == ' ') {
-				len = i;
-			}
-		}
-	} else {
-		len = below->len;
-	}
-
-	/* If a substring fits, move it above. */
-	if (len > 0) {
-		int ret;
-		if (need_extra_space) {
-			assert(above->len > 0);
-			above->str[above->len] = ' ';
-			/* If the end of the above line and the start of the
-			   below line have same background color, use that for
-			   the space, otherwise use the default bg color. */
-			if (CC_BG(above->col[above->len - 1])
-			    == CC_BG(below->col[0])) {
-				above->col[above->len] = below->col[0];
-			} else {
-				above->col[above->len] = C_DEFAULT;
-			}
-			above->len++;
-			ret = MERGE_EXTRA_SPACE;
-		} else {
-			ret = MERGE_REGULAR;
-		}
-		int *dest_str = above->str + above->len;
-		int *dest_col = above->col + above->len;
-		int *src_str = below->str;
-		int *src_col = below->col;
-		int *rest_str = below->str + len + 1;
-		int *rest_col = below->col + len + 1;
-		size_t bytes_to_copy = len*sizeof(int);
-
-		// TODO this assertion can fail... but shouldn't
-		assert(below->len >= len + 1);
-		size_t remaining_bytes = (below->len - len - 1)*sizeof(int);
-		memcpy(dest_str, src_str, bytes_to_copy);
-		memcpy(dest_col, src_col, bytes_to_copy);
-		memmove(src_str, rest_str, remaining_bytes);
-		memmove(src_col, rest_col, remaining_bytes);
-
-		above->len += len;
-		below->len -= len + 1;
-		if (below->len <= 0) {
-			DEB("Delete below");
-			textbuf_delete_line(t->text, below);
-			//ret = MERGE_BELOW_EMPTY; /* CHECK */
-		}
-		return ret;
-	}
-	/* There's no room in the above line to fit something from below */
-	return MERGE_NOTHING;
-}
-
-static Merge_Lines_Result Editor_Merge_Lines(Editor_Text *t)
-{
-	return text_merge_lines(t, t->curr, t->curr->next);
 }
 
 /*
