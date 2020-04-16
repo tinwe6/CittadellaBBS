@@ -1197,7 +1197,8 @@ static void Editor_Putchar(Editor_Text *t, int c)
 	} else {
 		if (t->insert == MODE_ASCII_ART
 		    && t->curr->pos >= t->max - 1) {
-			assert
+			/* the editor should not allow this state */
+			assert(false);
 			Beep();
 			return;
 		}
@@ -1232,33 +1233,43 @@ static void Editor_Putchar(Editor_Text *t, int c)
 	cti_mv(t->curr->pos + 1, Editor_Vcurs);
 }
 
-/* Processa <Enter> */
-static void Editor_Key_Enter(Editor_Text *t)
+/* Breaks 'line' into two lines. The original line is cut at position 'pos',
+ * and the rest is moved in a new line, that is inserted below the original
+ * line in the text list. Any trailing space in the above line and any
+ * leading space in the below line is eliminated.                           */
+void textbuf_break_line(TextBuf *buf, Editor_Line *line, int pos)
 {
-	textbuf_insert_line_below(t->text, t->curr);
-	if (t->curr->pos < t->curr->len) {
+	textbuf_insert_line_below(buf, line);
+	if (pos < line->len) {
 		/* the new line starts with the first non-blank character */
-		int src_offset = t->curr->pos;
-		while(*(t->curr->str + src_offset) == ' '
-		      && src_offset < t->curr->len) {
+		int src_offset = pos;
+		while(*(line->str + src_offset) == ' '
+		      && src_offset < line->len) {
 			src_offset++;
 		}
 		/* copy from src_offset to the end of line into the new line */
-		line_copy_from(t->curr->next, t->curr, src_offset);
+		line_copy_from(line->next, line, src_offset);
 
 		/* eliminate trailing space in above line */
-		t->curr->len = t->curr->pos;
-		while (t->curr->len > 0
-		       && *(t->curr->str + t->curr->len - 1) == ' ') {
-			t->curr->len--;
+		line->len = pos;
+		while (line->len > 0
+		       && *(line->str + line->len - 1) == ' ') {
+			line->len--;
 		}
-
-		cti_mv(t->curr->len + 1, Editor_Vcurs);
-                setcolor(C_DEFAULT);
-		erase_to_eol();
 	}
-        t->curr->next->pos = 0;
-        t->curr->pos = 0;
+        line->next->pos = 0;
+	line->pos = 0;
+}
+
+/* Processa <Enter> */
+static void Editor_Key_Enter(Editor_Text *t)
+{
+	textbuf_break_line(t->text, t->curr, t->curr->pos);
+
+	cti_mv(t->curr->len + 1, Editor_Vcurs);
+	setcolor(C_DEFAULT);
+	erase_to_eol();
+
 	Editor_Newline(t);
 
 	line_refresh(t->curr, Editor_Vcurs, 0);
@@ -1268,15 +1279,13 @@ static void Editor_Key_Enter(Editor_Text *t)
 /* Effettua un backspace cancellando gli eventuali allegati */
 static void Editor_Key_Backspace(Editor_Text *t)
 {
-        int mdnum;
-
-        mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]);
+        int mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]);
         if ((t->curr->pos)
             && ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos-1])))) {
                 do {
                         Editor_Backspace(t);
-                } while ((t->curr->pos) &&
-                     (mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos-1])));
+                } while (t->curr->pos && (mdnum == Editor_Get_MDNum(
+			                  t->curr->col[t->curr->pos - 1])));
                 mdop_delete(t->mdlist, mdnum);
         } else {
                 Editor_Backspace(t);
@@ -1334,9 +1343,9 @@ static void Editor_Backspace(Editor_Text *t)
 /* Cancella il carattere sottostante al cursore, eliminando gli allegati */
 static void Editor_Key_Delete(Editor_Text *t)
 {
-        int mdnum;
+        int mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]);
 
-        if ( (mdnum = Editor_Get_MDNum(t->curr->col[t->curr->pos]))) {
+        if (mdnum) {
                 do {
                         Editor_Delete(t);
                 } while(mdnum == Editor_Get_MDNum(t->curr->col[t->curr->pos]));
