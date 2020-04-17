@@ -174,6 +174,16 @@ void line_remove_interval(Line *line, int begin, int end)
 	}
 }
 
+/* Append white spaces to the line until it is of length pos + 1 */
+void line_extend_to_pos(Line *line, int pos) {
+	while (line->len <= pos) {
+		line->str[line->len] = ' ';
+		line->col[line->len] = C_DEFAULT;
+		line->len++;
+	}
+}
+
+
 #include "tests.c"
 
 /*********************************************************************/
@@ -1419,49 +1429,38 @@ static void Editor_Key_Backspace(Editor_Text *t)
 /* Effettua un backspace */
 static void Editor_Backspace(Editor_Text *t)
 {
-	/* if the cursor is at the line start, merge with the line above */
-	if (t->curr->pos == 0) {
-		if (t->curr->prev) {
-			int above_len = t->curr->prev->len;
-			Line *below = t->curr;
-			Editor_Up(t); /* make t->curr the line above */
-			switch (textbuf_merge_lines(t->text, t->curr,
-						    t->curr->next, t->max)) {
-			case MERGE_EXTRA_SPACE:
-				t->curr->pos = above_len + 1;
-				Editor_Refresh(t, Editor_Vcurs);
-				break;
-			case MERGE_ABOVE_EMPTY:
-				/* The above line was deleted */
-				t->curr = below;
-				t->curr->pos = 0;
-				Editor_Refresh(t, Editor_Vcurs);
-				break;
-			case MERGE_REGULAR:
-			case MERGE_BELOW_EMPTY:
-				t->curr->pos = above_len;
-				Editor_Refresh(t, Editor_Vcurs);
-				break;
-			case MERGE_NOTHING:
-				/* This happens if the first word in the line
-				   below does not fit above: simply move the
-				   cursor at the end of the line above.      */
-				t->curr->pos = above_len;
-				line_refresh(t->curr, Editor_Vcurs, 0);
-				break;
-			}
-			setcolor(t->curr_col);
-		} else {
-			Beep();
-		}
+	if (t->curr == t->text->first && t->curr->pos == 0) {
+		Beep();
 		return;
 	}
 
-	/* Cancella il carattere precedente */
-	t->curr->pos--;
-	line_remove_index(t->curr, t->curr->pos);
-
-	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
+	if (t->curr->pos == 0) {
+		/* cursor at line start: merge with line above */
+		int above_len = t->curr->prev->len;
+		Line *below = t->curr;
+		Editor_Up(t); /* make t->curr the line above */
+		Merge_Lines_Result result = textbuf_merge_lines(t->text,
+					     t->curr, t->curr->next, t->max);
+		if (result == MERGE_EXTRA_SPACE) {
+			t->curr->pos = above_len + 1;
+		} else if (result == MERGE_ABOVE_EMPTY) {
+			/* The above line was deleted */
+			t->curr->pos = 0;
+			t->curr = below;
+		} else {
+			t->curr->pos = above_len;
+		}
+		/* Note: MERGE_NOTHING occurs when the starting word below
+		   doesn't fit above; move cursor to end of line above.    */
+	} else {
+		/* delete previous character */
+		t->curr->pos--;
+		line_remove_index(t->curr, t->curr->pos);
+	}
+	/* no refresh necessary for MERGE_NOTHING */
+	/* line_refresh(t->curr, Editor_Vcurs, t->curr->pos); enough if char
+	   deleted without merging */
+	Editor_Refresh(t, Editor_Vcurs);
 	setcolor(t->curr_col);
 }
 
@@ -1480,33 +1479,51 @@ static void Editor_Key_Delete(Editor_Text *t)
 	}
 }
 
+typedef enum { DEL_FAIL, DEL_CHAR, DEL_LINE } DelCharResult;
+
+static DelCharResult textbuf_delete_char(TextBuf *buf, Line *line, int pos,
+				     int maxlen)
+{
+	if (pos == line->len && line == buf->last) {
+		return DEL_FAIL;
+	}
+
+	if (pos == line->len) {
+		Line *below = line->next;
+		Merge_Lines_Result result = textbuf_merge_lines(buf, line,
+								below, maxlen);
+		if (result == MERGE_ABOVE_EMPTY) {
+			return DEL_LINE;
+		}
+	} else {
+		line_remove_index(line, pos);
+	}
+
+	return DEL_CHAR;
+}
+
+
+
 /* Cancella il carattere sottostante al cursore. */
 static void Editor_Delete(Editor_Text *t)
 {
-	if (t->curr->pos == t->curr->len && t->curr == t->text->last) {
+	DelCharResult result = textbuf_delete_char(t->text, t->curr,
+						  t->curr->pos, t->max);
+	if (result == DEL_FAIL) {
 		Beep();
 		return;
 	}
-
-	if (t->curr->pos == t->curr->len) {
-		Line *below = t->curr->next;
-		Merge_Lines_Result result =
-			textbuf_merge_lines(t->text, t->curr,
-					    t->curr->next, t->max);
-		if (result == MERGE_ABOVE_EMPTY) {
-			t->curr = below;
-			t->curr->pos = 0;
-		}
-	} else {
-		line_remove_index(t->curr, t->curr->pos);
+	if (result == DEL_LINE) {
+		t->curr = t->curr->next;
+		t->curr->pos = 0;
 	}
 
-	Editor_Refresh(t, Editor_Vcurs);
 	/* NOTE: refresh useless if result MERGE_NOTHING */
 	/* ie. not enough space to move first word below */
 	/* also line_refresh(t->curr, Editor_Vcurs, t->curr->pos); is
 	 * sufficient if there was no merfe (pos < len ) */
 
+	Editor_Refresh(t, Editor_Vcurs);
 	setcolor(t->curr_col);
 	cti_mv(t->curr->pos+1, Editor_Vcurs);
 }
@@ -1654,9 +1671,6 @@ static void Editor_Key_Tab(Editor_Text *t)
 
 static void Editor_Key_Up(Editor_Text *t)
 {
-	int i, mdnum;
-
-	assert(t->curr);
 	if (t->curr->prev == NULL) {
 		Beep();
 		return;
@@ -1665,18 +1679,15 @@ static void Editor_Key_Up(Editor_Text *t)
 	t->curr->pos = t->curr->next->pos;
 	if (t->curr->pos >= t->curr->len) {
 		if (t->insert == MODE_ASCII_ART) {
-			for (i = t->curr->len; i <= t->curr->pos; i++){
-				t->curr->str[i] = ' ';
-				t->curr->col[i] = C_DEFAULT;
-			}
-			t->curr->len = t->curr->pos + 1;
+			line_extend_to_pos(t->curr, t->curr->pos);
 		} else {
 			t->curr->pos = t->curr->len;
 		}
 	}
 
         /* Se finisco in un oggetto metadata, vai indietro */
-        if ( (mdnum = line_get_mdnum(t->curr, t->curr->pos))) {
+	int mdnum = line_get_mdnum(t->curr, t->curr->pos);
+        if (mdnum) {
 		do {
                         Editor_Curs_Right(t);
                 } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
@@ -1688,8 +1699,6 @@ static void Editor_Key_Up(Editor_Text *t)
 
 static void Editor_Key_Down(Editor_Text *t)
 {
-	int i, mdnum;
-
 	if (t->insert == MODE_ASCII_ART) {
 		if (!t->curr->next) {
 			textbuf_insert_line_below(t->text, t->curr);
@@ -1697,11 +1706,7 @@ static void Editor_Key_Down(Editor_Text *t)
 		Editor_Down(t);
 		t->curr->pos = t->curr->prev->pos;
 		if (t->curr->pos >= t->curr->len) {
-			for (i = t->curr->len; i <= t->curr->pos; i++) {
-				t->curr->str[i] = ' ';
-				t->curr->col[i] = C_DEFAULT;
-			}
-			t->curr->len = t->curr->pos + 1;
+			line_extend_to_pos(t->curr, t->curr->pos);
 		}
 	} else if (t->curr->next) {
 		Editor_Down(t);
@@ -1715,7 +1720,8 @@ static void Editor_Key_Down(Editor_Text *t)
         }
 
         /* Se finisco in un oggetto metadata, vai indietro */
-        if ( (mdnum = line_get_mdnum(t->curr, t->curr->pos)))
+	int mdnum = line_get_mdnum(t->curr, t->curr->pos);
+        if (mdnum)
                 do {
                         Editor_Curs_Right(t);
                 } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
@@ -1757,16 +1763,9 @@ static void Editor_Curs_Right(Editor_Text *t)
 			line_refresh(t->curr, Editor_Vcurs, 0);
 			setcolor(t->curr_col);
 		} else {
-			if (t->curr->pos == t->curr->len) {
-				t->curr->str[t->curr->pos] = ' ';
-				t->curr->col[t->curr->pos] = C_DEFAULT;
-				t->curr->len++;
-			}
-			t->curr->len++;
 			t->curr->pos++;
-			t->curr->str[t->curr->pos] = ' ';
-			t->curr->col[t->curr->pos] = C_DEFAULT;
-			cti_mv(t->curr->pos+1, Editor_Vcurs);
+			line_extend_to_pos(t->curr, t->curr->pos);
+			cti_mv(t->curr->pos + 1, Editor_Vcurs);
 		}
 		return;
 	}
