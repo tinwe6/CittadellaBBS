@@ -40,7 +40,7 @@
 #include "room_cmd.h" /* for blog_display_pre */
 
 /* Variabili globali */
-int Editor_Pos; /* Riga di inizio dell'editor                           */
+int Editor_Pos;   /* Top terminal row for the editor, row of status bar */
 int Editor_Hcurs; /* Posizione cursore orizzontale...                   */
 int Editor_Vcurs; /*                  ... e verticale.                  */
 bool editor_reached_full_size;
@@ -197,7 +197,7 @@ typedef struct TextBuf_t {
 
 /*********************************************************************/
 
-typedef struct Editor_Text_t {
+typedef struct {
 	int max;      /* Numero massimo di colonne nel testo      */
 	char insert;  /* 1 se in insert mode, 0 altrimenti        */
 	int curs_col; /* Colore corrente del cursore              */
@@ -209,6 +209,8 @@ typedef struct Editor_Text_t {
         bool buf_pasted;  /* true se il buffer e' stato incollato */
         bool copy; /* true se aggiunto riga al copy buf nell'ultima op */
         Metadata_List *mdlist; /* metadata and attachments        */
+	/* display */
+	Line *top_line;
 } Editor_Text;
 
 /* Editor_Merge_Lines() result codes */
@@ -284,7 +286,6 @@ static void Editor_Key_Delete(Editor_Text *t);
 static void Editor_Delete(Editor_Text *t);
 static void Editor_Delete_Word(Editor_Text *t);
 static void Editor_Delete_Next_Word(Editor_Text *t);
-static void Editor_Newline(Editor_Text *t);
 static void Editor_Copy_To_Kill_Buffer(Editor_Text *t);
 static int Editor_Wrap_Word(Editor_Text *t);
 static void Editor_Kill_Line(Editor_Text *t);
@@ -302,8 +303,6 @@ static void Editor_Scroll_Up(int stop);
 #if 0
 static void Editor_Scroll_Down(int start, int stop);
 #endif
-static void Editor_Up(Editor_Text *t);
-static void Editor_Down(Editor_Text *t);
 static void Editor_Set_Color(Editor_Text *t, int c);
 static void Editor_Insert_Metadata(Editor_Text *t);
 static void Editor_Insert_Link(Editor_Text *t);
@@ -653,6 +652,30 @@ static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
 	return MERGE_NOTHING;
 }
 
+typedef enum { DEL_FAIL, DEL_CHAR, DEL_LINE } DelCharResult;
+
+static DelCharResult textbuf_delete_char(TextBuf *buf, Line *line, int pos,
+					 int maxlen)
+{
+	if (pos == line->len && line == buf->last) {
+		return DEL_FAIL;
+	}
+
+	if (pos == line->len) {
+		Line *below = line->next;
+		Merge_Lines_Result result = textbuf_merge_lines(buf, line,
+								below, maxlen);
+		if (result == MERGE_ABOVE_EMPTY) {
+			return DEL_LINE;
+		}
+	} else {
+		line_remove_index(line, pos);
+	}
+
+	return DEL_CHAR;
+}
+
+
 /* Initialize the text buffer with a single, empty line. */
 void textbuf_init(TextBuf *buf)
 {
@@ -802,6 +825,9 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	textbuf_init(t.text);
 	t.curr = t.text->first;
 
+	/* Initialize display data */
+	t.top_line = t.text->first;
+
 	/* Initialize an empty kill buffer */
 	t.killbuf = textbuf_new();
 	assert(t.killbuf->first == NULL && t.killbuf->last == NULL);
@@ -826,12 +852,11 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	txt_clear(txt);
 
 	/* Visualizza l'header dell'editor ed eventualmente il testo */
-	t.curr = t.text->first;
+	t.curr = t.text->last;
+	/*
 	Editor_Head(&t);
-	while(t.curr->next) {
-		Editor_Newline(&t);
-	}
 	Editor_Refresh(&t, 0);
+	*/
 
 #ifdef EDITOR_DEBUG
 	console_init();
@@ -896,6 +921,16 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	return ret;
 }
 
+static inline int display_nrows(void)
+{
+	return NRIGHE - 1 - Editor_Pos;
+}
+
+static inline int display_bottom_line_num(Editor_Text *t)
+{
+	return t->top_line->num + display_nrows() - 1;
+}
+
 /*
  * Prende un testo dallo stdinput, lungo 'max'.
  * Il testo viene editato su una singola riga, e se e' piu' lungo dello
@@ -915,6 +950,39 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
         do {
+		/* Display update window */
+		while (t->curr->num < t->top_line->num) {
+			DEB("DISP Scroll down");
+			t->top_line = t->top_line->prev;
+		}
+		while (t->curr->num > display_bottom_line_num(t)) {
+			console_update(t);
+			if (!editor_reached_full_size) {
+				if (Editor_Pos > MSG_WIN_SIZE) {
+					DEB("DISP grow");
+					/* editor is tiny: grow display size */
+					--Editor_Pos;
+					// todo scroll up
+				} else {
+					DEB("DISP reached full size");
+					// scroll up in win
+					window_push(Editor_Pos + 1, NRIGHE-1);
+					editor_reached_full_size = true;
+					t->top_line = t->top_line->next;
+				}
+			} else {
+				DEB("DISP Scroll up");
+				t->top_line = t->top_line->next;
+			}
+		}
+		/*
+		  setcolor(C_DEFAULT);
+		  erase_to_eol();
+		*/
+		assert(t->curr->num >= t->top_line->num);
+		Editor_Vcurs = ((Editor_Pos + 1)
+				+ (t->curr->num - t->top_line->num));
+		Editor_Hcurs = t->curr->pos + 1;
 
 #ifdef EDITOR_DEBUG
 		textbuf_sanity_check(t->text);
@@ -926,9 +994,12 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 		console_update(t);
 #endif
 
-		Editor_Head_Refresh(t, false);
+		/* display: update */
+		//Editor_Head_Refresh(t, false);
+		Editor_Refresh_All(t);
 
-		Editor_Hcurs = t->curr->pos + 1;
+		cti_mv(Editor_Hcurs, Editor_Vcurs);
+		setcolor(t->curr_col);
 
 		int key = inkey_sc(true);
 		bool addchar = false;
@@ -1351,7 +1422,8 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 }
 
 /****************************************************************************/
-/* Insert character 'c' at current test position, using the current color */
+
+/* Insert character 'c' at current text position, using the current color */
 static void Editor_Putchar(Editor_Text *t, int c)
 {
 	if (t->insert == MODE_INSERT) {
@@ -1377,6 +1449,7 @@ static void Editor_Putchar(Editor_Text *t, int c)
 		t->curr->pos++;
 	}
 
+#ifdef OLDWIN
 	if (t->insert == MODE_ASCII_ART) {
 		putchar(c);
 		return;
@@ -1389,25 +1462,17 @@ static void Editor_Putchar(Editor_Text *t, int c)
 		}
 		putchar(t->curr->str[i]);
 	}
+#endif
 	if (t->curr->len >= t->max) {
 		Editor_Wrap_Word(t);
 	}
-	cti_mv(t->curr->pos + 1, Editor_Vcurs);
 }
 
-/* Processa <Enter> */
+/* <Enter>: Break the line at current cursor pos. and go to next row start */
 static void Editor_Key_Enter(Editor_Text *t)
 {
 	textbuf_break_line(t->text, t->curr, t->curr->pos);
-
-	cti_mv(t->curr->len + 1, Editor_Vcurs);
-	setcolor(C_DEFAULT);
-	erase_to_eol();
-
-	Editor_Newline(t);
-
-	line_refresh(t->curr, Editor_Vcurs, 0);
-	setcolor(t->curr_col);
+	t->curr = t->curr->next;
 }
 
 /* Effettua un backspace cancellando gli eventuali allegati */
@@ -1438,7 +1503,11 @@ static void Editor_Backspace(Editor_Text *t)
 		/* cursor at line start: merge with line above */
 		int above_len = t->curr->prev->len;
 		Line *below = t->curr;
-		Editor_Up(t); /* make t->curr the line above */
+
+		/* move cursor to line above */
+		assert(t->curr->prev);
+		t->curr = t->curr->prev;
+
 		Merge_Lines_Result result = textbuf_merge_lines(t->text,
 					     t->curr, t->curr->next, t->max);
 		if (result == MERGE_EXTRA_SPACE) {
@@ -1460,8 +1529,6 @@ static void Editor_Backspace(Editor_Text *t)
 	/* no refresh necessary for MERGE_NOTHING */
 	/* line_refresh(t->curr, Editor_Vcurs, t->curr->pos); enough if char
 	   deleted without merging */
-	Editor_Refresh(t, Editor_Vcurs);
-	setcolor(t->curr_col);
 }
 
 /* Cancella il carattere sottostante al cursore, eliminando gli allegati */
@@ -1478,31 +1545,6 @@ static void Editor_Key_Delete(Editor_Text *t)
                 Editor_Delete(t);
 	}
 }
-
-typedef enum { DEL_FAIL, DEL_CHAR, DEL_LINE } DelCharResult;
-
-static DelCharResult textbuf_delete_char(TextBuf *buf, Line *line, int pos,
-				     int maxlen)
-{
-	if (pos == line->len && line == buf->last) {
-		return DEL_FAIL;
-	}
-
-	if (pos == line->len) {
-		Line *below = line->next;
-		Merge_Lines_Result result = textbuf_merge_lines(buf, line,
-								below, maxlen);
-		if (result == MERGE_ABOVE_EMPTY) {
-			return DEL_LINE;
-		}
-	} else {
-		line_remove_index(line, pos);
-	}
-
-	return DEL_CHAR;
-}
-
-
 
 /* Cancella il carattere sottostante al cursore. */
 static void Editor_Delete(Editor_Text *t)
@@ -1522,10 +1564,6 @@ static void Editor_Delete(Editor_Text *t)
 	/* ie. not enough space to move first word below */
 	/* also line_refresh(t->curr, Editor_Vcurs, t->curr->pos); is
 	 * sufficient if there was no merfe (pos < len ) */
-
-	Editor_Refresh(t, Editor_Vcurs);
-	setcolor(t->curr_col);
-	cti_mv(t->curr->pos+1, Editor_Vcurs);
 }
 
 /* Cancella la parola precedente al cursore. */
@@ -1545,9 +1583,6 @@ static void Editor_Delete_Word(Editor_Text *t)
 		t->curr->pos--;
 	}
 	line_remove_interval(t->curr, t->curr->pos, tmp);
-
-	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
-	setcolor(t->curr_col);
 }
 
 /* Cancella la parola successiva al cursore. */
@@ -1570,9 +1605,6 @@ static void Editor_Delete_Next_Word(Editor_Text *t)
 	}
 	line_remove_interval(t->curr, tmp, t->curr->pos);
 	t->curr->pos = tmp;
-
-	line_refresh(t->curr, Editor_Vcurs, t->curr->pos);
-	setcolor(t->curr_col);
 }
 
 /*
@@ -1586,20 +1618,12 @@ static void Editor_Kill_Line(Editor_Text *t)
 		textbuf_delete_line(t->text, t->curr);
 		t->curr = next_line;
 		t->curr->pos = 0;
-		Editor_Refresh(t, Editor_Vcurs);
 	} else if (t->curr->pos == t->curr->len) {
 		Editor_Delete(t);
 	} else {
 		Editor_Copy_To_Kill_Buffer(t);
 		/* Eliminate the text from the cursor to the end of line */
 		t->curr->len = t->curr->pos;
-
-		/* cti_mv(t->curr->pos+1, Editor_Vcurs); */
-
-		/* Update the screen accordingly */
-		setcolor(C_DEFAULT);
-		erase_to_eol();
-		setcolor(t->curr_col);
 	}
 	t->copy = true;
 }
@@ -1615,12 +1639,14 @@ static void Editor_Yank(Editor_Text *t)
 	if (t->curr->len) {
 		bool cursor_at_line_start = (t->curr->pos == 0);
 		bool cursor_at_line_end = (t->curr->pos == t->curr->len);
-		Editor_Key_Enter(t);
+
+		textbuf_break_line(t->text, t->curr, t->curr->pos);
+		t->curr = t->curr->next;
+
 		if (cursor_at_line_start) {
-			Editor_Up(t);
+			t->curr = t->curr->prev;
 			t->curr->pos = 0;
 			t->curr->next->pos = 0;
-			Editor_Refresh(t, Editor_Vcurs);
 			DEB("Yank-1");
 		} else if (cursor_at_line_end) {
 			/* do nothing */
@@ -1630,7 +1656,6 @@ static void Editor_Yank(Editor_Text *t)
 			t->curr = t->curr->prev;
 			t->curr->pos = 0;
 			t->curr->next->pos = 0;
-			Editor_Refresh(t, Editor_Vcurs);
 			DEB("Yank-3");
 		}
 	}
@@ -1640,16 +1665,15 @@ static void Editor_Yank(Editor_Text *t)
         for (Line *src = t->killbuf->first; src; ) {
 		line_copy_all(t->curr, src);
 		t->curr->pos = src->len;
-                line_refresh(t->curr, Editor_Vcurs, 0);
                 src = src->next;
                 if (src) {
-                        Editor_Key_Enter(t);
+			textbuf_insert_line_below(t->text, t->curr);
+			t->curr = t->curr->next;
+			t->curr->pos = 0;
                 }
         }
         t->curr->pos = t->curr->len;
-        line_refresh(t->curr, Editor_Vcurs, 0);
-	setcolor(t->curr_col);
-        t->buf_pasted = true;
+	t->buf_pasted = true;
 }
 
 static void Editor_Key_Tab(Editor_Text *t)
@@ -1661,7 +1685,8 @@ static void Editor_Key_Tab(Editor_Text *t)
 		return;
 	}
 	if ((t->max - t->curr->pos) < CLIENT_TABSIZE) {
-		Editor_Key_Enter(t);
+		textbuf_break_line(t->text, t->curr, t->curr->pos);
+	        t->curr = t->curr->next;
 	} else {
 		do {
 			Editor_Putchar(t, ' ');
@@ -1675,14 +1700,12 @@ static void Editor_Key_Up(Editor_Text *t)
 		Beep();
 		return;
 	}
-	Editor_Up(t);
+	t->curr = t->curr->prev;
 	t->curr->pos = t->curr->next->pos;
-	if (t->curr->pos >= t->curr->len) {
-		if (t->insert == MODE_ASCII_ART) {
-			line_extend_to_pos(t->curr, t->curr->pos);
-		} else {
-			t->curr->pos = t->curr->len;
-		}
+	if (t->insert == MODE_ASCII_ART && t->curr->pos >= t->curr->len) {
+		line_extend_to_pos(t->curr, t->curr->pos);
+	} else if (t->curr->pos > t->curr->len) {
+		t->curr->pos = t->curr->len;
 	}
 
         /* Se finisco in un oggetto metadata, vai indietro */
@@ -1692,9 +1715,6 @@ static void Editor_Key_Up(Editor_Text *t)
                         Editor_Curs_Right(t);
                 } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
 	}
-
-	line_refresh(t->curr, Editor_Vcurs, 0);
-	setcolor(t->curr_col);
 }
 
 static void Editor_Key_Down(Editor_Text *t)
@@ -1703,13 +1723,13 @@ static void Editor_Key_Down(Editor_Text *t)
 		if (!t->curr->next) {
 			textbuf_insert_line_below(t->text, t->curr);
 		}
-		Editor_Down(t);
+		t->curr = t->curr->next;
 		t->curr->pos = t->curr->prev->pos;
 		if (t->curr->pos >= t->curr->len) {
 			line_extend_to_pos(t->curr, t->curr->pos);
 		}
 	} else if (t->curr->next) {
-		Editor_Down(t);
+		t->curr = t->curr->next;
 		t->curr->pos = t->curr->prev->pos;
 		if (t->curr->pos > t->curr->len) {
 			t->curr->pos = t->curr->len;
@@ -1721,13 +1741,11 @@ static void Editor_Key_Down(Editor_Text *t)
 
         /* Se finisco in un oggetto metadata, vai indietro */
 	int mdnum = line_get_mdnum(t->curr, t->curr->pos);
-        if (mdnum)
+        if (mdnum) {
                 do {
                         Editor_Curs_Right(t);
                 } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
-
-        line_refresh(t->curr, Editor_Vcurs, 0);
-        setcolor(t->curr_col);
+	}
 }
 
 /* Key right: skips metadata objects */
@@ -1749,37 +1767,27 @@ static void Editor_Key_Right(Editor_Text *t)
 static void Editor_Curs_Right(Editor_Text *t)
 {
 	if (t->insert == MODE_ASCII_ART) {
-		if (t->curr->pos < t->curr->len-1) {
+		if (t->curr->pos < t->curr->len - 1) {
 			t->curr->pos++;
-			cti_mv(t->curr->pos+1, Editor_Vcurs);
-			return;
-		}
-		if (t->curr->len >= t->max - 1) {
+		} else if (t->curr->len >= t->max - 1) {
 			if (!t->curr->next) {
 				textbuf_insert_line_below(t->text, t->curr);
 			}
-			Editor_Down(t);
+			t->curr = t->curr->next;
 			t->curr->pos = 0;
-			line_refresh(t->curr, Editor_Vcurs, 0);
-			setcolor(t->curr_col);
 		} else {
 			t->curr->pos++;
 			line_extend_to_pos(t->curr, t->curr->pos);
-			cti_mv(t->curr->pos + 1, Editor_Vcurs);
 		}
-		return;
-	}
-	if (t->curr->pos < t->curr->len) {
-		cti_mv((++t->curr->pos)+1, Editor_Vcurs);
-		return;
-	}
-	if (t->curr->next) {
-		Editor_Down(t);
-		t->curr->pos = 0;
-		line_refresh(t->curr, Editor_Vcurs, 0);
-		setcolor(t->curr_col);
 	} else {
-		Beep();
+		if (t->curr->pos < t->curr->len) {
+			++t->curr->pos;
+		} else if (t->curr->next) {
+			t->curr = t->curr->next;
+			t->curr->pos = 0;
+		} else {
+			Beep();
+		}
 	}
 }
 
@@ -1805,15 +1813,14 @@ static void Editor_Key_Left(Editor_Text *t)
 static void Editor_Curs_Left(Editor_Text *t)
 {
 	if (t->curr->pos) {
-		cti_mv(t->curr->pos--, Editor_Vcurs);
+		--t->curr->pos;
 	} else if (t->curr->prev) {
-		Editor_Up(t);
+		t->curr = t->curr->prev;
 		t->curr->pos = t->curr->len;
 		if ((t->insert == MODE_ASCII_ART) && (t->curr->pos > 0)) {
 			t->curr->pos--;
 		}
-		line_refresh(t->curr, Editor_Vcurs, 0);
-		setcolor(t->curr_col);
+		// dirty
 	} else {
 		Beep();
 	}
@@ -1825,9 +1832,9 @@ static void Editor_PageUp(Editor_Text *t)
 	if (t->curr->prev == NULL) {
 		Beep();
 		t->curr->pos = 0;
-		cti_mv(1, Editor_Vcurs);
 		return;
 	}
+	// TODO(display) adapt
 	for (int i = Editor_Vcurs; (i > Editor_Pos) && t->curr->prev; i--) {
 		t->curr = t->curr->prev;
 	}
@@ -1838,7 +1845,6 @@ static void Editor_PageUp(Editor_Text *t)
 		Editor_Vcurs = NRIGHE - 1;
 	}
 	t->curr->pos = 0;
-	Editor_Refresh(t, 0);
 }
 
 /* Va alla pagina successiva */
@@ -1849,20 +1855,16 @@ static void Editor_PageDown(Editor_Text *t)
 	if (t->curr->next == NULL) {
 		Beep();
 		t->curr->pos = t->curr->len;
-		cti_mv(t->curr->pos + 1, Editor_Vcurs);
 		return;
 	}
+	// TODO(display) adapt
 	for (i = Editor_Vcurs; (i < NRIGHE) && t->curr->next; i++) {
 		t->curr = t->curr->next;
 	}
 	if (t->text->last->num - t->curr->num < NRIGHE - Editor_Pos - 2) {
 		t->curr = t->text->last;
-		Editor_Vcurs = NRIGHE - 1;
-	} else {
-		Editor_Vcurs = Editor_Pos + 1;
 	}
 	t->curr->pos = 0;
-	Editor_Refresh(t, 0);
 }
 
 /* Scroll down the region from the current row to the bottom of the terminal,
@@ -1873,21 +1875,6 @@ void EdTerm_Scroll_Down(void)
 	cti_mv(0, Editor_Vcurs);
 	scroll_down();
 	window_pop();
-}
-
-/* Va alla riga successiva del testo. */
-static void Editor_Newline(Editor_Text *t)
-{
-	assert(t->curr->next);
-
-	t->curr = t->curr->next;
-	if (Editor_Vcurs != NRIGHE - 1) {
-		Editor_Vcurs++;
-		EdTerm_Scroll_Down();
-		cti_mv(0, Editor_Vcurs);
-	} else {
-		Editor_Scroll_Up(NRIGHE - 1);
-	}
 }
 
 /*
@@ -1931,8 +1918,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 		/* No need to wrap */
 		DEB("Stripped ending space instead of wrapping");
 		t->curr->len = t->max - 1;
-		line_refresh(t->curr, Editor_Vcurs, 0);
-		cti_mv(t->curr->pos + 1, Editor_Vcurs);
+		// dirty
 		return 1;
 	}
 	len = t->curr->len;
@@ -2090,17 +2076,7 @@ static int Editor_Wrap_Word(Editor_Text *t)
 			nl->pos++;
 		}
 		t->curr = nl;
-		if (Editor_Vcurs != NRIGHE - 1) {
-			Editor_Vcurs++;
-			cti_mv(t->curr->pos + 1, Editor_Vcurs);
-		} else {
-			Editor_Scroll_Up(NRIGHE - 1);
-		}
-		line_refresh(t->curr->prev, Editor_Vcurs - 1, 0);
 	}
-
-	Editor_Refresh(t, Editor_Vcurs);
-	cti_mv(t->curr->pos + 1, Editor_Vcurs);
 
 	return added_line;
 }
@@ -2180,30 +2156,6 @@ static void Editor_Scroll_Down(int start, int stop)
 	cti_mv(Editor_Hcurs, Editor_Vcurs);
 }
 #endif
-
-/* Moves the cursor to the line above and updates the display */
-static void Editor_Up(Editor_Text *t)
-{
-	assert(t->curr->prev);
-
-	t->curr = t->curr->prev;
-	if (editor_reached_full_size && (Editor_Vcurs == Editor_Pos + 1)) {
-		scroll_down();
-	} else {
-		Editor_Vcurs--;
-	}
-}
-
-/* Vai alla riga successiva */
-static void Editor_Down(Editor_Text *t)
-{
-	t->curr = t->curr->next;
-	if (Editor_Vcurs == NRIGHE - 1) {
-		Editor_Scroll_Up(NRIGHE - 1);
-	} else {
-		Editor_Vcurs++;
-	}
-}
 
 /* Modifica il colore del cursore */
 static void Editor_Set_Color(Editor_Text *t, int c)
@@ -2659,9 +2611,6 @@ static void Editor_Insert_Text(Editor_Text *t)
 						       t->curr->col+len,
 						       wlen*sizeof(int));
                                                 t->curr->len = len;
-						line_refresh(t->curr,
-							     Editor_Vcurs, 0);
-						setcolor(t->curr_col);
                                                 nl->str[0] = ' ';
                                                 nl->str[1] = ' ';
                                                 nl->col[0] = C_DEFAULT;
@@ -2669,26 +2618,19 @@ static void Editor_Insert_Text(Editor_Text *t)
                                                 nl->pos = 0;
                                                 nl->flag = 1;
 
-                                                Editor_Newline(t);
-                                                //t->curr = nl;
-                                        }
-					line_refresh(t->curr, Editor_Vcurs, 0);
-					setcolor(t->curr_col);
-                                        //Editor_Key_Enter(t);
+						t->curr = t->curr->next;
+					}
 					textbuf_insert_line_below(t->text,
 								  t->curr);
-                                        Editor_Newline(t);
+					t->curr = t->curr->next;
                                 }
-				line_refresh(t->curr, Editor_Vcurs, 0);
-				setcolor(t->curr_col);
                         } else {
                                 rewind(fp);
                                 while( (c = fgetc(fp)) != EOF) {
-                                        if ((c == Key_CR) || (c == Key_LF))
+                                        if ((c == Key_CR) || (c == Key_LF)) {
                                                 Editor_Key_Enter(t);
-                                        else if ((isascii(c) && isprint(c)) ||
-						 is_isoch(c)) {
-
+					} else if ((isascii(c) && isprint(c))
+						   || is_isoch(c)) {
                                                 Editor_Putchar(t, c);
                                                 if (t->curr->len >= t->max) {
 
@@ -3356,7 +3298,8 @@ static void console_update(Editor_Text *t)
 	int ws_count = debug_get_winstack_index();
 	int first, last;
 	debug_get_current_win(&first, &last);
-	printf("%s [fs %c rows %d] W(%d,%d)$%d", console_status,
+	printf("%s FR %d [fs %c rows %d] W(%d,%d)$%d", console_status,
+	       t->top_line->num,
 	       editor_reached_full_size ? 'y' : 'n', t->term_nrows, first,
 	       last, debug_get_winstack_index());
 	for (int i = 0; i != ws_count; i++) {
