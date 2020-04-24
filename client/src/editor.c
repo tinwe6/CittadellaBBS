@@ -84,6 +84,10 @@ bool editor_reached_full_size;
 # define DEB(...)
 #endif
 
+#ifdef EDITOR_DEBUG
+# define PERFORM_EDITOR_TESTS
+#endif
+
 #define MODE_INSERT     0
 #define MODE_OVERWRITE  1
 #define MODE_ASCII_ART  2
@@ -117,7 +121,20 @@ void lines_update_nums(Line *line)
 	}
 }
 
-void line_copy(Line *dst, int dst_offset,  Line *src, int src_offset)
+void line_copy_n(Line *dst, int dst_offset, Line *src, int src_offset,
+		 int char_count)
+{
+	assert(dst != src);
+	assert(0 <= src_offset && src_offset <= src->len);
+	assert(0 <= dst_offset && dst_offset <= dst->len);
+	assert(src_offset + char_count <= src->len);
+	int bytes = char_count*sizeof(int);
+	memcpy(dst->str + dst_offset, src->str + src_offset, bytes);
+	memcpy(dst->col + dst_offset, src->col + src_offset, bytes);
+	dst->len = dst_offset + char_count;
+}
+
+void line_copy(Line *dst, int dst_offset, Line *src, int src_offset)
 {
 	assert(dst != src);
 	assert(0 <= src_offset && src_offset <= src->len);
@@ -130,11 +147,13 @@ void line_copy(Line *dst, int dst_offset,  Line *src, int src_offset)
 }
 
 /* Copy contents of line src to line dest. The contents of src are lost. */
+static inline
 void line_copy_all(Line *dst, Line *src)
 {
 	line_copy(dst, 0, src, 0);
 }
 
+static inline
 void line_copy_from(Line *dst, Line *src, int src_offset)
 {
 	line_copy(dst, 0, src, src_offset);
@@ -183,8 +202,6 @@ void line_extend_to_pos(Line *line, int pos) {
 	}
 }
 
-
-#include "tests.c"
 
 /*********************************************************************/
 
@@ -432,7 +449,7 @@ void textbuf_sanity_check(TextBuf *buf)
 	}
 }
 
-/* Append a new line at bottom of text buffer */
+/* Append a new line at bottom of text buffer. Returns pointer to new line. */
 static Line * textbuf_append_new_line(TextBuf *buf)
 {
 	Line *line = line_new();
@@ -451,7 +468,7 @@ static Line * textbuf_append_new_line(TextBuf *buf)
 	return line;
 }
 
-/* Insert a new line below 'line' */
+/* Insert a new line below 'line'. Returns pointer to the new line. */
 static Line * textbuf_insert_line_below(TextBuf *buf, Line *line)
 {
 	Line *new_line = line_new();
@@ -472,7 +489,7 @@ static Line * textbuf_insert_line_below(TextBuf *buf, Line *line)
 	return new_line;
 }
 
-/* Insert a new line above 'line' */
+/* Insert a new line above 'line'. Returns pointer to the new line. */
 static Line * textbuf_insert_line_above(TextBuf *buf, Line *line)
 {
 	Line *new_line = line_new();
@@ -588,6 +605,37 @@ static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
 	/* Remaining space available in the above line */
 	int avail_chars = maxlen - 1 - above->len - extra_space;
 
+	if (avail_chars >= below->len) {
+		/* the line below fits above */
+		int ret;
+		if (need_extra_space) {
+			assert(above->len > 0);
+			above->str[above->len] = ' ';
+			/* If the end of the above line and the start of the
+			   below line have same background color, use that for
+			   the space, otherwise use the default bg color. */
+			if (CC_BG(above->col[above->len - 1])
+			    == CC_BG(below->col[0])) {
+				/* NOTE: the below line could start with
+				   an attachment: we make sure we only copy
+				   the color/attribute bits! */
+				/* TODO replace with function/macro */
+				above->col[above->len] = below->col[0] & 0xff;
+			} else {
+				above->col[above->len] = C_DEFAULT;
+			}
+			above->len++;
+			ret = MERGE_EXTRA_SPACE;
+		} else {
+			ret = MERGE_REGULAR;
+		}
+
+		line_copy(above, above->len, below, 0);
+		textbuf_delete_line(buf, below);
+
+		return ret;
+	}
+
 	/* Find out how much of the string below can be appended to the
 	   string above without breaking any word */
 	int len = 0;
@@ -622,25 +670,12 @@ static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
 			ret = MERGE_REGULAR;
 		}
 
-
-		int *dest_str = above->str + above->len;
-		int *dest_col = above->col + above->len;
-		int *src_str = below->str;
-		int *src_col = below->col;
-		int *rest_str = below->str + len + 1;
-		int *rest_col = below->col + len + 1;
-		size_t bytes_to_copy = len*sizeof(int);
-
 		// TODO this assertion can fail... but shouldn't
 		assert(below->len >= len + 1);
-		size_t remaining_bytes = (below->len - len - 1)*sizeof(int);
-		memcpy(dest_str, src_str, bytes_to_copy);
-		memcpy(dest_col, src_col, bytes_to_copy);
-		memmove(src_str, rest_str, remaining_bytes);
-		memmove(src_col, rest_col, remaining_bytes);
+		line_copy_n(above, above->len, below, 0, len);
+		line_remove_interval(below, 0, len + 1);
 
-		above->len += len;
-		below->len -= len + 1;
+
 		if (below->len <= 0) {
 			DEB("Delete below");
 			textbuf_delete_line(buf, below);
@@ -693,7 +728,9 @@ void textbuf_init(TextBuf *buf)
 	assert(buf->lines_count == 1);
 }
 
-
+#ifdef PERFORM_EDITOR_TESTS
+#include "tests.c"
+#endif
 
 /***************************************************************************/
 /*
