@@ -99,15 +99,21 @@ typedef struct Line_t {
 	int pos;                    /* Posizione del cursore         */
 	int len;                    /* Lunghezza della stringa       */
 	char flag;                  /* 1 se contiene testo           */
+	bool dirty; 		    /* true if contents have changed */
 	struct Line_t *prev; /* Linea precedente              */
 	struct Line_t *next; /* Linea successiva              */
 } Line;
 
+/*
+ * Allocate and return a new, empty string.
+ * Note: The new line starts 'dirty', since it has not yet been displayed.
+ */
 static Line *line_new(void)
 {
 	Line *line;
 	CREATE(line, Line, 1, 0);
 	*line = (Line){0};
+	line->dirty = true;
 	return line;
 }
 
@@ -132,6 +138,7 @@ void line_copy_n(Line *dst, int dst_offset, Line *src, int src_offset,
 	memcpy(dst->str + dst_offset, src->str + src_offset, bytes);
 	memcpy(dst->col + dst_offset, src->col + src_offset, bytes);
 	dst->len = dst_offset + char_count;
+	dst->dirty = true;
 }
 
 void line_copy(Line *dst, int dst_offset, Line *src, int src_offset)
@@ -144,6 +151,7 @@ void line_copy(Line *dst, int dst_offset, Line *src, int src_offset)
 	memcpy(dst->str + dst_offset, src->str + src_offset, bytes);
 	memcpy(dst->col + dst_offset, src->col + src_offset, bytes);
 	dst->len = dst_offset + count;
+	dst->dirty = true;
 }
 
 /* Copy contents of line src to line dest. The contents of src are lost. */
@@ -168,6 +176,7 @@ void line_remove_index(Line *line, int pos)
 		memmove(line->col + pos, line->col + pos + 1, bytes);
 	}
 	line->len--;
+	line->dirty = true;
 }
 
 void line_insert_index(Line *line, int pos)
@@ -177,6 +186,7 @@ void line_insert_index(Line *line, int pos)
 	memmove(line->str + pos + 1, line->str + pos, bytes);
 	memmove(line->col + pos + 1, line->col + pos, bytes);
 	line->len++;
+	line->dirty = true;
 }
 
 /* Remove from line the characters in the interval [begin, end) */
@@ -191,6 +201,7 @@ void line_remove_interval(Line *line, int begin, int end)
 		memmove(line->col + begin, line->col + end, count*sizeof(int));
  		line->len -= end - begin;
 	}
+	line->dirty = true;
 }
 
 /* Append white spaces to the line until it is of length pos + 1 */
@@ -262,28 +273,33 @@ typedef enum {
                                     CC_BG((t)->curs_col),                 \
 			            CC_ATTR((t)->curs_col)^((a) & ATTR_MASK)))
 
-static inline int attr_get_mdnum(int c)
+static inline
+int attr_get_mdnum(int c)
 {
 	return (c >> 16) & 0xff;
 }
 
-static inline int attr_set_mdnum(int c, int mdnum)
+static inline
+int attr_set_mdnum(int c, int mdnum)
 {
 	return (mdnum << 16) | (c & 0xffff);
 }
 
 #define ATTR_SET_MDNUM(c, m) do { (c) = attr_set_mdnum((c), (m)); } while(0)
 
-static inline int line_get_mdnum(Line *line, int pos)
+static inline
+int line_get_mdnum(Line *line, int pos)
 {
 	int c = line->col[pos];
 	return (c >> 16) & 0xff;
 }
 
-static inline void line_set_mdnum(Line *line, int pos, int mdnum)
+static inline
+void line_set_mdnum(Line *line, int pos, int mdnum)
 {
 	int c = line->col[pos];
 	line->col[pos] = (mdnum << 16) | (c & 0xffff);
+	line->dirty = true;
 }
 
 /* Colori */
@@ -561,9 +577,13 @@ void textbuf_break_line(TextBuf *buf, Line *line, int pos)
 		       && *(line->str + line->len - 1) == ' ') {
 			line->len--;
 		}
+		line->dirty = true;
 	}
         line->next->pos = 0;
 	line->pos = 0;
+
+	DEB("break_line Above (len %d pos %d) Below (len %d pos %d)",
+	    line->len, line->pos, line->next->len, line->next->pos);
 }
 
 /*
@@ -670,7 +690,7 @@ static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
 			ret = MERGE_REGULAR;
 		}
 
-		// TODO this assertion can fail... but shouldn't
+		// TODO check this assertion
 		assert(below->len >= len + 1);
 		line_copy_n(above, above->len, below, 0, len);
 		line_remove_interval(below, 0, len + 1);
