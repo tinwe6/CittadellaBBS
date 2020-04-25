@@ -211,16 +211,23 @@ void line_extend_to_pos(Line *line, int pos) {
 		line->col[line->len] = C_DEFAULT;
 		line->len++;
 	}
+	line->dirty = true;
 }
 
 
 /*********************************************************************/
 
+typedef enum {
+	NO_CHANGE = 0, LINE_INSERT, LINE_DELETE,
+} TextBufOp;
+
 typedef struct TextBuf_t {
-	Line *first;   /* first line                       */
-	Line *last;    /* last line                        */
-	//Line *curr;    /* current line                     */
-        int lines_count;      /* number of lines in the list      */
+	Line *first;		/* first line                       */
+	Line *last;    		/* last line                        */
+        int lines_count;      	/* number of lines in the list      */
+	TextBufOp operation;
+	Line *op_first_line;
+	Line *op_last_line;
 } TextBuf;
 
 /*********************************************************************/
@@ -429,6 +436,29 @@ void textbuf_free(TextBuf *buf)
 	Free(buf);
 }
 
+static inline
+void textbuf_clear_op(TextBuf *buf)
+{
+	buf->operation = NO_CHANGE;
+}
+
+static void textbuf_set_op(TextBuf *buf, TextBufOp op, Line *first,
+			   Line *last)
+{
+	////////////////
+	//assert(buf->operation == NO_CHANGE);
+	buf->operation = op;
+	buf->op_first_line = first;
+	buf->op_last_line = last;
+}
+
+static inline
+void textbuf_set_op1(TextBuf *buf, TextBufOp op, Line *line)
+{
+	textbuf_set_op(buf, op, line, line);
+}
+
+
 void textbuf_sanity_check(TextBuf *buf)
 {
 	Line *line = buf->first;
@@ -481,6 +511,8 @@ static Line * textbuf_append_new_line(TextBuf *buf)
 	buf->lines_count++;
 	line->num = buf->lines_count;
 
+	textbuf_set_op1(buf, LINE_INSERT, line);
+
 	return line;
 }
 
@@ -501,6 +533,8 @@ static Line * textbuf_insert_line_below(TextBuf *buf, Line *line)
 	lines_update_nums(new_line);
 	buf->lines_count++;
 	assert(buf->last->num == buf->lines_count);
+
+	textbuf_set_op1(buf, LINE_INSERT, new_line);
 
 	return new_line;
 }
@@ -523,12 +557,16 @@ static Line * textbuf_insert_line_above(TextBuf *buf, Line *line)
 	buf->lines_count++;
 	assert(buf->last->num == buf->lines_count);
 
+	textbuf_set_op1(buf, LINE_INSERT, new_line);
+
 	return new_line;
 }
 
 /* Removes 'line' from the text buffer list and frees it. */
 static void textbuf_delete_line(TextBuf *buf, Line *line)
 {
+	textbuf_set_op(buf, LINE_INSERT, line->prev, line->next);
+
         for (Line *tmp = line->next; tmp; tmp = tmp->next) {
 		tmp->num--;
 	}
@@ -738,6 +776,7 @@ void textbuf_init(TextBuf *buf)
 
 	textbuf_append_new_line(buf);
 	buf->first->flag = 1;
+	textbuf_clear_op(buf);
 
 	assert(buf->last == buf->first);
 	assert(buf->first->num == 1);
