@@ -909,7 +909,7 @@ void textbuf_init(TextBuf *buf)
 }
 
 #ifdef PERFORM_EDITOR_TESTS
-#include "tests.c"
+#include "tests_editor.c"
 #endif
 
 /***************************************************************************/

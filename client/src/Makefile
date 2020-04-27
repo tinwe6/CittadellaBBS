@@ -154,7 +154,7 @@ cterminfo.o : cterminfo.c cterminfo.h
 	$(CC) -c $(CFLAGS) cterminfo.c
 edit.o : edit.c edit.h
 	$(CC) -c $(CFLAGS) edit.c
-editor.o : editor.c editor.h
+editor.o : editor.c editor.h tests_editor.c
 	$(CC) -c $(CFLAGS) editor.c
 errore.o : errore.c errore.h
 	$(CC) -c $(CFLAGS) errore.c
