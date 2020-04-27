@@ -117,6 +117,21 @@ static Line *line_new(void)
 	return line;
 }
 
+static inline
+int line_get_mdnum(Line *line, int pos)
+{
+	int c = line->col[pos];
+	return (c >> 16) & 0xff;
+}
+
+static inline
+void line_set_mdnum(Line *line, int pos, int mdnum)
+{
+	int c = line->col[pos];
+	line->col[pos] = (mdnum << 16) | (c & 0xffff);
+	line->dirty = true;
+}
+
 void lines_update_nums(Line *line)
 {
 	int num = line->prev ? line->prev->num : 0;
@@ -127,6 +142,10 @@ void lines_update_nums(Line *line)
 	}
 }
 
+/* Copy the chars [src_offset, src_offset + char_count) in src to
+ * dst at slots [dst_offset, dst_offset + char_count). If the copied
+ * characters do not fit the original dst string, extend dst accordingly,
+ * to length dst_offset + char_count. */
 void line_copy_n(Line *dst, int dst_offset, Line *src, int src_offset,
 		 int char_count)
 {
@@ -137,10 +156,15 @@ void line_copy_n(Line *dst, int dst_offset, Line *src, int src_offset,
 	int bytes = char_count*sizeof(int);
 	memcpy(dst->str + dst_offset, src->str + src_offset, bytes);
 	memcpy(dst->col + dst_offset, src->col + src_offset, bytes);
-	dst->len = dst_offset + char_count;
+	if (dst->len < dst_offset + char_count) {
+		dst->len = dst_offset + char_count;
+	}
 	dst->dirty = true;
 }
 
+/* Copy the chars [src_offset, src->len) in src to dst, starting at dst_offset.
+ * If the copied characters do not fit the original dst string, extend dst
+ * accordingly, to length dst_offset + src->len - src_offset. */
 void line_copy(Line *dst, int dst_offset, Line *src, int src_offset)
 {
 	assert(dst != src);
@@ -150,7 +174,9 @@ void line_copy(Line *dst, int dst_offset, Line *src, int src_offset)
 	int bytes = count*sizeof(int);
 	memcpy(dst->str + dst_offset, src->str + src_offset, bytes);
 	memcpy(dst->col + dst_offset, src->col + src_offset, bytes);
-	dst->len = dst_offset + count;
+	if (dst->len < dst_offset + count) {
+		dst->len = dst_offset + count;
+	}
 	dst->dirty = true;
 }
 
@@ -167,6 +193,7 @@ void line_copy_from(Line *dst, Line *src, int src_offset)
 	line_copy(dst, 0, src, src_offset);
 }
 
+/* Removes the character at index `pos` */
 void line_remove_index(Line *line, int pos)
 {
 	assert(pos >= 0 && line->len > pos);
@@ -179,7 +206,8 @@ void line_remove_index(Line *line, int pos)
 	line->dirty = true;
 }
 
-void line_insert_index(Line *line, int pos)
+/* Expands the string by 1 character at position `pos` */
+void line_expand_index(Line *line, int pos)
 {
 	assert(pos >= 0 && line->len >= pos);
 	size_t bytes = (line->len - pos)*sizeof(int);
@@ -187,6 +215,33 @@ void line_insert_index(Line *line, int pos)
 	memmove(line->col + pos + 1, line->col + pos, bytes);
 	line->len++;
 	line->dirty = true;
+}
+
+/* Expands the string by adding `chars_count characters in front.
+* The contents of the line are moved chars_count slots to the right. */
+void line_expand_front(Line *line, int chars_count)
+{
+	assert(chars_count >= 0);
+	size_t bytes = line->len*sizeof(int);
+	memmove(line->str + chars_count, line->str, bytes);
+	memmove(line->col + chars_count, line->col, bytes);
+	line->len += chars_count;
+	line->dirty = true;
+}
+
+/* Expand the front of dst by count character, and copy in the front of dst
+ * the characters [offset, offset + count) of src. If separator is true,
+ * dst is expanded by an extra slot between the copied characters and its old
+ * content. A space, with attributes `color`, is placed in the extra slot. */
+void line_insert_interval_front(Line *dst, Line *src, int offset, int count,
+				bool separator, int color)
+{
+	line_expand_front(dst, count + separator);
+	line_copy_n(dst, 0, src, offset, count);
+	if (separator) {
+		dst->str[count] = ' ';
+		dst->col[count] = color;
+	}
 }
 
 /* Remove from line the characters in the interval [begin, end) */
@@ -214,6 +269,92 @@ void line_extend_to_pos(Line *line, int pos) {
 	line->dirty = true;
 }
 
+/* Return index of last printable char in line, 0 if none */
+int line_last_char_idx(Line *line)
+{
+	int last = line->len - 1;
+	while (last > 0 && line->str[last] == ' ') {
+		last--;
+	}
+	return last;
+}
+
+/* Remove all trailing blank characters from the line. */
+void line_strip_trailing_space(Line *line) {
+	while (line->len > 0
+	       && *(line->str + line->len - 1) == ' ') {
+		line->len--;
+	}
+	line->dirty = true;
+}
+
+/* Truncates the line to length len (must be <= line->len) */
+static inline
+void line_truncate_at(Line *line, int len)
+{
+	assert(len <= line->len);
+	if (len < line->len) {
+		line->len = len;
+		line->dirty = true;
+	}
+}
+
+/*
+      first_blank    last
+            v          v
+  "This is a    sentence  "
+   ^            ^         ^
+   0           first     len
+*/
+typedef struct {
+	int first;
+	int last;
+	int prev_blank;
+} WordPos;
+
+/* Return the position of the last word in *line as a WordPos structure,
+ * that includes the indices of the first and last chars in the word, and
+ * the starting index of the whitespace in front of the char (or 0) */
+WordPos find_last_word(Line *line)
+{
+	int last = line_last_char_idx(line);
+	int first = last;
+	int mdnum = line_get_mdnum(line, last);
+	if (mdnum) { /* if there's an attachment, treat it as a single word */
+		while ((line_get_mdnum(line, first) == mdnum)
+		       && (first > 0)) {
+			first--;
+		}
+	} else {
+		while ((first > 0) && (line->str[first - 1] != ' ')) {
+			first--;
+		}
+	}
+
+	int blank = first;
+	while (blank && line->str[blank - 1] == ' ') {
+		blank--;
+	}
+
+	assert(blank == 0 || line->str[blank] == ' ');
+	assert(line->str[first] != ' ');
+	assert(first == 0 || line->str[first - 1] == ' ');
+	assert(line->str[last] != ' ');
+	assert(last == line->len - 1 || line->str[last + 1] == ' ');
+
+	return (WordPos){.first = first, .last = last, .prev_blank = blank};
+}
+
+/* Return the index of the first non-blank character starting from pos */
+int line_next_word_idx(Line *line, int pos)
+{
+	assert(pos <= line->len);
+	int offset = pos;
+	while(*(line->str + offset) == ' ' && offset < line->len) {
+		offset++;
+	}
+	return offset;
+}
 
 /*********************************************************************/
 
@@ -261,7 +402,7 @@ typedef enum {
 /* Macro per settare i colori, attributi e mdnum
  * Col ha la seguente struttura
  *     intero  =     8 bit | 8 bit | 8 bit | 4 bit | 4bit
- *                  liberi   mdnum   attr    bgcol   fgvol
+ *                  liberi   mdnum   attr    bgcol   fgcol
  */
 #define Editor_Fg_Color(t, c)                                             \
 	Editor_Set_Color((t), COLOR((c) & 0xf, CC_BG((t)->curs_col),	  \
@@ -295,18 +436,9 @@ int attr_set_mdnum(int c, int mdnum)
 #define ATTR_SET_MDNUM(c, m) do { (c) = attr_set_mdnum((c), (m)); } while(0)
 
 static inline
-int line_get_mdnum(Line *line, int pos)
+int attr_get_color(int c)
 {
-	int c = line->col[pos];
-	return (c >> 16) & 0xff;
-}
-
-static inline
-void line_set_mdnum(Line *line, int pos, int mdnum)
-{
-	int c = line->col[pos];
-	line->col[pos] = (mdnum << 16) | (c & 0xffff);
-	line->dirty = true;
+	return c & 0xff;
 }
 
 /* Colori */
@@ -601,21 +733,11 @@ void textbuf_break_line(TextBuf *buf, Line *line, int pos)
 	textbuf_insert_line_below(buf, line);
 	if (pos < line->len) {
 		/* the new line starts with the first non-blank character */
-		int src_offset = pos;
-		while(*(line->str + src_offset) == ' '
-		      && src_offset < line->len) {
-			src_offset++;
-		}
-		/* copy from src_offset to the end of line into the new line */
+		int src_offset = line_next_word_idx(line, pos);
 		line_copy_from(line->next, line, src_offset);
-
-		/* eliminate trailing space in above line */
-		line->len = pos;
-		while (line->len > 0
-		       && *(line->str + line->len - 1) == ' ') {
-			line->len--;
-		}
-		line->dirty = true;
+		/* and we eliminate the trailing space from the line above */
+		line_truncate_at(line, pos);
+		line_strip_trailing_space(line);
 	}
         line->next->pos = 0;
 	line->pos = 0;
@@ -677,8 +799,8 @@ static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
 				/* NOTE: the below line could start with
 				   an attachment: we make sure we only copy
 				   the color/attribute bits! */
-				/* TODO replace with function/macro */
-				above->col[above->len] = below->col[0] & 0xff;
+				above->col[above->len] = attr_get_color(
+							     below->col[0]);
 			} else {
 				above->col[above->len] = C_DEFAULT;
 			}
@@ -732,7 +854,6 @@ static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
 		assert(below->len >= len + 1);
 		line_copy_n(above, above->len, below, 0, len);
 		line_remove_interval(below, 0, len + 1);
-
 
 		if (below->len <= 0) {
 			DEB("Delete below");
@@ -1523,7 +1644,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 static void Editor_Putchar(Editor_Text *t, int c)
 {
 	if (t->insert == MODE_INSERT) {
-		line_insert_index(t->curr, t->curr->pos);
+		line_expand_index(t->curr, t->curr->pos);
 	} else {
 		if (t->insert == MODE_ASCII_ART
 		    && t->curr->pos >= t->max - 1) {
@@ -1997,184 +2118,81 @@ static void Editor_Copy_To_Kill_Buffer(Editor_Text *t)
  */
 static int Editor_Wrap_Word(Editor_Text *t)
 {
-	bool added_line = false;
-
-	DEB("Wrap_Word pos %d len %d", t->curr->pos, t->curr->len);
-
-	int len = t->curr->len;
-
-	/* Find the position of the last character in the line */
-	int last = len - 1;
-	while (last > 0 && t->curr->str[last] == ' ') {
-		last--;
-	}
-
-	/* eliminate the white space at the end of the line if any */
-	if (last + 1 < t->max && t->curr->pos < t->curr->len) {
-		/* No need to wrap */
-		DEB("Stripped ending space instead of wrapping");
-		t->curr->len = t->max - 1;
-		// dirty
-		return 1;
-	}
-	len = t->curr->len;
+	bool line_was_added = false;
 
 	/* Find the starting position of the last word */
-	int first = last;
-        int mdnum = line_get_mdnum(t->curr, last);
-        if (mdnum) { /* if there's an attachment, treat it as a single word */
-                while ((line_get_mdnum(t->curr, first) == mdnum)
-                       && (first > 0)) {
-                        first--;
-		}
-        } else {
-                while ((first > 0) && (t->curr->str[first - 1] != ' ')) {
-                        first--;
-		}
-        }
-	int first_blank = first;
-	while (first_blank && t->curr->str[first_blank - 1] == ' ') {
-		first_blank--;
+	const WordPos last_word = find_last_word(t->curr);
+	int first = last_word.first;
+	int last = last_word.last;
+	int first_blank = last_word.prev_blank;
+
+	if (last - first == t->max - 1) {
+		/* monster word; split at cursor and continue below */
+		first = t->curr->pos - 1;
+		last = t->curr->len - 1;
+		first_blank = first;
 	}
-
-	{
-		/*
-	                first_blank    last
-	                      v          v
-                    "This is a    sentence  "
-                     ^            ^         ^
-                     0           first     len
-		*/
-		int *str = t->curr->str;
-		assert(first_blank == 0 || str[first_blank] == ' ');
-		assert(str[first] != ' ');
-		assert(first == 0 || str[first - 1] == ' ');
-		assert(str[last] != ' ');
-		assert(last == t->curr->len - 1 || str[last + 1] == ' ');
-	}
-
-	/* NOTE wlen is word length + 1 for the space in front of it */
-	int word_len = last - first + 1;
-	int wlen = last - first + 2;
-	DEB("Wrap_Word pos (%d, %d) wlen ", first, last, wlen);
-
-	bool parolone = false;
-	if (word_len == t->max) {
-		/* TODO */
-	    //if (wlen >= len) {/* un'unico lungo parolone senza senso... */
-		DEB("Word_Wrap: oversized word");
-		wlen = len - t->curr->pos + 1;
-		if (wlen <= 0) {
-			wlen = 1;
-		}
-		if (wlen > len) {
-			wlen = 10;
-		}
-		parolone = true;
+	if (last + 1 < t->max && t->curr->pos < t->curr->len) {
+		/* if the line ends with a space, just eliminate it;
+		   there's no need to wrap the word */
+		line_truncate_at(t->curr, t->max - 1);
+		return line_was_added;
 	}
 
 	if (t->curr->next == NULL) {
-		textbuf_insert_line_below(t->text, t->curr);
-		added_line = true;
+		textbuf_append_new_line(t->text);
+	        line_was_added = true;
 	}
-	Line *nl = t->curr->next;
-	bool need_extra_space = nl->len && nl->str[0] != ' ';
-	int extra_len = need_extra_space ? 1 : 0;
-	int total_len = word_len + extra_len;
-	if ((nl->len + total_len) >= t->max) {
-		/* La parola non ci sta nella riga successiva */
+	Line *below = t->curr->next;
+	/* if the line below begins with a non-blank char, add extra space */
+	bool need_extra_space = below->len && below->str[0] != ' ';
+
+	const int word_len = last - first + 1;
+	const int total_len = word_len + need_extra_space;
+	if ((below->len + total_len) >= t->max) {
+		/* The word to be wrapped does not fit the next line,
+		   insert an extra empty line below. */
 		textbuf_insert_line_below(t->text, t->curr);
-		added_line = true;
-		nl = t->curr->next;
+		line_was_added = true;
+		below = t->curr->next;
 
 		need_extra_space = false;
-		extra_len = 0;
-		total_len = word_len;
-
-		/*
-		Editor_Scroll_Down(Editor_Vcurs + 1, NRIGHE-1);
-		line_refresh(t->curr->next, Editor_Vcurs + 1, 0);
-		setcolor(t->curr_col);
-		cti_mv(t->curr->pos + 1, Editor_Vcurs);
-		*/
 	}
 
-	/* cut the word (and leading space) from current line */
-	len = first_blank;
-
-	{
-		char str[LBUF] = {0};
-		int i;
-		for (i = 0; i != nl->len; i++) {
-			str[i] = (char)nl->str[i];
-		}
-		str[i] = 0;
-		DEB(str);
-	}
-
-	if (nl->len > 0) {
-		DEB("move %d char dest pos %d", nl->len, total_len);
-		/* move content of next string to make place */
-		memmove(nl->str + total_len, nl->str, nl->len*sizeof(int));
-		memmove(nl->col + total_len, nl->col, nl->len*sizeof(int));
-		if (need_extra_space) {
-			nl->str[total_len - 1] = ' ';
-			/* TODO set correct colot */
-			nl->col[total_len - 1] = C_DEFAULT;
-		}
-		// TODO fix this
-#if 0
-                if (line_get_mdnum(nl, wlen) == 0) {
-                        nl->col[wlen - 1] = nl->col[wlen];
-		} else {
-                        nl->col[wlen - 1] = C_DEFAULT;
-		}
-#endif
-	}
-
-	{
-		char str[LBUF] = {0};
-		int i;
-		for (i = 0; i != nl->len; i++) {
-			str[i] = (char)nl->str[i];
-		}
-		str[i] = 0;
-		DEB(str);
-	}
-
-	nl->len += total_len;
-	assert(t->curr->next == nl);
-
-	/* copy the word at beginning of line below */
-	if (parolone) {
-		nl->len++;
-		memcpy(nl->str, t->curr->str + len, wlen*sizeof(int));
-		memcpy(nl->col, t->curr->col + len, wlen*sizeof(int));
-	} else {
-		DEB("move %d char from pos %d", word_len, first);
-		/* Ricopio la parola */
-		memcpy(nl->str, t->curr->str + first, word_len*sizeof(int));
-		memcpy(nl->col, t->curr->col + first, word_len*sizeof(int));
-		{
-			char str[LBUF] = {0};
-			for (int i = 0; i != nl->len; i++) {
-				str[i] = (char)nl->str[i];
-			}
-			DEB(str);
+	int space_attributes = C_DEFAULT;
+	if (need_extra_space) {
+		/* If the chars adjacent to the space have the same BG color,
+		   keep it, otherwise set it to C_DEFAULT */
+		if (CC_BG(t->curr->col[last])
+		    == CC_BG(below->col[0])) {
+			space_attributes = attr_get_color(below->col[0]);
 		}
 	}
-	t->curr->len = len;
 
-	if (t->curr->pos > len) {
+	/* if the wrap was triggered by the entry of a space at the end of the
+	   line and the line below is empty, make sure the space stays. */
+	if (below->len == 0
+	    && (t->curr->len > last + 1) && (t->curr->str[last + 1] == ' ')) {
+		last += 1;
+	}
+
+	line_insert_interval_front(below, t->curr, first, word_len,
+				   need_extra_space, space_attributes);
+
+	if (t->curr->pos >= first) {
 		/* the cursor was in the part of the line that was wrapped */
-		nl->pos = t->curr->pos - len - 1;
-		if (parolone) {
-			nl->pos++;
+		line_truncate_at(t->curr, first_blank);
+		below->pos = t->curr->pos - first;
+		if (below->pos > below->len) {
+			below->pos = below->len;
 		}
-		t->curr = nl;
+		t->curr = below;
+		assert(below->pos <= below->len);
+	} else {
+		line_truncate_at(t->curr, first);
 	}
 
-	return added_line;
+	return line_was_added;
 }
 
 /*
