@@ -39,11 +39,10 @@
 #include "cterminfo.h"
 #include "room_cmd.h" /* for blog_display_pre */
 
-/* Variabili globali */
+/* Global variables, shared with inkey.c */
 int Editor_Pos;   /* Top terminal row for the editor, row of status bar */
 int Editor_Hcurs; /* Posizione cursore orizzontale...                   */
 int Editor_Vcurs; /*                  ... e verticale.                  */
-bool editor_reached_full_size;
 
 #ifdef HAVE_CTI
 
@@ -373,6 +372,8 @@ typedef struct TextBuf_t {
 
 /*********************************************************************/
 
+bool editor_reached_full_size;
+
 typedef struct {
 	int max;      /* Numero massimo di colonne nel testo      */
 	char insert;  /* 1 se in insert mode, 0 altrimenti        */
@@ -489,10 +490,10 @@ static void clear_line(int vpos);
 static void Editor_Free(Editor_Text *t);
 static void Editor_Free_MD(Editor_Text *t, Line *l);
 static void Editor_Free_Copy_Buffer(Editor_Text *t);
-static void Editor_Refresh(Editor_Text *t, int start);
-static void Editor_Head(Editor_Text *t);
-static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh);
-static void Editor_Refresh_All(Editor_Text *t);
+static void display_refresh(Editor_Text *t, bool force);
+static void display_head(Editor_Text *t);
+static void display_refresh_head(Editor_Text *t, bool full_refresh);
+static void display_refresh_all(Editor_Text *t);
 static void Editor2CML(Line *line, struct text *txt, int col,
                        Metadata_List *mdlist);
 static void text2editor(Editor_Text *t, struct text *txt, int color,
@@ -1071,8 +1072,8 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	/* Visualizza l'header dell'editor ed eventualmente il testo */
 	t.curr = t.text->last;
 	/*
-	Editor_Head(&t);
-	Editor_Refresh(&t, 0);
+	display_head(&t);
+	display_refresh(&t, 0);
 	*/
 
 #ifdef EDITOR_DEBUG
@@ -1137,6 +1138,8 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 
 	return ret;
 }
+/****************************************************************************/
+/* Editor display */
 
 static inline int display_nrows(void)
 {
@@ -1148,6 +1151,163 @@ static inline int display_bottom_line_num(Editor_Text *t)
 	return t->top_line->num + display_nrows() - 1;
 }
 
+
+/* Refresh the displayed text, from terminal row 'start' to the bottom of the
+ * terminal window. If 'start' is zero, refreshes the full text display.   */
+static void display_refresh(Editor_Text *t, bool force)
+{
+	Line *line = t->top_line;
+	int row = Editor_Pos + 1;
+	while (row < NRIGHE && line) {
+		if (line->dirty || force) {
+			line_refresh(line, row, 0);
+			line->dirty = false;
+		}
+		line = line->next;
+		++row;
+	}
+
+	/* clear the remaining rows if the text did not fill the display */
+	while (row < NRIGHE) {
+		clear_line(row);
+		row++;
+	}
+}
+
+static void display_refresh_old(Editor_Text *t, int start)
+{
+	int i;
+
+	if (start < (Editor_Pos + 1)) {
+		start = Editor_Pos + 1;
+	}
+
+	/* find the first line to be refreshed */
+	Line *line = t->curr;
+	for (i = Editor_Vcurs; i > start && line->prev; i--) {
+		line = line->prev;
+	}
+	assert(line);
+
+	/* refresh down to the bottom of the screen, or text end */
+	for (i = start; i < NRIGHE && line; i++) {
+		line_refresh(line, i, 0);
+		line = line->next;
+	}
+
+	/* clear the remaining rows if the text did not fill the display */
+	for ( ; i < NRIGHE; i++) {
+		clear_line(i);
+	}
+}
+
+const char status_front[] =
+	"--- Inserisci il testo ---   Help: F1   Exit: Ctrl-X   [ ";
+const char status_back[] =  "%s %3d/%3d,%2d ] ";
+const char *insmode[3] = {"Insert   ", "Overwrite", "ASCII Art"};
+
+static void display_head(Editor_Text *t)
+{
+	push_color();
+	setcolor(C_EDITOR);
+	printf(status_front);
+	printf(status_back, insmode[(int)t->insert], t->curr->num,
+	       t->text->lines_count, t->curr->pos + 1);
+	pull_color();
+	/* TODO: what is the role of the following '\n' (and it is needed!) */
+	putchar('\n');
+}
+
+/* Aggiorna l'header dell'editor, con modalita' di scrittura e pos cursore */
+/* Se mode e' TRUE refresh dell'intero header, non solamente la parte      */
+/* finale che puo' cambiare.                                               */
+static void display_refresh_head(Editor_Text *t, bool full_refresh)
+{
+	if (editor_reached_full_size) {
+		window_push(0, NRIGHE - 1);
+	}
+	setcolor(COL_EDITOR_HEAD);
+        if (full_refresh) {
+                cti_mv(0, Editor_Pos);
+		printf(status_front);
+        } else {
+                cti_mv(strlen(status_front), Editor_Pos);
+	}
+
+	printf(status_back, insmode[(int) t->insert], t->curr->num, t->text->lines_count,
+	       t->curr->pos+1);
+
+	if (editor_reached_full_size) {
+		window_pop();
+	}
+	setcolor(t->curr_col);
+	cti_mv(t->curr->pos + 1, Editor_Vcurs);
+}
+
+/* Refresh everything: header and text */
+static void display_refresh_all(Editor_Text *t)
+{
+	/*
+	  We clear the line just above the editor status bar because the
+	  apple Terminal.app behaves erraticaly when resizing the terminal
+	  window, sometimes doing an extra scroll up. Erasing the line above
+	  the status bar is fine because it is anyway not used.
+	*/
+	setcolor(C_DEFAULT);
+	cti_mv(0, Editor_Pos - 1);
+	erase_to_eol();
+
+	display_refresh_head(t, true);
+	display_refresh(t, true);
+}
+
+static
+void display_update(Editor_Text *t)
+{
+	/* Display update window */
+	while (t->curr->num < t->top_line->num) {
+		DEB("DISP Scroll down");
+		t->top_line = t->top_line->prev;
+	}
+	while (t->curr->num > display_bottom_line_num(t)) {
+		console_update(t);
+		if (!editor_reached_full_size) {
+			if (Editor_Pos > MSG_WIN_SIZE) {
+				DEB("DISP grow");
+				/* editor is tiny: grow display size */
+				--Editor_Pos;
+				// todo scroll up
+			} else {
+				DEB("DISP reached full size");
+				// scroll up in win
+				window_push(Editor_Pos + 1, NRIGHE-1);
+				editor_reached_full_size = true;
+				t->top_line = t->top_line->next;
+			}
+		} else {
+			DEB("DISP Scroll up");
+			t->top_line = t->top_line->next;
+		}
+	}
+	/*
+	  setcolor(C_DEFAULT);
+	  erase_to_eol();
+	*/
+	assert(t->curr->num >= t->top_line->num);
+	Editor_Vcurs = ((Editor_Pos + 1)
+			+ (t->curr->num - t->top_line->num));
+	Editor_Hcurs = t->curr->pos + 1;
+
+	/* display: update */
+	//display_refresh_head(t, false);
+	display_refresh_all(t);
+	//display_refresh(t, false);
+
+	cti_mv(Editor_Hcurs, Editor_Vcurs);
+	setcolor(t->curr_col);
+}
+
+/****************************************************************************/
 /*
  * Prende un testo dallo stdinput, lungo 'max'.
  * Il testo viene editato su una singola riga, e se e' piu' lungo dello
@@ -1157,7 +1317,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 /* TODO why is arg wrap not used here? the two calls to this function have
         wrap = true and wrap = false, why? */
 {
-	int status = GL_NORMAL;    /* stato dell'editor             */
+        int status = GL_NORMAL;    /* stato dell'editor             */
 #ifdef EDITOR_DEBUG
 	int last_key = 0;
 #endif
@@ -1167,39 +1327,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 	line_refresh(t->curr, Editor_Vcurs, 0);
 	setcolor(t->curr_col);
         do {
-		/* Display update window */
-		while (t->curr->num < t->top_line->num) {
-			DEB("DISP Scroll down");
-			t->top_line = t->top_line->prev;
-		}
-		while (t->curr->num > display_bottom_line_num(t)) {
-			console_update(t);
-			if (!editor_reached_full_size) {
-				if (Editor_Pos > MSG_WIN_SIZE) {
-					DEB("DISP grow");
-					/* editor is tiny: grow display size */
-					--Editor_Pos;
-					// todo scroll up
-				} else {
-					DEB("DISP reached full size");
-					// scroll up in win
-					window_push(Editor_Pos + 1, NRIGHE-1);
-					editor_reached_full_size = true;
-					t->top_line = t->top_line->next;
-				}
-			} else {
-				DEB("DISP Scroll up");
-				t->top_line = t->top_line->next;
-			}
-		}
-		/*
-		  setcolor(C_DEFAULT);
-		  erase_to_eol();
-		*/
-		assert(t->curr->num >= t->top_line->num);
-		Editor_Vcurs = ((Editor_Pos + 1)
-				+ (t->curr->num - t->top_line->num));
-		Editor_Hcurs = t->curr->pos + 1;
+		display_update(t);
 
 #ifdef EDITOR_DEBUG
 		textbuf_sanity_check(t->text);
@@ -1210,13 +1338,6 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 				   last_key);
 		console_update(t);
 #endif
-
-		/* display: update */
-		//Editor_Head_Refresh(t, false);
-		Editor_Refresh_All(t);
-
-		cti_mv(Editor_Hcurs, Editor_Vcurs);
-		setcolor(t->curr_col);
 
 		int key = inkey_sc(true);
 		bool addchar = false;
@@ -1259,7 +1380,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 				Editor_Vcurs -= extra_rows;
 			}
 			t->term_nrows = NRIGHE;
-			Editor_Refresh_All(t);
+			display_refresh_all(t);
 			continue;
 		}
 
@@ -1334,7 +1455,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			t->curr = t->text->first;
 			t->curr->pos = 0;
 			Editor_Vcurs = Editor_Pos+1;
-			Editor_Refresh(t, 0);
+			display_refresh(t, false);
 			break;
 		case Key_END:
 			/* case META('>'): */
@@ -1345,7 +1466,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 				t->curr->pos--;
 			}
 			Editor_Vcurs = NRIGHE-1;
-			Editor_Refresh(t, 0);
+			display_refresh(t, false);
 			break;
 		case Ctrl('A'): /* Vai inizio riga */
 			t->curr->pos = 0;
@@ -1380,7 +1501,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			break;
 
 		case Ctrl('L'): /* Rivisualizza il contenuto dello schermo */
-			Editor_Refresh_All(t);
+			display_refresh_all(t);
 			break;
 
 		case Key_F(1): /* Visualizza l'Help */
@@ -2323,7 +2444,7 @@ static void Editor_Insert_Metadata(Editor_Text *t)
                 break;
         }
         make_cursor_visible();
-        Editor_Head_Refresh(t, true);
+        display_refresh_head(t, true);
 }
 
 /* Inserisce il riferimento a un post */
@@ -2356,7 +2477,7 @@ static void Editor_Insert_PostRef(Editor_Text *t)
 		return;
 	}
 
-        Editor_Head_Refresh(t, true);
+        display_refresh_head(t, true);
         id = md_insert_post(t->mdlist, roomname, local_number);
 
         tmpcol = t->curs_col;
@@ -2412,7 +2533,7 @@ static void Editor_Insert_Room(Editor_Text *t)
 		return;
 	}
 
-        Editor_Head_Refresh(t, true);
+        display_refresh_head(t, true);
 
         id = md_insert_room(t->mdlist, roomname);
 
@@ -2466,7 +2587,7 @@ static void Editor_Insert_User(Editor_Text *t)
 		return;
 	}
 
-        Editor_Head_Refresh(t, true);
+        display_refresh_head(t, true);
 
         id = md_insert_user(t->mdlist, username);
 
@@ -2597,7 +2718,7 @@ static void Editor_Insert_File(Editor_Text *t)
 			window_pop();
 		}
 
-                Editor_Head_Refresh(t, true);
+                display_refresh_head(t, true);
                 id = md_insert_file(t->mdlist, filename, fullpath, filenum,
 				    len, flags);
 
@@ -2643,7 +2764,7 @@ static void Editor_Insert_Link(Editor_Text *t)
 			window_pop();
 		}
 
-                Editor_Head_Refresh(t, true);
+                display_refresh_head(t, true);
                 tmpcol = t->curs_col;
                 linkcol = COLOR_LINK;
                 ATTR_SET_MDNUM(linkcol, id);
@@ -2683,7 +2804,7 @@ static void Editor_Insert_Text(Editor_Text *t)
 			if (editor_reached_full_size) {
 				window_pop();
 			}
-                        Editor_Head_Refresh(t, true);
+                        display_refresh_head(t, true);
                         fgets(buf, 6, fp);
                         if (!strncmp(buf, "<cml>", 5)) {
                                 color = C_DEFAULT;
@@ -2771,7 +2892,7 @@ static void Editor_Insert_Text(Editor_Text *t)
 		}
 	}
 
-        Editor_Head_Refresh(t, true);
+        display_refresh_head(t, true);
 }
 
 
@@ -2818,7 +2939,7 @@ static void Editor_Save_Text(Editor_Text *t)
 	if (editor_reached_full_size) {
 		window_pop();
 	}
-        Editor_Head_Refresh(t, true);
+        display_refresh_head(t, true);
 }
 
 
@@ -2836,7 +2957,7 @@ static void line_refresh(Line *line, int vpos, int start)
 		setcolor(col);
 		putchar('>');
 	} else {
-		cti_mv(start+1, vpos);
+		cti_mv(start + 1, vpos);
 	}
 	for (i = start; i < line->len; i++) {
 		if (line->col[i] != col) {
@@ -2904,95 +3025,6 @@ static void Editor_Free_Copy_Buffer(Editor_Text *t)
         t->buf_pasted = false;
         t->killbuf->first = NULL;
         t->killbuf->last = NULL;
-}
-
-/* Refresh the displayed text, from terminal row 'start' to the bottom of the
- * terminal window. If 'start' is zero, refreshes the full text display.   */
-static void Editor_Refresh(Editor_Text *t, int start)
-{
-	int i;
-
-	if (start < (Editor_Pos + 1)) {
-		start = Editor_Pos + 1;
-	}
-
-	/* find the first line to be refreshed */
-	Line *line = t->curr;
-	for (i = Editor_Vcurs; i > start && line->prev; i--) {
-		line = line->prev;
-	}
-	assert(line);
-
-	/* refresh down to the bottom of the screen, or text end */
-	for (i = start; i < NRIGHE && line; i++) {
-		line_refresh(line, i, 0);
-		line = line->next;
-	}
-
-	/* clear the remaining rows if the text did not fill the display */
-	for ( ; i < NRIGHE; i++) {
-		clear_line(i);
-	}
-}
-
-const char status_front[] =
-	"--- Inserisci il testo ---   Help: F1   Exit: Ctrl-X   [ ";
-const char status_back[] =  "%s %3d/%3d,%2d ] ";
-const char *insmode[3] = {"Insert   ", "Overwrite", "ASCII Art"};
-
-static void Editor_Head(Editor_Text *t)
-{
-	push_color();
-	setcolor(C_EDITOR);
-	printf(status_front);
-	printf(status_back, insmode[(int)t->insert], t->curr->num, t->text->lines_count,
-	       t->curr->pos + 1);
-	pull_color();
-	/* TODO: what is the role of the following '\n' (and it is needed!) */
-	putchar('\n');
-}
-
-/* Aggiorna l'header dell'editor, con modalita' di scrittura e pos cursore */
-/* Se mode e' TRUE refresh dell'intero header, non solamente la parte      */
-/* finale che puo' cambiare.                                               */
-static void Editor_Head_Refresh(Editor_Text *t, bool full_refresh)
-{
-	if (editor_reached_full_size) {
-		window_push(0, NRIGHE - 1);
-	}
-	setcolor(COL_EDITOR_HEAD);
-        if (full_refresh) {
-                cti_mv(0, Editor_Pos);
-		printf(status_front);
-        } else {
-                cti_mv(strlen(status_front), Editor_Pos);
-	}
-
-	printf(status_back, insmode[(int) t->insert], t->curr->num, t->text->lines_count,
-	       t->curr->pos+1);
-
-	if (editor_reached_full_size) {
-		window_pop();
-	}
-	setcolor(t->curr_col);
-	cti_mv(t->curr->pos + 1, Editor_Vcurs);
-}
-
-/* Refresh everything: header and text */
-static void Editor_Refresh_All(Editor_Text *t)
-{
-	/*
-	  We clear the line just above the editor status bar because the
-	  apple Terminal.app behaves erraticaly when resizing the terminal
-	  window, sometimes doing an extra scroll up. Erasing the line above
-	  the status bar is fine because it is anyway not used.
-	*/
-	setcolor(C_DEFAULT);
-	cti_mv(0, Editor_Pos - 1);
-	erase_to_eol();
-
-	Editor_Head_Refresh(t, true);
-	Editor_Refresh(t, 0);
 }
 
 static int Editor_Ask_Abort(Editor_Text *t)
@@ -3151,11 +3183,11 @@ static void help_edit(Editor_Text *t)
 	cml_print(help_8bit);
 	hit_any_key();
 	cti_mv(0, Editor_Pos);
-	Editor_Head(t);
+	display_head(t);
 	if (editor_reached_full_size) {
 		window_pop();
 	}
-	Editor_Refresh(t, 0);
+	display_refresh(t, true);
 }
 
 static void refresh_line_curs(int *pos, int *curs)
