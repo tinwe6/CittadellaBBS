@@ -99,9 +99,53 @@ typedef struct Line_t {
 	int len;                    /* Lunghezza della stringa       */
 	char flag;                  /* 1 se contiene testo           */
 	bool dirty; 		    /* true if contents have changed */
+	int dirt_begin;
+	int dirt_end;
 	struct Line_t *prev; /* Linea precedente              */
 	struct Line_t *next; /* Linea successiva              */
 } Line;
+
+static void dirty_clear(Line *line)
+{
+	line->dirty = false;
+	line->dirt_begin = 0;
+	line->dirt_end = 0;
+}
+
+static void dirty_all(Line *line)
+{
+	line->dirty = true;
+	line->dirt_begin = 0;
+	line->dirt_end = line->len;
+}
+
+static void dirty_index(Line *line, int index)
+{
+	if (line->dirty) {
+		line->dirt_begin = MIN(line->dirt_begin, index);
+		line->dirt_end = MAX(line->dirt_end, index + 1);
+	} else {
+		line->dirty = true;
+		line->dirt_begin = index;
+		line->dirt_end = index + 1;
+	}
+}
+
+static void dirty_range(Line *line, int begin, int end)
+{
+	assert(begin <= end);
+	if (begin == end) {
+		return;
+	}
+	if (line->dirty) {
+		line->dirt_begin = MIN(line->dirt_begin, begin);
+		line->dirt_end = MAX(line->dirt_end, end);
+	} else {
+		line->dirty = true;
+		line->dirt_begin = begin;
+		line->dirt_end = end;
+	}
+}
 
 /*
  * Allocate and return a new, empty string.
@@ -113,6 +157,8 @@ static Line *line_new(void)
 	CREATE(line, Line, 1, 0);
 	*line = (Line){0};
 	line->dirty = true;
+	line->dirt_begin = 0;
+	line->dirt_end = 0;
 	return line;
 }
 
@@ -128,7 +174,7 @@ void line_set_mdnum(Line *line, int pos, int mdnum)
 {
 	int c = line->col[pos];
 	line->col[pos] = (mdnum << 16) | (c & 0xffff);
-	line->dirty = true;
+	dirty_index(line, pos);
 }
 
 void lines_update_nums(Line *line)
@@ -147,7 +193,7 @@ void line_replace_char_idx(Line *line, int index, int ch, int col) {
 	assert(line_get_mdnum(line, index) == 0);
 	line->str[index] = ch;
 	line->col[index] = col;
-	line->dirty = true;
+	dirty_index(line, index);
 }
 
 static inline
@@ -155,7 +201,7 @@ void line_replace_attr_idx(Line *line, int index, int attr) {
 	assert(index < line->len);
 	assert(line_get_mdnum(line, index) == 0);
 	line->col[index] = attr;
-	line->dirty = true;
+	dirty_index(line, index);
 }
 
 /*
@@ -185,25 +231,16 @@ void line_copy_n(Line *dst, int dst_offset, Line *src, int src_offset,
 	if (dst->len < dst_offset + char_count) {
 		dst->len = dst_offset + char_count;
 	}
-	dst->dirty = true;
+	dirty_range(dst, dst_offset, dst_offset + char_count);
 }
 
 /* Copy the chars [src_offset, src->len) in src to dst, starting at dst_offset.
  * If the copied characters do not fit the original dst string, extend dst
  * accordingly, to length dst_offset + src->len - src_offset. */
+static inline
 void line_copy(Line *dst, int dst_offset, Line *src, int src_offset)
 {
-	assert(dst != src);
-	assert(0 <= src_offset && src_offset <= src->len);
-	assert(0 <= dst_offset && dst_offset <= dst->len);
-	int count = src->len - src_offset;
-	int bytes = count*sizeof(int);
-	memcpy(dst->str + dst_offset, src->str + src_offset, bytes);
-	memcpy(dst->col + dst_offset, src->col + src_offset, bytes);
-	if (dst->len < dst_offset + count) {
-		dst->len = dst_offset + count;
-	}
-	dst->dirty = true;
+	line_copy_n(dst, dst_offset, src, src_offset, src->len - src_offset);
 }
 
 /* Copy contents of line src to line dest. The contents of src are lost. */
@@ -229,7 +266,7 @@ void line_remove_index(Line *line, int pos)
 		memmove(line->col + pos, line->col + pos + 1, bytes);
 	}
 	line->len--;
-	line->dirty = true;
+	dirty_range(line, pos, line->len + 1);
 }
 
 /* Expands the string by 1 character at position `pos` */
@@ -240,7 +277,7 @@ void line_expand_index(Line *line, int pos)
 	memmove(line->str + pos + 1, line->str + pos, bytes);
 	memmove(line->col + pos + 1, line->col + pos, bytes);
 	line->len++;
-	line->dirty = true;
+	dirty_range(line, pos, line->len);
 }
 
 /* Expands the back of the string by 1 character */
@@ -248,11 +285,11 @@ static inline
 void line_expand_back(Line *line)
 {
 	line->len++;
-	line->dirty = true;
+	dirty_range(line, line->len - 1, line->len);
 }
 
 /* Expands the string by adding `chars_count characters in front.
-* The contents of the line are moved chars_count slots to the right. */
+ * The contents of the line are moved chars_count slots to the right. */
 void line_expand_front(Line *line, int chars_count)
 {
 	assert(chars_count >= 0);
@@ -260,7 +297,7 @@ void line_expand_front(Line *line, int chars_count)
 	memmove(line->str + chars_count, line->str, bytes);
 	memmove(line->col + chars_count, line->col, bytes);
 	line->len += chars_count;
-	line->dirty = true;
+	dirty_all(line);
 }
 
 /* Expand the front of dst by count character, and copy in the front of dst
@@ -282,6 +319,7 @@ void line_insert_range_front(Line *dst, Line *src, int offset, int count,
 void line_remove_range(Line *line, int begin, int end)
 {
 	assert(begin >= 0 && begin < end && end <= line->len);
+	int initial_len = line->len;
 	if (end == line->len) {
 		line->len = begin;
 	} else {
@@ -290,17 +328,18 @@ void line_remove_range(Line *line, int begin, int end)
 		memmove(line->col + begin, line->col + end, count*sizeof(int));
  		line->len -= end - begin;
 	}
-	line->dirty = true;
+	dirty_range(line, begin, initial_len);
 }
 
 /* Append white spaces to the line until it is of length pos + 1 */
 void line_extend_to_pos(Line *line, int pos) {
+	int initial_len = line->len;
 	while (line->len <= pos) {
 		line->str[line->len] = ' ';
 		line->col[line->len] = C_DEFAULT;
 		line->len++;
 	}
-	line->dirty = true;
+	dirty_range(line, initial_len, pos + 1);
 }
 
 /* Return index of last printable char in line, 0 if none */
@@ -315,11 +354,12 @@ int line_last_char_idx(Line *line)
 
 /* Remove all trailing blank characters from the line. */
 void line_strip_trailing_space(Line *line) {
+	int initial_len = line->len;
 	while (line->len > 0
 	       && *(line->str + line->len - 1) == ' ') {
 		line->len--;
 	}
-	line->dirty = true;
+	dirty_range(line, line->len, initial_len);
 }
 
 /* Truncates the line to length len (must be <= line->len) */
@@ -330,8 +370,9 @@ void line_truncate_at(Line *line, int len)
 	   that we truncate; we should free it first. */
 	assert(len <= line->len);
 	if (len < line->len) {
+		int initial_len = line->len;
 		line->len = len;
-		line->dirty = true;
+		dirty_range(line, len, initial_len);
 	}
 }
 
@@ -2252,7 +2293,6 @@ static void Editor_Curs_Left(Editor_Text *t)
 		if ((t->insert == MODE_ASCII_ART) && (t->curr->pos > 0)) {
 			t->curr->pos--;
 		}
-		// dirty
 	} else {
 		Beep();
 	}
