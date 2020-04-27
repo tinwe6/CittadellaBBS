@@ -267,8 +267,8 @@ void line_expand_front(Line *line, int chars_count)
  * the characters [offset, offset + count) of src. If separator is true,
  * dst is expanded by an extra slot between the copied characters and its old
  * content. A space, with attributes `color`, is placed in the extra slot. */
-void line_insert_interval_front(Line *dst, Line *src, int offset, int count,
-				bool separator, int color)
+void line_insert_range_front(Line *dst, Line *src, int offset, int count,
+			     bool separator, int color)
 {
 	line_expand_front(dst, count + separator);
 	line_copy_n(dst, 0, src, offset, count);
@@ -279,7 +279,7 @@ void line_insert_interval_front(Line *dst, Line *src, int offset, int count,
 }
 
 /* Remove from line the characters in the interval [begin, end) */
-void line_remove_interval(Line *line, int begin, int end)
+void line_remove_range(Line *line, int begin, int end)
 {
 	assert(begin >= 0 && begin < end && end <= line->len);
 	if (end == line->len) {
@@ -910,7 +910,7 @@ static Merge_Lines_Result textbuf_merge_lines(TextBuf *buf, Line *above,
 		// TODO check this assertion
 		assert(below->len >= len + 1);
 		line_copy_n(above, above->len, below, 0, len);
-		line_remove_interval(below, 0, len + 1);
+		line_remove_range(below, 0, len + 1);
 
 		if (below->len <= 0) {
 			DEB("Delete below");
@@ -2015,7 +2015,7 @@ static void Editor_Delete_Word(Editor_Text *t)
 	while ((t->curr->pos != 0) && (t->curr->str[t->curr->pos-1] != ' ')) {
 		t->curr->pos--;
 	}
-	line_remove_interval(t->curr, t->curr->pos, tmp);
+	line_remove_range(t->curr, t->curr->pos, tmp);
 }
 
 /* Cancella la parola successiva al cursore. */
@@ -2035,7 +2035,7 @@ static void Editor_Delete_Next_Word(Editor_Text *t)
 	       && (t->curr->str[t->curr->pos+1] == ' ')) {
 		t->curr->pos++;
 	}
-	line_remove_interval(t->curr, tmp, t->curr->pos);
+	line_remove_range(t->curr, tmp, t->curr->pos);
 	t->curr->pos = tmp;
 }
 
@@ -2391,8 +2391,8 @@ static int Editor_Wrap_Word(Editor_Text *t)
 		last += 1;
 	}
 
-	line_insert_interval_front(below, t->curr, first, word_len,
-				   need_extra_space, space_attributes);
+	line_insert_range_front(below, t->curr, first, word_len,
+				need_extra_space, space_attributes);
 
 	if (t->curr->pos >= first) {
 		/* the cursor was in the part of the line that was wrapped */

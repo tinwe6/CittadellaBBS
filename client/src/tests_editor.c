@@ -318,17 +318,17 @@ void test_line_insert_index_eq(char *str, int pos, char ch, char *result)
 }
 
 static
-void test_line_remove_interval_eq(char *str, int begin, int end, char *result)
+void test_line_remove_range_eq(char *str, int begin, int end, char *result)
 {
 	char buf[256];
 	Line *line;
 
 	line = line_from_str(str, str);
-	line_remove_interval(line, begin, end);
+	line_remove_range(line, begin, end);
 
 	line_extract_str(line, buf);
 	if (!line_str_col_eq(line, result, result)) {
-		printf("line_remove_interval [%d,%d) from '%s' -> ", begin,
+		printf("line_remove_range [%d,%d) from '%s' -> ", begin,
 		       end, str);
 		printf("'%s' ", buf);
 		printf("instead of '%s' - Failed\n", result);
@@ -428,7 +428,7 @@ void test_line_expand_front(void)
 	}
 }
 
-void test_line_insert_interval_front(void)
+void test_line_insert_range_front(void)
 {
 	char src_str[] = "12345 67890 1234 56 7890";
 	char src_col[] = "abcdefghijklmnopqrstuvwx";
@@ -445,7 +445,7 @@ void test_line_insert_interval_front(void)
 		Line *dst = line_from_str(dst_str, dst_col);
 		src->dirty = false;
 		dst->dirty = false;
-		line_insert_interval_front(dst, src, offset, count, (bool)space, 0);
+		line_insert_range_front(dst, src, offset, count, (bool)space, 0);
 		assert(!src->dirty);
 		assert(dst->dirty);
 		assert(dst->len == (int)strlen(dst_str) + count + space);
@@ -470,18 +470,18 @@ void test_line_insert_interval_front(void)
 }
 
 static
-void test_line_remove_interval(void)
+void test_line_remove_range(void)
 {
-	//test_line_remove_interval_eq("", 0, 0, "");
-	test_line_remove_interval_eq("a", 0, 1, "");
-	test_line_remove_interval_eq("abcde", 0, 2, "cde");
-	test_line_remove_interval_eq("abcde", 1, 2, "acde");
-	//test_line_remove_interval_eq("abcde", 2, 2, "abcde");
-	test_line_remove_interval_eq("abcde", 3, 4, "abce");
-	test_line_remove_interval_eq("abcde", 3, 5, "abc");
-	test_line_remove_interval_eq("abcde", 0, 5, "");
-	test_line_remove_interval_eq("abcde", 0, 4, "e");
-	test_line_remove_interval_eq("abcde", 1, 5, "a");
+	//test_line_remove_range_eq("", 0, 0, "");
+	test_line_remove_range_eq("a", 0, 1, "");
+	test_line_remove_range_eq("abcde", 0, 2, "cde");
+	test_line_remove_range_eq("abcde", 1, 2, "acde");
+	//test_line_remove_range_eq("abcde", 2, 2, "abcde");
+	test_line_remove_range_eq("abcde", 3, 4, "abce");
+	test_line_remove_range_eq("abcde", 3, 5, "abc");
+	test_line_remove_range_eq("abcde", 0, 5, "");
+	test_line_remove_range_eq("abcde", 0, 4, "e");
+	test_line_remove_range_eq("abcde", 1, 5, "a");
 }
 
 static
@@ -1199,8 +1199,8 @@ void test(void)
 	test_line_remove_index();
 	test_line_expand_index();
 	test_line_expand_front();
-	test_line_insert_interval_front();
-	test_line_remove_interval();
+	test_line_insert_range_front();
+	test_line_remove_range();
 	test_line_extend_to_pos();
 	test_line_strip_trailing_space();
 	test_line_truncate_at();
