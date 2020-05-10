@@ -95,8 +95,8 @@ int inkey_sc(bool exec_all_cmds)
                 if (FD_ISSET(serv_sock, &input_set)) {
 #ifdef HAVE_CTI
 			if (prompt_curr == P_EDITOR) {
-				window_push(0, Editor_Pos - 1);
-				cti_mv(0, Editor_Pos - 1);
+				window_push(0, gl_Editor_Pos - 1);
+				cti_mv(0, gl_Editor_Pos - 1);
 				scroll_up();
 				//fflush(stdout);
 			}
@@ -112,7 +112,7 @@ int inkey_sc(bool exec_all_cmds)
 			if (prompt_curr == P_EDITOR) {
 #ifdef HAVE_CTI
 				window_pop();
-				cti_mv(Editor_Hcurs, Editor_Vcurs);
+				cti_mv(gl_Editor_Hcurs, gl_Editor_Vcurs);
 #endif
 			} else {
 				print_prompt();

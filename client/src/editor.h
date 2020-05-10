@@ -50,10 +50,10 @@
 #define COLOR_LOCNUM   COLOR(COL_MAGENTA, COL_BLACK, ATTR_DEFAULT)
 
 /* Variabili globali */
-extern int Editor_Pos;   /* Riga di inizio dell'editor              */
-extern int Editor_Hcurs; /* Posizione cursore orizzontale...        */
-extern int Editor_Vcurs; /*                  ... e verticale.       */
-extern bool Editor_needs_refresh;
+extern int gl_Editor_Pos;   /* Riga di inizio dell'editor              */
+extern int gl_Editor_Hcurs; /* Posizione cursore orizzontale...        */
+extern int gl_Editor_Vcurs; /*                  ... e verticale.       */
+//extern bool Editor_needs_refresh;
 
 #include "metadata.h"
 
