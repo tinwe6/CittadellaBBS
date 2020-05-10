@@ -38,16 +38,21 @@ void reset_term(void)
 
 void term_mode(void)
 {
-        /* Assicuriamoci che stdin sia un terminale */
+        /* Make sure that stdin is a terminal */
         if (!isatty(STDIN_FILENO)) {
                 fprintf(stderr, "Non e' un terminale.\n");
                 exit(EXIT_FAILURE);
         }
 
         tcgetattr(STDIN_FILENO, &term_attr);
-        term_attr.c_lflag &= ~(ICANON|ECHO);
+        /* Clear IXON to disable start/stop control on output, so that
+           Ctrl-S / Ctrl-Q do not start/stop the terminal. */
+        term_attr.c_iflag &= ~(IXON);
+        /* Disable IEXTEN so that we can use Ctrl-V for PageDown */
+        term_attr.c_lflag &= ~(ICANON|ECHO|IEXTEN);
         term_attr.c_cc[VMIN] = 1;
         term_attr.c_cc[VTIME] = 0;
+        term_attr.c_cc[VLNEXT] = 0;
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_attr);
 }
 
