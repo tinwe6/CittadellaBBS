@@ -1684,11 +1684,11 @@ void display_update(Editor_Text *t, Display *disp)
 		DEB("DEL num %d, row %d, curr_num %d [%c]",
 		    t->text->op_del_num, del_row, t->curr->num,
 		    t->curr->num < t->text->op_del_num ? 'B' : 'D');
-		if (del_row < NRIGHE - 1) { // TODO decide test
+		if (del_row < NRIGHE - 1) {
 			display_region_scroll_up(disp, del_row, NRIGHE - 1, 1);
-			disp->redraw_begin = NRIGHE - 1;
-			disp->redraw_end = NRIGHE;
 		}
+                disp->redraw_begin = NRIGHE - 1;
+                disp->redraw_end = NRIGHE;
 	}
 
 	assert(t->curr->num >= disp->top_line_num);
