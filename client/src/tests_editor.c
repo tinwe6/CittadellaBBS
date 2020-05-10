@@ -507,7 +507,7 @@ void test_line_strip_trailing_space(void)
 		Line *line = line_from_str(str, col);
 		line->dirty = false;
 		line_strip_trailing_space(line);
-		assert(line->dirty);
+		assert(!line->dirty);
 		assert(line->len == (int)strlen(str));
 		line_extract_str(line, rstr);
 		line_extract_col(line, rcol);
@@ -623,6 +623,10 @@ void test_find_last_word(void)
 		 .col = "012345678901",
 		 .wp = {.first = 6, .last = 8, .prev_blank = 3},
 		},
+		{.str = "            ",
+		 .col = "012345678901",
+		 .wp = {.first = 0, .last = -1, .prev_blank = 0},
+		},
 	};
 	for (int i = 0; i != sizeof(data)/sizeof(*data); ++i) {
 		Line *line = line_from_str(data[i].str, data[i].col);
@@ -676,6 +680,7 @@ TextBuf * test_make_textbuf1(char *str, char *col)
 	assert(buf->first == buf->last);
 	assert(buf->first->len == 0);
 	line_set_str(buf->first, str, col);
+	textbuf_clear_op(buf);
 	return buf;
 }
 
@@ -717,6 +722,7 @@ TextBuf * test_make_textbufn(char **str, char **col)
 		++col;
 	}
 	assert(*col == NULL);
+	textbuf_clear_op(buf);
 	return buf;
 }
 
