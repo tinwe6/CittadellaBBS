@@ -1124,6 +1124,16 @@ void display_setcolor(Display *disp, int color)
 	}
 }
 
+/* Forces the current terminal color to be the color stored in the display
+ * structure. Needed after a call to getline_scroll() because after it returns
+ * we don't know the color state of the terminal.
+ * TODO: Reorganize the color handling... */
+static inline
+void display_sync_color(Display *disp)
+{
+        setcolor(disp->color);
+}
+
 static inline
 int display_nrows(Display *disp)
 {
@@ -3009,6 +3019,8 @@ static void Editor_Insert_Metadata(Editor_Text *t)
         }
         make_cursor_visible();
 	display.force_redraw_header = true;
+        /* the getline_wrap() call may have put colors out of sync */
+        display_sync_color(&display);
 }
 
 /* Inserisce il riferimento a un post */
