@@ -36,6 +36,7 @@ struct serverinfo {
 	int  protocol_vcode;
 	int  newclient_vcode;
 	char num_canali_chat;
+        int maxcmdlen;  /* Max command length (including final '\n\0' */
 	int maxlineebug;      /* Numero massimo di righe nei bug rep. */
 	int maxlineebx;       /* Numero massimo di righe nei messaggi */
 	int maxlineenews;     /* Numero massimo di righe nelle news   */

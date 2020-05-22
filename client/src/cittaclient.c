@@ -988,6 +988,7 @@ static void info_sul_server(void)
 		    serverinfo.maxlineeroominfo = extract_int(buf, 11);
 		    serverinfo.flags            = extract_int(buf, 12);
 		    extract(comp, buf, 13);
+                    serverinfo.maxcmdlen        = 1024;
 		} else{
 		/*--8<------------------------------------------------------*/
                 serverinfo.newclient_vcode  = extract_int(buf, 5);
@@ -999,7 +1000,8 @@ static void info_sul_server(void)
                 serverinfo.maxlineeprfl     = extract_int(buf, 11);
                 serverinfo.maxlineeroominfo = extract_int(buf, 12);
                 serverinfo.flags            = extract_int(buf, 13);
-                extract(comp, buf, 14);
+                serverinfo.maxcmdlen        = extract_int(buf, 14);
+                extract(comp, buf, 15);
 		}
 
                 printf("\nServer: %s version ", serverinfo.software);

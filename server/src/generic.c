@@ -212,11 +212,12 @@ void cmd_info(struct sessione *t, char *cmd)
                 return;
         }
         compress_check(t, compress);
-        cprintf(t, "%d %s|%d|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s\n", OK,
+        cprintf(t, "%d %s|%d|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s\n", OK,
 		citta_soft, SERVER_VERSION_CODE, citta_nodo, citta_dove,
 		PROTCL_VERSION_CODE, CLIENT_VERSION_CODE, NCANALICHAT,
 		MAXLINEEBUG, MAXLINEEBX, MAXLINEENEWS, MAXLINEEPOST,
-		MAXLINEEPRFL, MAXLINEEROOMINFO, SERVER_FLAGS, t->compressione);
+		MAXLINEEPRFL, MAXLINEEROOMINFO, SERVER_FLAGS, MAX_L_INPUT,
+                t->compressione);
         compress_set(t);
 }
 
