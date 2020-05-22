@@ -331,6 +331,7 @@ int get_textl_cursor(struct text *txt, int max, int nlines, bool chat)
  * fino in fondo alla riga.
  * Se str non e' nulla, l'editing inizia dal fondo della stringa, e i primi
  * "protect" caratteri di "str" non sono editabili.
+ * At least (max + 1) bytes must be allocated for str.
  * If editor_vpos >= 0 the editing occurs at row 'editor_vpos': this is used
  * when getline_scroll is called by the full internal editor (e.g. to enter
  * attachments).

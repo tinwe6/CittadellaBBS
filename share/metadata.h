@@ -19,8 +19,13 @@
 #include <unistd.h>
 
 /* Maximum number of metadata objects in a single message. */
-#define MAXMDXMSG 64 
-#define MAXMDSTR  128
+#define MAXMDXMSG 64
+/* Max length of metadata strings (including ending 0) */
+#define MAXMDSTR  256
+/* Max length of links. Must be smaller than MAXMDSTR. */
+/* NOTE: the server accepts input commands of max 1024 chars and the full
+         TEXT command with the line containing the link must fit in it.   */
+#define MAXLEN_LINK (MAXMDSTR - 1)
 
 /* Metadata type */
 #define MD_USER   1

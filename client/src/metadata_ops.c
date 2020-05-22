@@ -124,11 +124,11 @@ void mdop_print_list(Metadata_List *mdlist)
         cml_printf(_("*** Lista degli allegati presenti nel post:\n\n"));
 
         for (i = 0; i < MAXMDXMSG; i++) {
-                if ( !mdlist->md[i] )
+                if (!mdlist->md[i]) {
                         continue;
-
+                }
                 md = mdlist->md[i];
-                printf("%3d. ", i+1);
+                printf("%2d. ", i+1);
                 switch (md->type) {
                 case MD_USER:
                         printf("Utente ");
@@ -169,13 +169,13 @@ void mdop_print_list(Metadata_List *mdlist)
                         printf("Link ");
                         push_color();
                         setcolor(COLOR_LINK);
-                        if (md->str[0])
+                        if (md->str[0]) {
                                 printf("%s", md->str);
-                        else if (strlen(md->content) < 68)
+                        } else if (strlen(md->content) < 71) {
                                 printf("%s", md->content);
-                        else {
+                        } else {
                                 strcpy(buf, md->content);
-                                sprintf(buf+67, "..");
+                                sprintf(buf + 67, "...");
                                 printf("%s", buf);
                         }
                         pull_color();
@@ -431,7 +431,10 @@ static bool mdop_link(char *link, char *label)
                         system(cmd);
                 }
         } else
-                cml_printf(_("\nUsando il client locale potrai aprire direttamente il link.\nPer ora, devi fare un copia e incolla del link nel tuo browser per aprirlo.\n"));
+                cml_printf(_(
+"\nPer aprire i link direttamente dalla BBS devi usare il client locale.\n"
+"Per ora, devi fare un copia e incolla del link nel tuo browser per aprirlo.\n"
+                             ));
 
         return false;
 }

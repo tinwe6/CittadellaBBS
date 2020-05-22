@@ -3312,38 +3312,45 @@ static void Editor_Insert_File(Editor_Text *t)
 /* Inserisce un testo da un file */
 static void Editor_Insert_Link(Editor_Text *t)
 {
-        char buf[LBUF], label[LBUF];
-        char *ptr, tmpcol;
-        int id, linkcol;
+        assert(MAXLEN_LINK <= MAXMDSTR);
+
+        const char ellipsis[] = "...";
+        char link[MAXLEN_LINK + 1] = "";
+        char label[LBUF];
 
 	erase_current_line();
-	buf[0] = 0;
 
-        if (getline_scroll("<b>Insert Link:</b> ", COL_HEAD_MD, buf,
-                           LBUF-8, 0, 0, display.pos) > 0) {
+        if (getline_scroll("<b>Insert Link:</b> ", COL_HEAD_MD, link,
+                           MAXLEN_LINK, 0, 0, display.pos) > 0) {
 		erase_current_line();
                 label[0] = 0;
+                const int maxlen_label = t->max - 1;
                 getline_scroll("<b>Etichetta (opzionale):</b> ", COL_HEAD_MD,
-                               label, NCOL - 2, 0, 0, display.pos);
-                id = md_insert_link(t->mdlist, buf, label);
+                               label, maxlen_label, 0, 0, display.pos);
+                int id = md_insert_link(t->mdlist, link, label);
                 if (label[0] == 0) {
-                        strncpy(label, buf, 75);
-                        if (strlen(buf) > 75)
-                                strcpy(label+75, "...");
+                        const int short_len = maxlen_label - strlen(ellipsis);
+                        if (strlen(link) > (unsigned int)maxlen_label) {
+                                strncpy(label, link, short_len);
+                                strcpy(label + short_len, ellipsis);
+                        } else {
+                                strncpy(label, link, maxlen_label + 1);
+                        }
                 }
 
 		if (display.reached_full_size) {
 			display_window_pop(&display);
 		}
 
-                tmpcol = t->curs_col;
-                linkcol = COLOR_LINK;
+                int tmpcol = t->curs_col;
+                int linkcol = COLOR_LINK;
                 ATTR_SET_MDNUM(linkcol, id);
                 Editor_Set_Color(t, linkcol);
-                for (ptr = label; *ptr; ptr++) {
+                for (char *ptr = label; *ptr; ptr++) {
                         if ((isascii(*ptr) && isprint(*ptr))
-                            || is_isoch(*ptr))
+                            || is_isoch(*ptr)) {
                                 Editor_Putchar(t, *ptr);
+                        }
                 }
                 Editor_Set_Color(t, tmpcol);
         } else {
