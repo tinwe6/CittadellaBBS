@@ -584,58 +584,58 @@ void test_find_last_word(void)
 	typedef struct {
 		char str[64];
 		char col[64];
-		WordPos wp;
+		Word wp;
 	} test_data;
 	test_data data[] = {
 		{.str = "cat",
 		 .col = "012",
-		 .wp = {.first = 0, .last = 2, .prev_blank = 0},
+		 .wp = {.first = 0, .last = 2, .mdnum = 0},
 		},
 		{.str = " cat",
 		 .col = "0123",
-		 .wp = {.first = 1, .last = 3, .prev_blank = 0},
+		 .wp = {.first = 1, .last = 3, .mdnum = 0},
 		},
 		{.str = "  cat",
 		 .col = "01234",
-		 .wp = {.first = 2, .last = 4, .prev_blank = 0},
+		 .wp = {.first = 2, .last = 4, .mdnum = 0},
 		},
 		{.str = "cat ",
 		 .col = "0123",
-		 .wp = {.first = 0, .last = 2, .prev_blank = 0},
+		 .wp = {.first = 0, .last = 2, .mdnum = 0},
 		},
 		{.str = "cat  ",
 		 .col = "01234",
-		 .wp = {.first = 0, .last = 2, .prev_blank = 0},
+		 .wp = {.first = 0, .last = 2, .mdnum = 0},
 		},
 		{.str = " cat ",
 		 .col = "01234",
-		 .wp = {.first = 1, .last = 3, .prev_blank = 0},
+		 .wp = {.first = 1, .last = 3, .mdnum = 0},
 		},
 		{.str = "cat dog",
 		 .col = "0123456",
-		 .wp = {.first = 4, .last = 6, .prev_blank = 3},
+		 .wp = {.first = 4, .last = 6, .mdnum = 0},
 		},
 		{.str = "cat   dog",
 		 .col = "012345678",
-		 .wp = {.first = 6, .last = 8, .prev_blank = 3},
+		 .wp = {.first = 6, .last = 8, .mdnum = 0},
 		},
 		{.str = "cat   dog   ",
 		 .col = "012345678901",
-		 .wp = {.first = 6, .last = 8, .prev_blank = 3},
+		 .wp = {.first = 6, .last = 8, .mdnum = 0},
 		},
 		{.str = "            ",
 		 .col = "012345678901",
-		 .wp = {.first = 0, .last = -1, .prev_blank = 0},
+		 .wp = {.first = 0, .last = -1, .mdnum = 0},
 		},
 	};
 	for (int i = 0; i != sizeof(data)/sizeof(*data); ++i) {
 		Line *line = line_from_str(data[i].str, data[i].col);
 		line->dirty = false;
-		WordPos wp = find_last_word(line);
+		Word wp = find_last_word(line);
 		assert(!line->dirty);
 		assert(wp.first == data[i].wp.first);
 		assert(wp.last == data[i].wp.last);
-		assert(wp.prev_blank == data[i].wp.prev_blank);
+		assert(wp.mdnum == data[i].wp.mdnum);
 		Free(line);
 	}
 }

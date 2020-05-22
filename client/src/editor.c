@@ -343,6 +343,14 @@ static int line_last_char_idx(Line *line)
 	return last;
 }
 
+static int line_left_blank_start(Line *line, int pos)
+{
+        while (pos && line->str[pos - 1] == ' ') {
+                --pos;
+        }
+        return pos;
+}
+
 /* Remove all trailing blank characters from the line. */
 static void line_strip_trailing_space(Line *line) {
 	int initial_len = line->len;
@@ -368,33 +376,34 @@ void line_truncate_at(Line *line, int len)
 }
 
 /*
-      first_blank    last
-            v          v
-  "This is a    sentence  "
-   ^            ^         ^
-   0           first     len
+                  last
+                    v
+  "This is a sentence  "
+   ^         ^         ^
+   0        first     len
 */
 /* NOTE: if last == -1 the word is empty */
+/* If the word refers to some metadata, mdnum is its id, otherwise 0 */
 typedef struct {
 	int first;
 	int last;
-	int prev_blank;
-} WordPos;
+        int mdnum;
+} Word;
 
-/* Return the position of the last word in *line as a WordPos structure,
+/* Return the position of the last word in *line as a Word structure,
  * that includes the indices of the first and last chars in the word, and
  * the starting index of the whitespace in front of the char (or 0) */
-WordPos find_last_word(Line *line)
+Word find_last_word(Line *line)
 {
 	int last = line_last_char_idx(line);
 	if (last == -1) {
-		return (WordPos){.first = 0, .last = -1};
+		return (Word){.first = 0, .last = -1};
 	}
 	int first = last;
 	int mdnum = line_get_mdnum(line, last);
 	if (mdnum) { /* if there's an attachment, treat it as a single word */
-		while ((line_get_mdnum(line, first) == mdnum)
-		       && (first > 0)) {
+		while ((first > 0)
+                       && (line_get_mdnum(line, first - 1) == mdnum)) {
 			first--;
 		}
 	} else {
@@ -403,19 +412,13 @@ WordPos find_last_word(Line *line)
 		}
 	}
 
-	int blank = first;
-	while (blank && line->str[blank - 1] == ' ') {
-		blank--;
-	}
-
-	assert(blank == 0 || line->str[blank] == ' ');
-	assert(first == 0 || line->str[first - 1] == ' ');
+	assert(first == 0 || mdnum || line->str[first - 1] == ' ');
 	assert(first == last || line->str[first] != ' ');
 	assert(first == last || line->str[last] != ' ');
 	assert(first == last || last == line->len - 1
 	       || line->str[last + 1] == ' ');
 
-	return (WordPos){.first = first, .last = last, .prev_blank = blank};
+	return (Word){.first = first, .last = last, .mdnum = mdnum};
 }
 
 /* Return the index of the first non-blank character starting from pos */
@@ -2455,8 +2458,8 @@ static void Editor_Key_Backspace(Editor_Text *t)
             && ( (mdnum = line_get_mdnum(t->curr, t->curr->pos - 1)))) {
                 do {
                         Editor_Backspace(t);
-                } while (t->curr->pos
-			 && (mdnum == line_get_mdnum(t->curr, t->curr->pos - 1)));
+                } while (t->curr->pos &&
+                         (mdnum == line_get_mdnum(t->curr, t->curr->pos - 1)));
                 mdop_delete(t->mdlist, mdnum);
         } else {
                 Editor_Backspace(t);
@@ -2511,7 +2514,8 @@ static void Editor_Key_Delete(Editor_Text *t)
         if (mdnum) {
                 do {
                         Editor_Delete(t);
-                } while (mdnum == line_get_mdnum(t->curr, t->curr->pos));
+                } while ((t->curr->pos < t->curr->len)
+                         && (mdnum == line_get_mdnum(t->curr, t->curr->pos)));
 		mdop_delete(t->mdlist, mdnum);
         } else {
                 Editor_Delete(t);
@@ -2664,6 +2668,22 @@ static void Editor_Key_Tab(Editor_Text *t)
 	}
 }
 
+/* If the cursor position is over a metadata object, move it back to the
+   beginning of the object. */
+void cursor_adapt_to_md(Editor_Text *t)
+{
+        if (t->curr->pos && t->curr->pos < t->curr->len) {
+                int mdnum = line_get_mdnum(t->curr, t->curr->pos);
+                if (mdnum) {
+                        while ((t->curr->pos) &&
+                               (mdnum == line_get_mdnum(t->curr,
+                                                        t->curr->pos - 1))) {
+                                Editor_Curs_Left(t);
+                        }
+                }
+        }
+}
+
 static void Editor_Key_Up(Editor_Text *t)
 {
 	if (t->curr->prev == NULL) {
@@ -2678,13 +2698,7 @@ static void Editor_Key_Up(Editor_Text *t)
 		t->curr->pos = t->curr->len;
 	}
 
-        /* Se finisco in un oggetto metadata, vai indietro */
-	int mdnum = line_get_mdnum(t->curr, t->curr->pos);
-        if (mdnum) {
-		do {
-                        Editor_Curs_Right(t);
-                } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
-	}
+        cursor_adapt_to_md(t);
 }
 
 static void Editor_Key_Down(Editor_Text *t)
@@ -2709,13 +2723,7 @@ static void Editor_Key_Down(Editor_Text *t)
                 return;
         }
 
-        /* Se finisco in un oggetto metadata, vai indietro */
-	int mdnum = line_get_mdnum(t->curr, t->curr->pos);
-        if (mdnum) {
-                do {
-                        Editor_Curs_Right(t);
-                } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
-	}
+        cursor_adapt_to_md(t);
 }
 
 /* Key right: skips metadata objects */
@@ -2727,7 +2735,8 @@ static void Editor_Key_Right(Editor_Text *t)
             && ( (mdnum = line_get_mdnum(t->curr, t->curr->pos)))) {
                 do {
                         Editor_Curs_Right(t);
-                } while(mdnum == line_get_mdnum(t->curr, t->curr->pos));
+                } while((t->curr->pos < t->curr->len)
+                        && (mdnum == line_get_mdnum(t->curr, t->curr->pos)));
 	} else {
                 Editor_Curs_Right(t);
 	}
@@ -2764,16 +2773,14 @@ static void Editor_Curs_Right(Editor_Text *t)
 /* Key left: skips metadata objects */
 static void Editor_Key_Left(Editor_Text *t)
 {
-        int mdnum, mdnum1;
+        int mdnum;
 
-        mdnum = line_get_mdnum(t->curr, t->curr->pos);
         if ((t->curr->pos)
-            && ( (mdnum1 = line_get_mdnum(t->curr, t->curr->pos - 1))
-                 != mdnum) && mdnum1) {
+            && ( (mdnum = line_get_mdnum(t->curr, t->curr->pos - 1)))) {
                 do {
                         Editor_Curs_Left(t);
                 } while ((t->curr->pos) &&
-                   (mdnum1 == line_get_mdnum(t->curr, t->curr->pos - 1)));
+                   (mdnum == line_get_mdnum(t->curr, t->curr->pos - 1)));
         } else {
                 Editor_Curs_Left(t);
 	}
@@ -2825,59 +2832,72 @@ static void Editor_Copy_To_Kill_Buffer(Editor_Text *t)
 }
 
 /*
- * Sposta l'ultima parola della riga corrente alla riga successiva se c'e`
- * posto, altrimenti in una nuova riga che inserisce.
+ * Free some space in the current line by wrapping the last word or eliminating
+ * some trailing blank. If the wrapped word does not fit the line below,
+ * insert a new line below.
  * Returns true if a line was added below the current line, otherwise false.
  */
 static int Editor_Wrap_Word(Editor_Text *t)
 {
-	/*
-	  TODO
-	  this function does too many things: decide what to wrap, and
+	/* TODO this function does too many things: decide what to wrap, and
 	  wrap. split it into textbuf_wrap*() functions
 	*/
 
+        assert(t->curr->len == t->max);
 	bool line_was_added = false;
 
 	/* Find the starting position of the last word */
-	const WordPos last_word = find_last_word(t->curr);
+	const Word last_word = find_last_word(t->curr);
 	int first = last_word.first;
 	int last = last_word.last;
-	int first_blank = last_word.prev_blank;
 
-	if (last - first == t->max - 1) {
-		/* monster word; split at cursor and continue below */
-		first = t->curr->pos - 1;
-		last = t->curr->len - 1;
-		first_blank = first;
-	}
-
-#if 0
-	if (last - first == t->max - 2 && t->curr->len == t->max
-		   && t->curr->str[t->curr->pos] == ' ') {
-		assert(t->curr->pos == t->curr->len - 1);
-		/* insert the space in the line below as if it were a word */
-		first = t->curr->pos - 1;
-		last = t->curr->pos - 1;
-		first_blank = first;
-	}
-#endif
-
-	if (last + 1 < t->max && t->curr->pos < t->curr->len) {
-		/* if the line ends with a space, just eliminate it;
-		   there's no need to wrap the word */
+        /* if the line ends with a space, just eliminate it without wrapping */
+        if (last + 1 < t->max && t->curr->pos < t->curr->len) {
 		line_truncate_at(t->curr, t->max - 1);
 		return line_was_added;
 	}
 
-	if (last == -1) {
+        /* Find out where to break the line */
+        int break_pos = first;
+        bool set_cursor_at_origin = false;
+        bool keep_cursor_here = false;
+        if (last_word.mdnum) {
+                /* do nothing: we break at the start of the attachment */
+        } else if (last - first == t->max - 1) {
+		/* monster word; split at cursor and continue below */
+		first = t->curr->pos - 1;
+                if (t->curr->pos == t->curr->len) {
+                        first = t->curr->pos - 1;
+                } else {
+                        first = t->curr->pos;
+                }
+		last = t->curr->len - 1;
+                break_pos = first;
+                if (t->curr->pos < 0.8*t->max) {
+                        keep_cursor_here = true;
+                        first = t->curr->pos;
+                }
+        } else if (last == -1) {
 		/* the line is blank and the user tries to insert one last
 		   space: just move that space on the line below */
-		first = t->curr->len - 1;
-		last = first;
-		assert(t->curr->str[first] == ' ');
-		first_blank = 0;
-	}
+                first = t->curr->len - 1;
+                last = first - 1;
+                break_pos = 0;
+                set_cursor_at_origin = true;
+                assert(t->curr->str[first] == ' ');
+        } else if (t->curr->pos == t->curr->len
+                   && t->curr->str[t->curr->len - 1] == ' ') {
+                /* The wrap was triggered by a blank inserted at the end of the
+                   current line */
+                first = t->curr->len - 1;
+                last = first - 1;
+                break_pos = line_left_blank_start(t->curr, first);
+                set_cursor_at_origin = true;
+	} else {
+                /* regular word: break at leftmost blank char preceding it */
+                break_pos = line_left_blank_start(t->curr, first);
+                assert(break_pos == 0 || t->curr->str[break_pos] == ' ');
+        }
 
 	if (t->curr->next == NULL) {
 		textbuf_append_new_line(t->text);
@@ -2909,21 +2929,12 @@ static int Editor_Wrap_Word(Editor_Text *t)
 		}
 	}
 
-	/* if the wrap was triggered by the entry of a space at the end of the
-	   line and the line below is empty, make sure the space stays. */
-#if 0
-	if (below->len == 0
-	    && (t->curr->len > last + 1) && (t->curr->str[last + 1] == ' ')) {
-		last += 1;
-	}
-#endif
-
 	line_insert_range_front(below, t->curr, first, word_len,
 				need_extra_space, space_attributes);
 
-	if (t->curr->pos >= first) {
+	if (t->curr->pos >= first && !keep_cursor_here) {
 		/* the cursor was in the part of the line that was wrapped */
-		line_truncate_at(t->curr, first_blank);
+		line_truncate_at(t->curr, break_pos);
 		below->pos = t->curr->pos - first;
 		if (below->pos > below->len) {
 			below->pos = below->len;
@@ -2933,6 +2944,10 @@ static int Editor_Wrap_Word(Editor_Text *t)
 	} else {
 		line_truncate_at(t->curr, first);
 	}
+
+        if (set_cursor_at_origin) {
+                t->curr->pos = 0;
+        }
 
 	return line_was_added;
 }
@@ -3498,9 +3513,9 @@ static void Editor_Free_MD(Editor_Text *t, Line *l)
                 int mdnum = line_get_mdnum(l, i);
                 if (mdnum) {
                         mdop_delete(t->mdlist, mdnum);
-                        do
+                        do {
                                 i++;
-                        while (line_get_mdnum(l, i) == mdnum);
+                        } while (line_get_mdnum(l, i) == mdnum);
                 }
         }
 }
