@@ -244,10 +244,7 @@ void cmd_noop(struct sessione *t)
 
 void cmd_echo(struct sessione *t, char *buf)
 {
-	if (strlen(buf) >= 5)
-		cprintf(t, "%d ok: '%s'\n", OK, &buf[5]);
-	else
-		cprintf(t, "%d ok: ''\n", OK);
+        cprintf(t, "%d ok: '%s'\n", OK, buf);
 }
 
 void interprete_comandi(struct sessione *t, char *com)
