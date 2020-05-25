@@ -488,6 +488,30 @@ int cml2editor(const char *str, int *outstr, int *outcol, int *totlen,
 	return len;
 }
 
+/* Renders the link as it should be presented to the user in posts and
+ * attachment lists. The result is written over `label`, that must have
+ * at least maxlen-1 bytes allocated. If label is empty, the link is
+ * rendered instead; if the resulting label is longer than `maxlen`, the
+ * the result is truncated and an ellipsis is inserted. */
+void render_link(char *link, char *label, size_t maxlen)
+{
+        const char ellipsis[] = "...";
+        const size_t short_len = maxlen - strlen(ellipsis);
+
+        if (label[0] == 0) {
+                if (strlen(link) > maxlen) {
+                        strncpy(label, link, short_len);
+                        strcpy(label + short_len, ellipsis);
+                } else {
+                        strncpy(label, link, maxlen + 1);
+                }
+        } else {
+                if (strlen(label) > maxlen) {
+                        strcpy(label + short_len, ellipsis);
+                }
+        }
+}
+
 /* TODO eventually it would be good to parse all attachements one single */
 /*      time in this function.                                           */
 static char * cml_parse_tag(const char **str, int *color,
@@ -508,7 +532,7 @@ static char * cml_parse_tag(const char **str, int *color,
 	register const char *p;
 	register char *o;
 	register int curr_state;
-	char digit, tmp[LBUF], strbuf1[LBUF], strbuf2[LBUF];
+	char digit, rendered_tag[LBUF], strbuf[LBUF];
 	/* int md_id; */
 	int tmpcol;
         unsigned long size, flags, num;
@@ -517,7 +541,7 @@ static char * cml_parse_tag(const char **str, int *color,
 	if (**str != '<')
 		return NULL;
 	curr_state = TAG_START;
-	o = tmp;
+	o = rendered_tag;
 	*(o++)='\x1b';
 	*(o++)='[';
 	for (p = *str+1; *p; p++) {
@@ -536,7 +560,7 @@ static char * cml_parse_tag(const char **str, int *color,
 			case TAG_START:
                                 if (!strncmp(p+1, "log user=\"", 10)) {
                                         p += 11;
-                                        p = cml_getstr(strbuf1, p);
+                                        p = cml_getstr(strbuf, p);
                                         if (strncmp(p, " num=", 5))
                                                 return NULL;
                                         p += 5;
@@ -545,12 +569,12 @@ static char * cml_parse_tag(const char **str, int *color,
                                                 return NULL;
                                         o += sprintf(o,
                        "1;33;40m%s\x1b[0;33m: \x1b[0;35m#%ld\x1b[0%d;3%d;4%dm",
-                                                     strbuf1, num,
+                                                     strbuf, num,
                                                      CC_ATTR(*color),
                                                      CC_FG(*color), CC_BG(*color));
-                                        /*md_id = md_insert_blogpost(mdlist, strbuf1,num);*/
+                                        /*md_id = md_insert_blogpost(mdlist, strbuf,num);*/
                                         *str = p;
-                                        return Strdup(tmp);
+                                        return Strdup(rendered_tag);
                                 }
 				curr_state = TAG_b;
 				break;
@@ -566,7 +590,7 @@ static char * cml_parse_tag(const char **str, int *color,
 			case TAG_START:
                                 if (!strncmp(p+1, "ile name=\"", 10)) {
                                         p += 11;
-                                        p = cml_getstr(strbuf1, p);
+                                        p = cml_getstr(strbuf, p);
                                         if (strncmp(p, " num=", 5))
                                                 return NULL;
                                         p += 5;
@@ -583,12 +607,12 @@ static char * cml_parse_tag(const char **str, int *color,
                                                 return NULL;
                                         o += sprintf(o,
                                                "4;32;40m%s\x1b[0%d;3%d;4%dm",
-                                                     strbuf1,
+                                                     strbuf,
                                                      CC_ATTR(*color),
                                                      CC_FG(*color), CC_BG(*color));
-                                        /*md_id = md_insert_file(mdlist, strbuf1, NULL, num, size, flags);*/
+                                        /*md_id = md_insert_file(mdlist, strbuf, NULL, num, size, flags);*/
                                         *str = p;
-                                        return Strdup(tmp);
+                                        return Strdup(rendered_tag);
                                 }
 				curr_state = TAG_f;
 				break;
@@ -613,30 +637,30 @@ static char * cml_parse_tag(const char **str, int *color,
 			break;
 		case 'l':
 			switch (curr_state) {
-			case TAG_START:
+			case TAG_START: {
+                                char link[MAXLEN_LINK + 1] = "";
+                                char label[LBUF] = "";
+
                                 if (strncmp(p+1, "ink=\"", 5))
                                         return NULL;
                                 p += 6;
-                                p = cml_getstr(strbuf1, p);
+                                p = cml_getstr(link, p);
                                 if (!strncmp(p, " label=\"", 8)) {
                                         p += 8;
-                                        p = cml_getstr(strbuf2, p);
-                                } else
-                                        strbuf2[0] = 0;
-                                if (*p != '>')
-                                        return NULL;
-                                /*md_id = md_insert_link(mdlist, strbuf1,strbuf2);*/
-                                if (strbuf2[0] == 0) {
-                                        strncpy(strbuf2, strbuf1, 75);
-                                        if (strlen(strbuf1) > 75)
-                                                strcpy(strbuf2+75, "...");
+                                        p = cml_getstr(label, p);
                                 }
 
+                                if (*p != '>') {
+                                        return NULL;
+                                }
+                                /*md_id = md_insert_link(mdlist, link, label);*/
+                                render_link(link, label, MSG_WIDTH);
                                 o += sprintf(o, "4;36;40m%s\x1b[0%d;3%d;4%dm",
-                                             strbuf2, CC_ATTR(*color),
+                                             label, CC_ATTR(*color),
                                              CC_FG(*color), CC_BG(*color));
                                 *str = p;
-				return Strdup(tmp);
+				return Strdup(rendered_tag);
+                        } break;
 			default:
 				return NULL;
 			}
@@ -645,7 +669,7 @@ static char * cml_parse_tag(const char **str, int *color,
                         if (strncmp(p+1, "ost room=\"", 10))
                                 return NULL;
                         p += 11;
-                        p = cml_getstr(strbuf1, p);
+                        p = cml_getstr(strbuf, p);
                         if (strncmp(p, " num=", 5))
                                 return NULL;
                         p += 5;
@@ -654,26 +678,26 @@ static char * cml_parse_tag(const char **str, int *color,
                                 return NULL;
                         o += sprintf(o,
                                      "1;33;40m%s\x1b[0;33m> \x1b[0;35m#%ld\x1b[0%d;3%d;4%dm",
-                                     strbuf1, num,
+                                     strbuf, num,
                                      CC_ATTR(*color),
                                      CC_FG(*color), CC_BG(*color));
-                        /*md_id = md_insert_post(mdlist, strbuf1, num);*/
+                        /*md_id = md_insert_post(mdlist, strbuf, num);*/
                         *str = p;
-                        return Strdup(tmp);
+                        return Strdup(rendered_tag);
 		case 'r':
 			switch (curr_state) {
 			case TAG_START:
                                 if (!strncmp(p+1, "oom=\"", 5)) {
 					/* room */
                                         p += 6;
-                                        p = cml_getstr(strbuf1, p);
+                                        p = cml_getstr(strbuf, p);
                                         if (*p != '>')
                                                 return NULL;
-					if (strbuf1[0] == ':') {
+					if (strbuf[0] == ':') {
 						o += sprintf(o,
 "0;33;40m%s\x1b[1;33m%s\x1b[0;33m>\x1b[0%d;3%d;4%dm",
 							     blog_display_pre,
-							     strbuf1 + 1,
+							     strbuf + 1,
 							     CC_ATTR(*color),
 							     CC_FG(*color),
 							     CC_BG(*color)
@@ -681,16 +705,16 @@ static char * cml_parse_tag(const char **str, int *color,
 					} else {
 						o += sprintf(o,
 "1;33;40m%s\x1b[0;33m>\x1b[0%d;3%d;4%dm",
-							     strbuf1,
+							     strbuf,
 							     CC_ATTR(*color),
 							     CC_FG(*color),
 							     CC_BG(*color)
 							     );
 					}
 
-                                        /*md_id = md_insert_room(mdlist, strbuf1);*/
+                                        /*md_id = md_insert_room(mdlist, strbuf);*/
                                         *str = p;
-                                        return Strdup(tmp);
+                                        return Strdup(rendered_tag);
                                 }
 				curr_state = TAG_REVERSE;
 				break;
@@ -705,16 +729,16 @@ static char * cml_parse_tag(const char **str, int *color,
 			case TAG_START:
                                 if (!strncmp(p+1, "ser=\"", 5)) {
                                         p += 6;
-                                        p = cml_getstr(strbuf1, p);
+                                        p = cml_getstr(strbuf, p);
                                         if (*p != '>')
                                                 return NULL;
                                         o += sprintf(o,
                  "1;34;40m%s\x1b[0%d;3%d;4%dm",
-                                                     strbuf1, CC_ATTR(*color),
+                                                     strbuf, CC_ATTR(*color),
                                                      CC_FG(*color), CC_BG(*color));
-                                        /*md_id = md_insert_user(mdlist, strbuf1);*/
+                                        /*md_id = md_insert_user(mdlist, strbuf);*/
                                         *str = p;
-                                        return Strdup(tmp);
+                                        return Strdup(rendered_tag);
                                 }
 				curr_state = TAG_UNDERSCORE;
 				break;
@@ -815,7 +839,7 @@ static char * cml_parse_tag(const char **str, int *color,
 					return Strdup("");
 				*(o++) = 'm';
 				*(o++) = '\0';
-				return Strdup(tmp);
+				return Strdup(rendered_tag);
 			}
 			*(o++) = ';';
 		        curr_state = TAG_START;

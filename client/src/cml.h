@@ -20,6 +20,7 @@
 #include "cml_entities.h"
 #include "metadata.h"
 
+void render_link(char *link, char *label, size_t maxlen);
 int cml_print_max(const char *str, int max);
 int cml_spoiler_print(const char *str, int max, int spoiler);
 int cml_printf(const char *format, ...);

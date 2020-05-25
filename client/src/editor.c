@@ -3314,29 +3314,19 @@ static void Editor_Insert_Link(Editor_Text *t)
 {
         assert(MAXLEN_LINK <= MAXMDSTR);
 
-        const char ellipsis[] = "...";
         char link[MAXLEN_LINK + 1] = "";
-        char label[LBUF];
+        char label[LBUF] = "";
 
 	erase_current_line();
 
         if (getline_scroll("<b>Insert Link:</b> ", COL_HEAD_MD, link,
                            MAXLEN_LINK, 0, 0, display.pos) > 0) {
 		erase_current_line();
-                label[0] = 0;
-                const int maxlen_label = t->max - 1;
+                const size_t maxlen_label = t->max - 1;
                 getline_scroll("<b>Etichetta (opzionale):</b> ", COL_HEAD_MD,
                                label, maxlen_label, 0, 0, display.pos);
                 int id = md_insert_link(t->mdlist, link, label);
-                if (label[0] == 0) {
-                        const int short_len = maxlen_label - strlen(ellipsis);
-                        if (strlen(link) > (unsigned int)maxlen_label) {
-                                strncpy(label, link, short_len);
-                                strcpy(label + short_len, ellipsis);
-                        } else {
-                                strncpy(label, link, maxlen_label + 1);
-                        }
-                }
+                render_link(link, label, maxlen_label);
 
 		if (display.reached_full_size) {
 			display_window_pop(&display);
