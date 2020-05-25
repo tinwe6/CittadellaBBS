@@ -946,7 +946,7 @@ void pulisci_ed_esci(exit_mode mode)
 
 static void info_sul_server(void)
 {
-        char rbf[LBUF+10], comp[LBUF], *buf;
+        char reply[LBUF+10], compression_type[LBUF];
 
 #ifdef LOCAL
 	/* local cittaclient  */
@@ -963,45 +963,45 @@ static void info_sul_server(void)
         serv_putf("INFO remoto|%s", rhost);
 # endif
 #endif
-        serv_gets(rbf);
+        serv_gets(reply);
 
-        if (rbf[0] == '2') {
-                buf = &rbf[4];
-                extractn(serverinfo.software, buf, 0, 50);
-                serverinfo.server_vcode = extract_int(buf, 1);
-                extractn(serverinfo.nodo, buf, 2, 50);
-                extractn(serverinfo.dove, buf, 3, 50);
-                serverinfo.protocol_vcode   = extract_int(buf, 4);
+        if (reply[0] == '2') {
+                char *args = reply + 4;
+                extractn(serverinfo.software, args, 0, 50);
+                serverinfo.server_vcode = extract_int(args, 1);
+                extractn(serverinfo.nodo, args, 2, 50);
+                extractn(serverinfo.dove, args, 3, 50);
+                serverinfo.protocol_vcode   = extract_int(args, 4);
 
 		/*--8<------------------------------------------------------*/
 		/* compatibility code, eleminate before release             */
 		if (CLIENT_VERSION_CODE > serverinfo.server_vcode) {
 		    printf("Legacy server: entering compatibility mode.\n");
 		    serverinfo.legacy = true;
-		    serverinfo.newclient_vcode  = extract_int(buf, 4);
-		    serverinfo.num_canali_chat  = extract_int(buf, 5);
-		    serverinfo.maxlineebug      = extract_int(buf, 6);
-		    serverinfo.maxlineebx       = extract_int(buf, 7);
-		    serverinfo.maxlineenews     = extract_int(buf, 8);
-		    serverinfo.maxlineepost     = extract_int(buf, 9);
-		    serverinfo.maxlineeprfl     = extract_int(buf, 10);
-		    serverinfo.maxlineeroominfo = extract_int(buf, 11);
-		    serverinfo.flags            = extract_int(buf, 12);
-		    extract(comp, buf, 13);
+		    serverinfo.newclient_vcode  = extract_int(args, 4);
+		    serverinfo.num_canali_chat  = extract_int(args, 5);
+		    serverinfo.maxlineebug      = extract_int(args, 6);
+		    serverinfo.maxlineebx       = extract_int(args, 7);
+		    serverinfo.maxlineenews     = extract_int(args, 8);
+		    serverinfo.maxlineepost     = extract_int(args, 9);
+		    serverinfo.maxlineeprfl     = extract_int(args, 10);
+		    serverinfo.maxlineeroominfo = extract_int(args, 11);
+		    serverinfo.flags            = extract_int(args, 12);
+		    extract(compression_type, args, 13);
                     serverinfo.maxcmdlen        = 1024;
 		} else{
 		/*--8<------------------------------------------------------*/
-                serverinfo.newclient_vcode  = extract_int(buf, 5);
-                serverinfo.num_canali_chat  = extract_int(buf, 6);
-                serverinfo.maxlineebug      = extract_int(buf, 7);
-                serverinfo.maxlineebx       = extract_int(buf, 8);
-                serverinfo.maxlineenews     = extract_int(buf, 9);
-                serverinfo.maxlineepost     = extract_int(buf, 10);
-                serverinfo.maxlineeprfl     = extract_int(buf, 11);
-                serverinfo.maxlineeroominfo = extract_int(buf, 12);
-                serverinfo.flags            = extract_int(buf, 13);
-                serverinfo.maxcmdlen        = extract_int(buf, 14);
-                extract(comp, buf, 15);
+                serverinfo.newclient_vcode  = extract_int(args, 5);
+                serverinfo.num_canali_chat  = extract_int(args, 6);
+                serverinfo.maxlineebug      = extract_int(args, 7);
+                serverinfo.maxlineebx       = extract_int(args, 8);
+                serverinfo.maxlineenews     = extract_int(args, 9);
+                serverinfo.maxlineepost     = extract_int(args, 10);
+                serverinfo.maxlineeprfl     = extract_int(args, 11);
+                serverinfo.maxlineeroominfo = extract_int(args, 12);
+                serverinfo.flags            = extract_int(args, 13);
+                serverinfo.maxcmdlen        = extract_int(args, 14);
+                extract(compression_type, args, 15);
 		}
 
                 printf("\nServer: %s version ", serverinfo.software);
@@ -1020,9 +1020,9 @@ static void info_sul_server(void)
 			pulisci_ed_esci(NO_EXIT_BANNER);
 		}
 
-                if (strncmp(comp, COMPRESSIONE, LBUF)) {
+                if (strncmp(compression_type, COMPRESSIONE, LBUF)) {
                         Free(COMPRESSIONE);
-                        COMPRESSIONE = Strdup(comp);
+                        COMPRESSIONE = Strdup(compression_type);
                 }
 
                 if (COMPRESSIONE[0]) {
@@ -1033,7 +1033,7 @@ static void info_sul_server(void)
                         printf("Connessione non compressa.\n");
 
         } else {
-		printf("%s\n", rbf + 4);
+		printf("%s\n", reply + 4);
 		pulisci_ed_esci(SHOW_EXIT_BANNER);
         }
 }
