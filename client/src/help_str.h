@@ -184,4 +184,14 @@
 			   " <r>ead\n"                         \
 			   " <v>ota\n"
 
+#define HELP_PAGER_CML "<b>Comandi del Message Pager:</b>\n\n"                 \
+        " \\<<b>Space</b>>, \\<<b>n</b>>ext     : Avanza di una pagina.\n"     \
+        " \\<<b>Enter</b>>, \\<<b>f</b>>orward  : Avanza di una riga.\n"       \
+        " \\<<b>b</b>>ackward          : Torna indietro di una riga\n"         \
+        " \\<<b>p</b>>revious          : Torna indietro di una pagina\n"       \
+        " \\<<b>r</b>>efresh, \\<<b>Ctrl-L</b>> : Rivisualizza la schermata\n" \
+        " \\<<b>s</b>>top, \\<<b>q</b>>uit      : Interrompe la lettura.\n"    \
+        " \\<<b>?</b>>                 : questo aiuto.\n"
+
+
 #endif /* help_str.h */

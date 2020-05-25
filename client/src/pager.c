@@ -22,6 +22,7 @@
 #include "cml.h"
 #include "conn.h"
 #include "cterminfo.h"
+#include "help_str.h"
 #include "inkey.h"
 #include "pager.h"
 #include "prompt.h"
@@ -211,15 +212,7 @@ static void pager_help(void)
 {
 	push_color();
 	setcolor(C_HELP);
-	cml_print(_(
-"\n<b>Comandi del Message Pager:</b>\n\n"
-" \\<<b>Space</b>>, \\<<b>n</b>>ext     : Avanza di una pagina.\n"
-" \\<<b>Enter</b>>, \\<<b>f</b>>orward  : Avanza di una riga.\n"
-" \\<<b>b</b>>ackward          : Torna indietro di una riga\n"
-" \\<<b>p</b>>revious          : Torna indietro di una pagina\n"
-" \\<<b>r</b>>efresh, \\<<b>Ctrl-L</b>> : Rivisualizza la schermata\n"
-" \\<<b>s</b>>top, \\<<b>q</b>>uit      : Interrompe la lettura.\n"
-" \\<<b>?</b>>                 : questo aiuto.\n\n"));
+        cml_print(_( "\n" HELP_PAGER_CML "\n"));
 	pull_color();
 }
 
