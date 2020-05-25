@@ -88,7 +88,7 @@
 			   " <s>wap rooms         ***\n"
 
 #define HELP_DOT_FRIEND    "(Opzioni)\nScegli:\n"            \
-                           " edit <e>nnemy list\n"           \
+                           " edit <e>nemy list\n"            \
                            " edit <f>riend list\n"           \
 			   " <r>ead friend and enemy lists.\n"
 
