@@ -34,6 +34,7 @@
 #include "room_cmd.h"
 #include "room_flags.h"
 #include "tabc.h"
+#include "msg_flags.h"
 #include "user_flags.h"
 #include "utility.h"
 #include "macro.h"
@@ -739,8 +740,8 @@ void room_edit_info(void)
 			unlink(filename);
 			free(filename);
 	} else {
-		get_text_full(txt, serverinfo.maxlineeroominfo, 79, false,
-			      C_ROOM_INFO, NULL);
+		get_text_full(txt, serverinfo.maxlineeroominfo, MSG_WIDTH,
+                              false, C_ROOM_INFO, NULL);
 	}
 
 	printf(sesso

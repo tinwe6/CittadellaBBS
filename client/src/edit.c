@@ -34,6 +34,7 @@
 #include "inkey.h"
 #include "macro.h"
 #include "messaggi.h"
+#include "msg_flags.h"
 #include "prompt.h"
 #include "strutt.h"
 #include "terminale.h"
@@ -183,8 +184,8 @@ static int getline_wrap(char *str, int max, bool maiuscole, bool special,
  */
 int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
 {
-        int riga = 0, pos = 0, wlen, maxchar = 79;
-        char str[80], parola[80], prompt_tmp;
+        int riga = 0, pos = 0, wlen, maxchar = MSG_WIDTH;
+        char str[MSG_WIDTH + 1], parola[MSG_WIDTH + 1], prompt_tmp;
 
 	prompt_tmp = prompt_curr;
 	prompt_curr = P_EDT;
@@ -747,7 +748,7 @@ int enter_text(struct text *txt, int max_linee, char mode,
 			printf(_("--- Editor: Premi return due volte per terminare.                  [Help: F1]---"));
 			pull_color();
 			putchar('\n');
-			return get_text_col(txt, max_linee, 79, 0);
+			return get_text_col(txt, max_linee, MSG_WIDTH, 0);
 		}
 
 		/* Se c'e` un quote, lo inserisce nel file */
@@ -775,7 +776,8 @@ int enter_text(struct text *txt, int max_linee, char mode,
 				}
 			}
 		}
-		return get_text_full(txt, max_linee, 79, false, 0, mdlist);
+		return get_text_full(txt, max_linee, MSG_WIDTH, false, 0,
+                                     mdlist);
         }
 	return EDIT_DONE;
 }
@@ -1215,8 +1217,6 @@ static int getline_col_wrap(int **str0, int **col0, int max,
 	return len;
 }
 
-#define MAXCHAR 79        /* Numero massimo di caratteri per riga */
-
 int get_text_col(struct text *txt, long max_linee, int max_col, bool abortp)
 {
         int parola[256], col_parola[256], prompt_tmp, tmpcol;
@@ -1227,12 +1227,12 @@ int get_text_col(struct text *txt, long max_linee, int max_col, bool abortp)
 	prompt_tmp = prompt_curr;
 	prompt_curr = P_EDT;
 
-        if (max_col > MAXCHAR) {
-                max_col = MAXCHAR;
+        if (max_col > MSG_WIDTH) {
+                max_col = MSG_WIDTH;
 	}
 
-	CREATE(str, int, MAXCHAR+1, 0);
-	CREATE(col, int, MAXCHAR+1, 0);
+	CREATE(str, int, MSG_WIDTH + 1, 0);
+	CREATE(col, int, MSG_WIDTH + 1, 0);
 	str[0] = '\0';
 
 	setcolor(C_DEFAULT);
@@ -1706,8 +1706,8 @@ void getline(char *str, int max, char maiuscole, char special)
 
 int get_text(struct text *txt, long max_linee, char max_col, bool abortp)
 {
-        int riga = 0, pos = 0, wlen, maxchar = 79;
-        char str[80], parola[80], prompt_tmp;
+        int riga = 0, pos = 0, wlen, maxchar = MSG_WIDTH;
+        char str[MSG_WIDTH + 1], parola[MSG_WIDTH + 1], prompt_tmp;
         int ch;
 
 	prompt_tmp = prompt_curr;

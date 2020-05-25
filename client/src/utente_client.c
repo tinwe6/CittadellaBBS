@@ -34,6 +34,7 @@
 #include "generic_cmd.h"
 #include "inkey.h"
 #include "macro.h"
+#include "msg_flags.h"
 #include "string_utils.h"
 #include "tabc.h"
 #include "user_flags.h"
@@ -1187,7 +1188,7 @@ void enter_profile(void)
                 unlink(filename);
                 free(filename);
         } else {
-                get_text_full(txt, serverinfo.maxlineeprfl, 79, false,
+                get_text_full(txt, serverinfo.maxlineeprfl, MSG_WIDTH, false,
                               C_PRFL_PERS, NULL);
         }
 

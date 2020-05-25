@@ -32,6 +32,7 @@
 #include "extract.h"
 #include "histo.h"
 #include "utility.h"
+#include "msg_flags.h"
 #include "sys_flags.h"
 
 /*
@@ -349,8 +350,8 @@ void edit_news(void)
 			unlink(filename);
 			free(filename);
 	} else
-		get_text_full(txt, serverinfo.maxlineenews, 79, false, C_NEWS,
-                              NULL); /* TODO sistemare MD */
+		get_text_full(txt, serverinfo.maxlineenews, MSG_WIDTH, false,
+                              C_NEWS, NULL); /* TODO sistemare MD */
 
 	printf(sesso
 	       ? _("\nSei sicura di voler mantenere le modifiche (s/n)? ")

@@ -34,6 +34,7 @@
 #include "signals.h"
 #include "tabc.h"
 #include "text.h"
+#include "msg_flags.h"
 #include "user_flags.h"
 #include "macro.h"
 #include "utility.h"
@@ -266,7 +267,7 @@ void bug_report(void)
         putchar('\n');
 
 	txt = txt_create();
-	if (get_text(txt, serverinfo.maxlineebug, 79, 1) > 0)
+	if (get_text(txt, serverinfo.maxlineebug, MSG_WIDTH, 1) > 0)
 		send_text(txt);
 	txt_free(&txt);
 

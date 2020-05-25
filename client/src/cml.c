@@ -26,6 +26,7 @@
 #include "inkey.h"
 #include "macro.h"
 #include "metadata.h"
+#include "msg_flags.h"
 #include "room_cmd.h" /* for blog_display_pre[] */
 #include "utility.h"
 

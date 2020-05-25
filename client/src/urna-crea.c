@@ -38,6 +38,7 @@
 #include "urna-strutture.h"
 #include "ansicol.h"
 #include "memkeep.h"
+#include "msg_flags.h"
 
 #define FREE(a) FreE(a,__LINE__);
 
@@ -128,7 +129,7 @@ void urna_new(void)
 }
 
    printf(_("\nInserisci il quesito (max 4 righe):\n"));
-   if(get_text_col(txt, 4, 79, 0)==-1){
+   if(get_text_col(txt, 4, MSG_WIDTH, 0)==-1){
       interrompi();
      free_dati(dati);
      myFree(dati);

@@ -18,6 +18,8 @@
 
 #define MAXLEN_SUBJECT  64
 #define MAXLEN_FILENAME 64
+/* Maximum width in characters for messages, posts,... */
+#define MSG_WIDTH       (80 - 1)
 
 /* Flags dei messaggi */
 #define MF_MAIL        1    /* E' un mail              */
