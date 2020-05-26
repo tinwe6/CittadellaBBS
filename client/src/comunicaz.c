@@ -36,6 +36,7 @@
 #include "prompt.h"
 #include "strutt.h"
 #include "tabc.h"
+#include "msg_flags.h"
 #include "user_flags.h"
 #include "utility.h"
 
@@ -84,7 +85,7 @@ void broadcast(void)
                 return;
         }
 	txt = txt_create();
-	if (get_text_col(txt, serverinfo.maxlineebx, 79, 1) > 0)
+	if (get_text_col(txt, serverinfo.maxlineebx, MSG_WIDTH, 1) > 0)
 		send_text(txt);
         serv_puts("BEND");
         serv_gets(buf);
@@ -146,7 +147,7 @@ void express(char *rcpt)
 		if (get_textl_cursor(txt, 78, serverinfo.maxlineebx - 2,
 				     false) > 0)
 			send_text(txt);
-	} else if (get_text_col(txt, serverinfo.maxlineebx, 79, 1) > 0)
+	} else if (get_text_col(txt, serverinfo.maxlineebx, MSG_WIDTH, 1) > 0)
 		send_text(txt);
 
 	serv_puts("XEND");
@@ -891,7 +892,7 @@ void send_emote(void)
 		if (get_textl_cursor(txt, 78, serverinfo.maxlineebx - 2,
 				     false) > 0)
 			send_text(txt);
-	} else if (get_text_col(txt, serverinfo.maxlineebx, 79, 1) > 0)
+	} else if (get_text_col(txt, serverinfo.maxlineebx, MSG_WIDTH, 1) > 0)
 		send_text(txt);
 	serv_puts("XEND");
 	serv_gets(buf);
