@@ -153,7 +153,7 @@ char * cml2html_max(const char *str, int *totlen, int maxlen, int *color,
                                                 tptr = htmlstr_open_tags(tptr, *color);
                                         }
                                 } else if (tag > 0) {
-                                        md_convert2html(mdlist, tag, tags);
+                                        md_convert2html(mdlist, tag, tags, sizeof(tags));
                                 }
                                 if (tags[0]) {
                                         tptr = tags;

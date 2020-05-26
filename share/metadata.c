@@ -196,7 +196,7 @@ int md_insert_file(Metadata_List *mdlist, char *filename, char *path,
         return md->num;
 }
 
-size_t md_convert2cml(Metadata_List *mdlist, int md_id, char *str)
+size_t md_convert2cml(Metadata_List *mdlist, int md_id, char *str, size_t size)
 {
         Metadata *md;
         size_t len;
@@ -205,42 +205,49 @@ size_t md_convert2cml(Metadata_List *mdlist, int md_id, char *str)
                 return 0;
 
         md_id--;
-        if ((md_id >= MAXMDXMSG) || (md_id < 0) || (!mdlist->md[md_id]))
+        if ((md_id >= MAXMDXMSG) || (md_id < 0) || (!mdlist->md[md_id])) {
+                str[0] = 0;
                 return 0;
+        }
 
         md = mdlist->md[md_id];
 
         switch (md->type) {
         case MD_USER:
-                len = sprintf(str, "<user=\"%s\">", md->content);
+                len = snprintf(str, size, "<user=\"%s\">", md->content);
                 break;
         case MD_ROOM:
-		len = sprintf(str, "<room=\"%s\">", md->content);
+		len = snprintf(str, size, "<room=\"%s\">", md->content);
                 break;
         case MD_POST:
-                len = sprintf(str, "<post room=\"%s\" num=%ld>", md->content,
-                              md->locnum);
+                len = snprintf(str, size, "<post room=\"%s\" num=%ld>",
+                               md->content, md->locnum);
                 break;
         case MD_BLOG:
-                len = sprintf(str, "<blog user=\"%s\" num=%ld>", md->content,
-                              md->locnum);
+                len = snprintf(str, size, "<blog user=\"%s\" num=%ld>",
+                               md->content, md->locnum);
                 break;
         case MD_LINK:
                 if (md->str[0] != '\0')
-                        len = sprintf(str, "<link=\"%s\" label=\"%s\">",
-				      md->content, md->str);
+                        len = snprintf(str, size, "<link=\"%s\" label=\"%s\">",
+                                       md->content, md->str);
                 else
-                        len = sprintf(str, "<link=\"%s\">", md->content);
+                        len = snprintf(str, size, "<link=\"%s\">", md->content);
                 break;
         case MD_FILE:
-                len = sprintf(str, "<file name=\"%s\" num=%ld size=%ld flags=%ld>", md->content, md->filenum, md->size, md->flags);
+                len = snprintf(str, size,
+                               "<file name=\"%s\" num=%ld size=%ld flags=%ld>",
+                               md->content, md->filenum, md->size, md->flags);
                 break;
+        default:
+                assert(false);
         }
+        str[size - 1] = 0;
 
         return len;
 }
 
-size_t md_convert2html(Metadata_List *mdlist, int md_id, char *str)
+size_t md_convert2html(Metadata_List *mdlist, int md_id, char *str, size_t size)
 {
         Metadata *md;
         size_t len;
@@ -256,37 +263,47 @@ size_t md_convert2html(Metadata_List *mdlist, int md_id, char *str)
 
         switch (md->type) {
         case MD_USER:
-                strcpy(buf, md->content);
-                len = sprintf(str, "<A href=\"/profile/%s\"><SPAN class=\"user\">%s</SPAN></A>", space2under(buf), md->content);
+                strncpy(buf, md->content, sizeof(buf) - 1);
+                buf[sizeof(buf) - 1] = 0;
+                len = snprintf(str, size,
+                  "<A href=\"/profile/%s\"><SPAN class=\"user\">%s</SPAN></A>",
+                               space2under(buf), md->content);
                 break;
         case MD_ROOM:
-                strcpy(buf, md->content);
-                len = sprintf(str, "<A href=\"/%s\"><SPAN class=\"room\">%s</SPAN></A>",
-                              space2under(buf), md->content);
+                strncpy(buf, md->content, sizeof(buf) - 1);
+                buf[sizeof(buf) - 1] = 0;
+                len = snprintf(str, size,
+                  "<A href=\"/%s\"><SPAN class=\"room\">%s</SPAN></A>",
+                               space2under(buf), md->content);
                 break;
         case MD_POST:
-                strcpy(buf, md->content);
-                len = sprintf(str, "<A href=\"/%s#%ld\"><SPAN class=\"room\">%s&gt;</SPAN> <SPAN class=\"postnum\">#%ld</SPAN></A>",
-                              space2under(buf), md->locnum,
-                              md->content, md->locnum);
+                strncpy(buf, md->content, sizeof(buf) - 1);
+                buf[sizeof(buf) - 1] = 0;
+                len = snprintf(str, size, "<A href=\"/%s#%ld\"><SPAN class=\"room\">%s&gt;</SPAN> <SPAN class=\"postnum\">#%ld</SPAN></A>",
+                               space2under(buf), md->locnum,
+                               md->content, md->locnum);
                 break;
         case MD_BLOG:
-                strcpy(buf, md->content);
-                len = sprintf(str, "<A href=\"/blog/%s#%ld\"><SPAN class=\"room\">blog di %s&gt;</SPAN> <SPAN class=\"postnum\">#%ld</SPAN></A>",
-                              space2under(buf), md->locnum, md->content, md->locnum);
+                strncpy(buf, md->content, sizeof(buf) - 1);
+                buf[sizeof(buf) - 1] = 0;
+                len = snprintf(str, size, "<A href=\"/blog/%s#%ld\"><SPAN class=\"room\">blog di %s&gt;</SPAN> <SPAN class=\"postnum\">#%ld</SPAN></A>",
+                               space2under(buf), md->locnum, md->content, md->locnum);
                 break;
         case MD_LINK:
 	        if (md->str[0] != '\0')
-                        len = sprintf(str, "<A href=\"%s\"><SPAN class=\"link\">%s</SPAN></A>",
-                                      md->content, md->str);
+                        len = snprintf(str, size, "<A href=\"%s\"><SPAN class=\"link\">%s</SPAN></A>",
+                                       md->content, md->str);
                 else
-                        len = sprintf(str, "<A href=\"%s\"><SPAN class=\"link\">%s</SPAN></A>",
-                                      md->content, md->content);
+                        len = snprintf(str, size, "<A href=\"%s\"><SPAN class=\"link\">%s</SPAN></A>",
+                                       md->content, md->content);
                 break;
         case MD_FILE:
-                len = sprintf(str, "<A href=\"/file/%ld/%s\"><SPAN class=\"file\">%s</SPAN> (%ldkb)</A>", md->filenum, md->content, md->content, (long)md->size/1024);
+                len = snprintf(str, size, "<A href=\"/file/%ld/%s\"><SPAN class=\"file\">%s</SPAN> (%ldkb)</A>",
+                               md->filenum, md->content, md->content,
+                               (long)md->size / 1024);
                 break;
         }
+        str[size - 1] = 0;
 
         return len;
 }

@@ -65,7 +65,7 @@ int md_insert_post(Metadata_List *mdlist, char *room, long locnum);
 int md_insert_blogpost(Metadata_List *mdlist, char *room, long locnum);
 int md_insert_user(Metadata_List *mdlist, char *user);
 int md_insert_file(Metadata_List *mdlist, char *filename, char *path, unsigned long filenum, unsigned long size, unsigned long flags);
-size_t md_convert2cml(Metadata_List *mdlist, int md_id, char *str);
-size_t md_convert2html(Metadata_List *mdlist, int md_id, char *str);
+size_t md_convert2cml(Metadata_List *mdlist, int md_id, char *str, size_t size);
+size_t md_convert2html(Metadata_List *mdlist, int md_id, char *str, size_t size);
 
 #endif /* metadata.h */
