@@ -887,14 +887,13 @@ static const char * cml_getstr(char *str, const char *p)
 char * editor2cml(int *str, int *col, int *color, size_t len,
                   Metadata_List *mdlist)
 {
-	int start, i, pos, currcol, flag, max, old_at, new_at, md_id;
-        size_t mdlen;
-	char *out, *tmp, mdstr[LBUF];
+	int currcol, old_at, new_at, md_id;
+	char *out, *tmp;
 
-	max = len;
+	size_t max = 127;
 	CREATE(out, char, max + 1, 0);
 
-        start = 0;
+        size_t start = 0;
         if ( (md_id = MDNUM(*color))) {
                 /* Elimina la fine del md della riga precedente */
                 while (MDNUM(col[start]) == md_id)
@@ -902,29 +901,37 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
         }
 
 	currcol = *color;
-	pos = 0;
-	for (i = start; (size_t)i < len; i++) {
+	size_t pos = 0;
+	for (size_t i = start; i < len; ++i) {
                 while ( (md_id = MDNUM(col[i]))) {
-                        /* Inizio del metadata */
-                        mdlen = md_convert2cml(mdlist, md_id, mdstr);
-			assert(max >= pos);
-                        while ((max - pos) < (long)mdlen) {
-                                max *= 2;
-                                RECREATE(out, char, max + 1);
+                        size_t mdlen;
+                        for (;;) {
+                                mdlen = md_convert2cml(mdlist, md_id, out + pos,
+                                                       max - pos + 1);
+                                if (pos + mdlen > max) {
+                                        while (max < pos + mdlen) {
+                                                max = 2*max + 1;
+                                        }
+                                        RECREATE(out, char, max + 1);
+                                } else {
+                                        break;
+                                }
                         }
-                        for (size_t j = 0; j < mdlen; j++) {
-                                out[pos++] = mdstr[j];
-			}
+                        pos += mdlen;
+                        assert(pos <= max);
+
                         do {
                                 i++;
                         } while (MDNUM(col[i]) == md_id);
                 }
+
+                /* 24 free bytes are sufficient to fit any color/attr command */
                 while ((max - pos) < 24) {
-                        max *= 2;
+                        max = 2*max + 1;
                         RECREATE(out, char, max + 1);
                 }
                 if (col[i] != currcol) {
-			flag = 0;
+			bool flag = false;
 			out[pos++] = '<';
 			new_at = CC_ATTR(col[i]);
 			old_at = CC_ATTR(currcol);
@@ -934,7 +941,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 					if (old_at & ATTR_BOLD)
 						out[pos++] = '/';
 					out[pos++] = 'b';
-					flag = 1;
+					flag = true;
 				}
 				if ((old_at & ATTR_UNDERSCORE) !=
 				    (new_at & ATTR_UNDERSCORE)) {
@@ -943,7 +950,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 					if (old_at & ATTR_UNDERSCORE)
 						out[pos++] = '/';
 					out[pos++] = 'u';
-					flag = 1;
+					flag = true;
 				}
 				if ((old_at & ATTR_BLINK) !=
 				    (new_at & ATTR_BLINK)) {
@@ -952,7 +959,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 					if (old_at & ATTR_BLINK)
 						out[pos++] = '/';
 					out[pos++] = 'f';
-					flag = 1;
+					flag = true;
 				}
 				if ((old_at & ATTR_REVERSE) !=
 				    (new_at & ATTR_REVERSE)) {
@@ -961,7 +968,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 					if (old_at & ATTR_REVERSE)
 						out[pos++] = '/';
 					out[pos++] = 'r';
-					flag = 1;
+					flag = true;
 				}
 			}
 			if (CC_FG(col[i]) != CC_FG(currcol)){
@@ -971,7 +978,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 				out[pos++] = 'g';
 				out[pos++] = '=';
 				out[pos++] = CC_FG(col[i])+'0';
-				flag = 1;
+				flag = true;
 			}
 			if (CC_BG(col[i]) != CC_BG(currcol)){
 				if (flag)
@@ -1002,6 +1009,7 @@ char * editor2cml(int *str, int *col, int *color, size_t len,
 	}
 	*color = currcol;
 	out[pos] = '\0';
+
 	return out;
 }
 

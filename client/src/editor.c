@@ -439,7 +439,7 @@ typedef enum {
 	OP_PAGEUP, OP_PAGEDOWN,
 } TextBufOp;
 
-typedef struct TextBuf_t {
+typedef struct {
 	Line *first;		/* first line                       */
 	Line *last;    		/* last line                        */
         int lines_count;      	/* number of lines in the list      */
@@ -563,8 +563,6 @@ static void Editor_Save_Text(Editor_Text *t);
 static void Editor_Free(Editor_Text *t);
 static void Editor_Free_MD(Editor_Text *t, Line *l);
 static void Editor_Free_Copy_Buffer(Editor_Text *t);
-static void Editor2CML(Line *line, struct text *txt, int col,
-                       Metadata_List *mdlist);
 static void text2editor(Editor_Text *t, struct text *txt, int color,
                         int max_col);
 static void help_edit(Editor_Text *t);
@@ -962,6 +960,19 @@ void textbuf_init(TextBuf *buf)
 	assert(buf->first->next == NULL);
 	assert(buf->first->prev == NULL);
 	assert(buf->lines_count == 1);
+}
+
+static void textbuf_to_cml(TextBuf *buf, struct text *txt, int col,
+                           Metadata_List *mdlist)
+{
+	if (col == 0) {
+		col = C_DEFAULT;
+        }
+	for (Line *line = buf->first; line; line = line->next) {
+		char *out = editor2cml(line->str, line->col, &col, line->len,
+                                       mdlist);
+		txt_puts(txt, out);
+	}
 }
 
 #ifdef PERFORM_EDITOR_TESTS
@@ -1959,7 +1970,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 		}
 	}
 
-	Editor2CML(t.text->first, txt, color, t.mdlist);
+	textbuf_to_cml(t.text, txt, color, t.mdlist);
 	Editor_Free(&t);
 	prompt_curr = prompt_tmp;
 
@@ -3572,19 +3583,6 @@ static int Editor_Ask_Abort(Editor_Text *t)
 		display_window_pop(&display);
 	}
 	return true;
-}
-
-static void Editor2CML(Line *line, struct text *txt, int col,
-                       Metadata_List *mdlist)
-{
-	char *out;
-
-	if (col == 0)
-		col = C_DEFAULT;
-	for (; line; line = line->next) {
-		out = editor2cml(line->str, line->col, &col, line->len, mdlist);
-		txt_puts(txt, out);
-	}
 }
 
 /* Inserisce il testo nella struttura txt nell'editor. */
