@@ -874,6 +874,8 @@ static char ciclo_client(void)
                 case 147:
                         sysop_unregistered_users();
                         break;
+                case 9999: /* do nothing */
+                        break;
                 default:
                         cml_printf("\n<b;fg=1>"
 "  *** ERROR cittaclient case %d - please notify the bug!"
