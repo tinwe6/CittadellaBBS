@@ -17,6 +17,8 @@
 #define _CONN_H   1
 
 #include "cittaclient.h"
+#include "metadata.h"
+#include "text.h"
 #include <string.h>
 
 /* Valori di ritorno di elabora_input() */
@@ -37,6 +39,8 @@ void parse_opt(int argc, char **argv, char **rcfile, bool *no_rc);
 void crea_connessione(char *host, unsigned int port);
 int conn_server(char *h, int p);
 void serv_gets(char *strbuf);
+char * serv_fetch(void);
+void serv_fetch_text(struct text *txt, Metadata_List *mdlist);
 int serv_getc_r(struct serv_buffer * buf);
 void serv_puts(const char *string);
 void serv_putf(char *format, ...);

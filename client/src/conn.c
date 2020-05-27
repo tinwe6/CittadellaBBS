@@ -36,6 +36,7 @@
 
 #include "cittaclient.h"
 #include "cittacfg.h"
+#include "cml.h"
 #include "conn.h"
 #include "cmd_da_server.h"
 #include "decompress.h"
@@ -298,11 +299,12 @@ void timeout(int signum)
 /*****************************************************************************/
 /*****************************************************************************/
 /*
- * Legge una stringa dal server.
- * Continua a leggere tramite elabora_input() finche'
- * non legge qualcosa di diverso da un comando
+ * Unqueue the next server message, and copies it in `str`, that is assumed to
+ * have at least LBUF bytes allocated.
+ * NOTE: if the message is longer than LBUF it gets truncated.
  */
-void serv_gets(char *strbuf)
+/* TODO: server messages should never get truncated.. */
+void serv_gets(char *str)
 {
 	char *buf;
 
@@ -311,16 +313,49 @@ void serv_gets(char *strbuf)
                 for ( ; elabora_input() != NO_CMD; );
                 prendi_da_coda(&server_in, &buf);
         }
-        strncpy(strbuf, buf, LBUF);
+        strncpy(str, buf, LBUF);
+        str[LBUF - 1] = 0;
+
         Free(buf);
         /*
 	if (!prendi_da_coda(&server_in, &buf)) {
 		while ( (elabora_input() & (CMD_ESEGUITO | CMD_IN_CODA)))
                         prendi_da_coda(&server_in, &buf);
 	}
-	strncpy(strbuf, buf, LBUF);
-	Free(buf);
         */
+}
+
+/*
+ * Unqueue the next server message, and return the pointer to its content.
+ * The string is dynamically allocated and must be freed after use.
+ */
+char * serv_fetch(void)
+{
+	char *str = NULL;
+
+        if (!prendi_da_coda(&server_in, &str)) {
+                for ( ; elabora_input() != NO_CMD; );
+                prendi_da_coda(&server_in, &str);
+        }
+        return str;
+}
+
+/*
+ * Fetches a full text, until the "000" terminator, from the server, and
+ * appends it in the text structure `txt`.
+ */
+void serv_fetch_text(struct text *txt, Metadata_List *mdlist) {
+        for (;;) {
+                char *line = serv_fetch();
+                assert(line);
+                if (!strcmp(line, "000")) {
+                        Free(line);
+                        break;
+                }
+                txt_put(txt, line + 4);
+                cml_extract_md(line + 4, mdlist);
+                Free(line);
+        }
 }
 
 /*
