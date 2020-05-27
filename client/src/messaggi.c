@@ -587,10 +587,15 @@ _("%s Reply: <b>%s</b>, msg #<b>%ld</b> da <b>%s</b>"),
                 cml_printf(_(
 "\n   *** <b>SPOILER!</b> ***   Premi <a> per leggere il messaggio.\n"
 			     ));
+
+                serv_fetch_text(msg->txt, mdlist);
+
+#if 0
                 while (serv_gets(aaa), strcmp(aaa, "000")) {
-                        txt_put(msg->txt, aaa+4);
-                        cml_extract_md(aaa+4, mdlist);
+                        txt_put(msg->txt, aaa + 4);
+                        cml_extract_md(aaa + 4, mdlist);
                 }
+#endif
         } else {
 	        /* we add 1 to nlines (arg 10 from server: num lines in body)
 		   to account for the empty line between header and body.   */

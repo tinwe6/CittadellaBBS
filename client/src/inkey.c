@@ -60,7 +60,7 @@ int inkey_sc(bool exec_all_cmds)
 	struct timeval timeout;
 	bool fast_mode = false;
 
-        while (true) {
+        for (;;) {
                 /* Controlliamo se il client ha input */
 		fd_set input_set;
                 for (;;) {
@@ -142,7 +142,7 @@ int inkey_sc(bool exec_all_cmds)
  * Puo' capitare che ci sia input contemporaneo, nel qual caso i due bit
  * sono settati e i risultati si trovano in str e *key.
  */
-int inkey_pager(int esegue, char *str, int *key)
+int inkey_pager(int esegue, char **str, int *key)
 {
         fflush(stdout);
 	*key = 0;
@@ -152,14 +152,15 @@ int inkey_pager(int esegue, char *str, int *key)
 	struct timeval timeout;
 	bool fast_mode = false;
 
-        int ret = 0;
-        while (!(ret & INKEY_EXIT)) {
+        int ret_code = 0;
+        for (;;) {
 		/* Controlliamo se il client ha input */
 		fd_set input_set;
 		for (;;) {
 			esegui_segnali(&window_changed, &fast_mode);
 			if (window_changed) {
-				return Key_Window_Changed;
+                                *key = Key_Window_Changed;
+				return INKEY_WINCH;
 			}
 
 			FD_ZERO(&input_set);
@@ -184,21 +185,21 @@ int inkey_pager(int esegue, char *str, int *key)
 			}
 		}
 
+		/* Check incoming server commands */
                 if (FD_ISSET(serv_sock, &input_set)) {
-                        /* Ho input dal server */
 			switch (elabora_input()) {
 			case NO_CMD:
-				ret |= INKEY_SERVER;
-				serv_gets(str);
+				ret_code |= INKEY_SERVER;
+				*str = serv_fetch();
 				break;
 			case CMD_IN_CODA:
 				if (!(esegue && esegue_comandi(0))) {
-					ret |= INKEY_QUEUE;
+					ret_code |= INKEY_QUEUE;
 					break;
 				}
 			case CMD_ESEGUITO:
 /*				if (prompt_curr != P_EDITOR)  */
-				ret |= INKEY_EXEC;
+				ret_code |= INKEY_EXEC;
 				print_prompt();
 				fflush(stdout);
 			}
@@ -206,12 +207,14 @@ int inkey_pager(int esegue, char *str, int *key)
 
                 if (FD_ISSET(0, &input_set)) {
 			*key = read_key();
-			ret |= INKEY_KEY;
+			ret_code |= INKEY_KEY;
                 }
 
+                if (ret_code & INKEY_EXIT) {
+                        break;
+                }
         }
-
-        return ret;
+        return ret_code;
 }
 
 static int read_key(void)

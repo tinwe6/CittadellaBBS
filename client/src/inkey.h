@@ -23,11 +23,12 @@
 #define IF_ISMETA(c) if (((c) >= Key_META) && ((c) < Key_META + 0xff))
 
 /* Valori di ritorno inkey */
-#define INKEY_KEY    (0x1)
-#define INKEY_SERVER (0x2)
-#define INKEY_EXEC   (0x4)
-#define INKEY_QUEUE  (0x8)
-#define INKEY_EXIT   (INKEY_KEY | INKEY_SERVER)
+#define INKEY_KEY    (1 << 0)
+#define INKEY_SERVER (1 << 1)
+#define INKEY_EXEC   (1 << 2)
+#define INKEY_QUEUE  (1 << 3)
+#define INKEY_WINCH  (1 << 4)
+#define INKEY_EXIT   (INKEY_KEY | INKEY_SERVER | INKEY_WINCH)
 
 /* Caratteri estesi */
 
@@ -54,7 +55,7 @@
 
 /* Prototipi funzioni in inkey.c */
 int inkey_sc(bool esegue);
-int inkey_pager(int esegue, char *str, int *c);
+int inkey_pager(int esegue, char **str, int *c);
 int inkey_elenco(const char *elenco);
 int inkey_elenco_def(const char *elenco, int def);
 

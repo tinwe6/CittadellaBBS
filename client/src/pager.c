@@ -35,7 +35,7 @@
 
 /* Prototipi delle funzioni statiche in questo file */
 static void pager_help(void);
-static bool pager_newstr(struct text *txt, char *aaa, bool inc_max,
+static bool pager_newstr(struct text *txt, char *str, bool inc_max,
                          Metadata_List *mdlist);
 
 /***************************************************************************/
@@ -45,7 +45,7 @@ static bool pager_newstr(struct text *txt, char *aaa, bool inc_max,
  * Se txt e' NULL, viene creato un buffer temporaneo per il testo,
  * che viene poi eliminato prima dell'uscita dal pager.
  *
- * Se (send == 1) il testo arriva dal server, e percio' controlla i sockets
+ * Se `send` e' true, il testo arriva dal server, e percio' controlla i sockets
  * in attesa di nuove righe, altrimenti il testo e' gia' tutto in *txt.
  *
  * Se la lunghezza del testo e' nota in anticipo, viene messa fornita in max
@@ -57,9 +57,9 @@ static bool pager_newstr(struct text *txt, char *aaa, bool inc_max,
 void pager(struct text *txt, bool send, long max, int start, bool cml,
            bool spoiler, Metadata_List *mdlist)
 {
-	char aaa[LBUF], prompt_tmp;
-	bool fine = false, refresh = false, freetxt = false, inc_max = true;
-	int c, s, ink; /* c: carattere input; s: righe da stampare */
+	char prompt_tmp;
+	bool refresh = false, freetxt = false, inc_max = true;
+	int ink;
 
 	if (txt == NULL) {
 		txt = txt_create();
@@ -79,122 +79,127 @@ void pager(struct text *txt, bool send, long max, int start, bool cml,
 	prompt_curr = P_PAG;
 	prompt_pager_n = start;
 
-	s = NRIGHE - 1 - start;
-	while (!fine) {
+	int rows_to_print = NRIGHE - 1 - start;
+        bool done = false;
+	while (!done) {
 		/* Stampa finche' non raggiungo il prompt o termina il testo */
-		while ((s > 0) && (!fine)) {
+		while (rows_to_print > 0) {
 			if (txt_rpos(txt) == txt_len(txt)) {
 				if (send) {
-					serv_gets(aaa);
-					send = pager_newstr(txt, aaa, inc_max,
+					char *str = serv_fetch();
+					send = pager_newstr(txt, str, inc_max,
                                                             mdlist);
-				} else {
-					fine = true;
+                                        Free(str);
 				}
 				if (!send) {
-					fine = true;
+					done = true;
+                                        break;
 				}
 			}
-			if (!fine) {
-				if (cml) {
-					cml_spoiler_print(txt_get(txt), -1,
-                                                          spoiler);
-					putchar('\n');
-				} else
-					printf("%s\n", txt_get(txt));
-				prompt_pager_n++;
-				s--;
-			}
+                        if (cml) {
+                                cml_spoiler_print(txt_get(txt), -1, spoiler);
+                                putchar('\n');
+                        } else {
+                                printf("%s\n", txt_get(txt));
+                        }
+                        prompt_pager_n++;
+                        --rows_to_print;
 		}
+
+                if (done) {
+                        break;
+                }
 
 		/* Prompt paginatore */
-		if (!fine) {
-			if (uflags[1] & UT_PAGINATOR
-			    && !(uflags[1] & UT_NOPROMPT)) {
-				PAGLOOP:
-				print_prompt();
-				c = 0;
-				while ((c!='s') && (c!='q')
-				       && (c!='f') && (c!='b') && (c!='n')
-				       && (c!='p') && (c!=' ') && (c!='r')
-				       && (c!='?') && (c!=Ctrl('L'))
-				       && (c!=Ctrl('C')) && (c!=Key_UP)
-				       && (c!=Key_DOWN) && (c!=Key_PAGEUP)
-				       && (c!=Key_PAGEDOWN) && (c!=Key_CR)
-				       && (c!=Key_LF)) {
-					ink = inkey_pager(uflags[3] & UT_XPOST,
-							aaa, &c);
-					if (ink & INKEY_SERVER) {
-						send = pager_newstr(txt, aaa,
-                                                              inc_max, mdlist);
-						if ((!send) && (txt_rpos(txt) == txt_len(txt)))
-							fine = true;
-						if (inc_max) {
-						    push_color();
-						    setcolor(C_PAGERPROMPT);
-						    cml_printf(PROMPT_STR, prompt_pager_n, prompt_pager_max, (long)prompt_pager_n*100/prompt_pager_max);
-						    pull_color();
-						}
-				        }
-				}
+                if (uflags[1] & UT_PAGINATOR
+                    && !(uflags[1] & UT_NOPROMPT)) {
+                PAGLOOP:
+                        print_prompt();
+                        int c = 0;
+                        while ((c!='s') && (c!='q')
+                               && (c!='f') && (c!='b') && (c!='n')
+                               && (c!='p') && (c!=' ') && (c!='r')
+                               && (c!='?') && (c!=Ctrl('L'))
+                               && (c!=Ctrl('C')) && (c!=Key_UP)
+                               && (c!=Key_DOWN) && (c!=Key_PAGEUP)
+                               && (c!=Key_PAGEDOWN) && (c!=Key_CR)
+                               && (c!=Key_LF)) {
+                                char *str = NULL;
+                                ink = inkey_pager(uflags[3] & UT_XPOST, &str,
+                                                  &c);
+                                if (ink & INKEY_SERVER) {
+                                        assert(str);
+                                        send = pager_newstr(txt, str, inc_max,
+                                                            mdlist);
+                                        Free(str);
+                                        if ((!send) && (txt_rpos(txt)
+                                                        == txt_len(txt))) {
+                                                done = true;
+                                        }
+                                        if (inc_max) {
+                                                push_color();
+                                                setcolor(C_PAGERPROMPT);
+                                                cml_printf(PROMPT_STR, prompt_pager_n, prompt_pager_max, (long)prompt_pager_n*100/prompt_pager_max);
+                                                pull_color();
+                                        }
+                                }
+                        }
 
-				printf("\r%78s\r", "");
-				switch (c) {
-                                 case Key_CR:
-                                 case Key_LF:
-                                 case Key_DOWN:
-				 case 'f': /* Una riga avanti     */
-					s = 1;
-					break;
-                                 case Key_UP:
-				 case 'b': /* Una riga indietro   */
-					txt_jump(txt, - NRIGHE);
-					prompt_pager_n = txt_rpos(txt);
-					s = NRIGHE - 1;
-					break;
-                                 case Key_PAGEDOWN:
-				 case ' ':
-				 case 'n': /* Una pagina avanti   */
-					s = NRIGHE - 2;
-					break;
-                                 case Key_PAGEUP:
-				 case 'p': /* Una pagina indietro */
-					txt_jump(txt, - (2*NRIGHE - 3));
-					prompt_pager_n = txt_rpos(txt);
-					s = NRIGHE - 1;
-					break;
-				 case Ctrl('L'):
-				 case 'r': /* Rinfresca schermata */
-					refresh = true;
-					break;
-				 case 'q':
-				 case 's': /* Esci dal pager      */
-				 case Ctrl('C'):
-					fine = true;
-					break;
-				 case '?': /* Aiuto               */
-					pager_help();
-					refresh = true;
-					goto PAGLOOP;
-					break;
-				}
-			} else
-				s = NRIGHE - 2;
+                        printf("\r%78s\r", "");
+                        switch (c) {
+                        case Key_CR:
+                        case Key_LF:
+                        case Key_DOWN:
+                        case 'f': /* Una riga avanti     */
+                                rows_to_print = 1;
+                                break;
+                        case Key_UP:
+                        case 'b': /* Una riga indietro   */
+                                txt_jump(txt, - NRIGHE);
+                                prompt_pager_n = txt_rpos(txt);
+                                rows_to_print = NRIGHE - 1;
+                                break;
+                        case Key_PAGEDOWN:
+                        case ' ':
+                        case 'n': /* Una pagina avanti   */
+                                rows_to_print = NRIGHE - 2;
+                                break;
+                        case Key_PAGEUP:
+                        case 'p': /* Una pagina indietro */
+                                txt_jump(txt, - (2*NRIGHE - 3));
+                                prompt_pager_n = txt_rpos(txt);
+                                rows_to_print = NRIGHE - 1;
+                                break;
+                        case Ctrl('L'):
+                        case 'r': /* Rinfresca schermata */
+                                refresh = true;
+                                break;
+                        case 'q':
+                        case 's': /* Esci dal pager      */
+                        case Ctrl('C'):
+                                done = true;
+                                break;
+                        case '?': /* Aiuto               */
+                                pager_help();
+                                refresh = true;
+                                goto PAGLOOP;
+                                break;
+                        }
+                } else {
+                        rows_to_print = NRIGHE - 2;
+                }
 
-			if (refresh) {
-				txt_jump(txt, -(NRIGHE-1));
-				prompt_pager_n = txt_rpos(txt);
-				refresh = false;
-				s = NRIGHE - 1;
-			}
-		}
-	}
+                if (refresh) {
+                        txt_jump(txt, -(NRIGHE-1));
+                        prompt_pager_n = txt_rpos(txt);
+                        refresh = false;
+                        rows_to_print = NRIGHE - 1;
+                }
+        }
 
 	/* Prende cio' che rimane del testo */
 	if (send) {
-   	        while (serv_gets(aaa), strcmp(aaa, "000")) {
-		        txt_put(txt, aaa+4);
-		}
+                serv_fetch_text(txt, mdlist);
 	}
 
 	if (freetxt) {
@@ -221,16 +226,16 @@ static void pager_help(void)
  * nuova stringa nel testo e restituisce 1.
  * Se (inc_max != 0) incrementa il numero totale di righe del testo.
  */
-static bool pager_newstr(struct text *txt, char *aaa, bool inc_max,
+static bool pager_newstr(struct text *txt, char *str, bool inc_max,
                          Metadata_List *mdlist)
 {
-        if (!strcmp(aaa, "000")) {
+        if (!strcmp(str, "000")) {
 		return false;
 	}
-	txt_putf(txt, "%s", aaa+4);
+	txt_put(txt, str + 4);
 
         /* Estrae il metadata */
-        cml_extract_md(aaa+4, mdlist);
+        cml_extract_md(str + 4, mdlist);
 
 	if (inc_max) {
 		prompt_pager_max++;
