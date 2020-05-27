@@ -97,20 +97,17 @@ void txt_clear(struct text *txt)
 /*
  * Aggiunge una riga in fondo al testo. Se le righe allocate sono tutte
  * utilizzate, rialloca il testo aggiungendo TXT_LINES_ADD linee vuote.
- * Se la riga da aggiungere supera (lstr) caratteri, la divide in piu'
- * righe.
  */
 void txt_put(struct text *txt, char *str)
 {
 	Text_Block *block;
-        size_t len;
 
         if (txt == NULL) txt_error();
 
-	len = strlen(str);
+	size_t len = strlen(str);
         CREATE(block, Text_Block, 1, TYPE_TEXT_BLOCK);
-	CREATE(block->str, char, len+1, TYPE_CHAR);
-	memcpy(block->str, str, len+1);
+	CREATE(block->str, char, len + 1, TYPE_CHAR);
+	memcpy(block->str, str, len + 1);
 	if (txt->first == NULL) {
 		txt->first = block;
 		txt->rpos = txt->first;
