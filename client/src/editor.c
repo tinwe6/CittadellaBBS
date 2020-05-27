@@ -3668,7 +3668,7 @@ static void help_edit(Editor_Text *t)
 "  \\<End\\>                 Vai in fondo al testo.\n\n"
 "<b>Comandi di cancellazione:</b>\n"
 "  Ctrl-D, \\<Del\\>  Cancella il carattere sotto al cursore.\n"
-"  Ctrl-G  Incolla il testo tagliato con Ctrl-K.\n"
+"  Ctrl-Y  Incolla il testo tagliato con Ctrl-K.\n"
 "  Ctrl-K  Cancella dal cursore fino alla fine della riga.\n"
 "  Ctrl-U  Cancella tutto il testo.\n"
 "  Ctrl-W  Cancella una parola all'indietro.\n"
