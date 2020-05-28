@@ -1389,22 +1389,15 @@ static void display_region_scroll_down(Display *disp, int first, int last,
 	assert(last < NRIGHE);
 	assert(first < last);
 	display_window_push(disp, first, last);
-	//display_move_curs(disp, first, 0);
+
 	display_move_curs_row(disp, first);
 	for (int i = 0; i != n; ++i) {
 		scroll_down();
 	}
-	//putchar('!');
+
 	display_window_pop(disp);
 
-	/* ATTENTION */
-	//OK WE FOUND THE PROBLEM! window_pop() moves the cursor!!!
-
-	/*
-	putchar('^');
-	fflush(stdout);
-	sleep(3);
-	*/
+	/* IMPORTANT: window_pop() moves the cursor!!! */
 }
 
 static void display_grow(Display *disp)
@@ -1417,18 +1410,8 @@ static void display_grow(Display *disp)
 	--disp->pos;
 
 	if (disp->pos == MSG_WIN_SIZE) {
-		/*
-		printf("^ here before");
-		fflush(stdout);
-		sleep(2);
-		*/
 		display_window_push(disp, disp->pos + 1, NRIGHE - 1);
 		disp->reached_full_size = true;
-		/*
-		printf("* here NR-1");
-		fflush(stdout);
-		sleep(2);
-		*/
 		DEB("DISP reached full size");
 	}
 }
@@ -1561,17 +1544,6 @@ void display_update(Editor_Text *t, Display *disp)
 	disp->redraw_begin = -1;
 	disp->redraw_end = -1;
 
-	/*
-	  BUGS (IMPORTANT)
-
-	  add lines when the editor is not full size so that lots of
-	  them are below. Now do End; the disp enters full size but text
-	  not refreshed correctly.
-
-	  Insert link (even single char); delete it; write a char -> crash
-	  This crash happens iff the link is at the end of the line.
-	*/
-
 	if (curs_above) {
 		int scroll_down_count = disp->top_line_num - t->curr->num;
 		DEB("DISP Scroll down %d", scroll_down_count);
@@ -1591,7 +1563,7 @@ void display_update(Editor_Text *t, Display *disp)
 		int grow_count = 0;
 		if (!disp->reached_full_size) {
 			grow_count = MIN(scroll_up_count,
-					 disp->pos - MSG_WIN_SIZE);
+                                         disp->pos - MSG_WIN_SIZE);
 			display_grow_n(disp, grow_count);
 			scroll_up_count -= grow_count;
 		}
@@ -1604,13 +1576,7 @@ void display_update(Editor_Text *t, Display *disp)
 			   text region since the display reached full size */
 			for (int i = 0; i != scroll_up_count; ++i) {
 				//DEB("Scroll Up");
-				//display_move_curs(disp, NRIGHE - 1, 60);
 				display_move_curs_row(disp, NRIGHE - 1);
-				/*
-				printf("* here NR-1 60");
-				fflush(stdout);
-				sleep(5);
-				*/
 				scroll_up();
 				disp->top_line = disp->top_line->next;
 			}
@@ -1924,6 +1890,7 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	t.curr_col = t.curs_col;
 
         /* Inizializza il metadata */
+        //bool keep_mdlist = (mdlist !=
         md_init(mdlist);
         t.mdlist = mdlist;
 
@@ -2021,7 +1988,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 	display_setcolor(&display, t->curr_col);
 	*/
 
-        do {
+        for (;;) {
 		display_update(t, &display);
 
 #ifdef EDITOR_DEBUG
@@ -2126,7 +2093,7 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 			break;
 		case Key_HOME:
 		case Key_F(5):
-			/* case META('<'): */
+                        /* case META('<'): */
 			t->curr = t->text->first;
 			t->curr->pos = 0;
 			break;
@@ -2386,9 +2353,8 @@ static int get_line_wrap(Editor_Text *t, bool wrap)
 		if (addchar) {
 			Editor_Putchar(t, key);
 		}
-	} while (t->curr->len < t->max);
-
-	return EDIT_NULL;
+                assert(t->curr->len < t->max);
+        }
 }
 
 /****************************************************************************/
@@ -3598,8 +3564,6 @@ static int Editor_Ask_Abort(Editor_Text *t)
 static void text2editor(Editor_Text *t, struct text *txt, int color,
                         int max_col)
 {
-        Metadata_List *mdlist;
-	Line *nl;
 	char *str;
 	int len, wlen;
 
@@ -3610,7 +3574,7 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
 		return;
 	txt_rewind(txt);
 
-        mdlist = t->mdlist;
+        Metadata_List *mdlist = t->mdlist;
 	while( (str = txt_get(txt))) {
 		t->curr->len = cml2editor(str, t->curr->str, t->curr->col,
 					  &len, t->max, &color, mdlist);
@@ -3618,7 +3582,7 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
 		t->curr->flag = 1;
                 if (t->curr->len >= max_col) { /* wrap word */
 			textbuf_insert_line_below(t->text, t->curr);
-                        nl = t->curr->next;
+                        Line *nl = t->curr->next;
                         wlen = 0;
                         len = t->curr->len;
                         while ((wlen <= len) && (t->curr->str[len-wlen]==' '))
@@ -3643,7 +3607,7 @@ static void text2editor(Editor_Text *t, struct text *txt, int color,
 		textbuf_insert_line_below(t->text, t->curr);
 		t->curr = t->curr->next;
 	}
-	/* qui devo eliminare l'ultima riga */
+	/* TODO qui devo eliminare l'ultima riga */
 }
 
 /****************************************************************************/
