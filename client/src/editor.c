@@ -1025,14 +1025,13 @@ static Display display_init(int term_nrows, int initial_size, Line *top_line)
 {
 	assert(initial_size > 0);
 	return (Display) {
-		.reached_full_size = false,
+                        .reached_full_size = false,
 			.top_line = top_line,
 			.top_line_num = top_line->num,
 			.pos = term_nrows - initial_size - 1,
 			.vcurs = term_nrows - initial_size,
-			.hcurs = 1, /* TODO check */
+			.hcurs = 1,
 			.last_pos = -1, /* there was no editor */
-			//.last_pos = term_nrows, /* there was no editor */
 			.color = C_UNDEFINED,
 
 			.last_curs_col = -1,
@@ -1145,10 +1144,18 @@ void display_sync_color(Display *disp)
         setcolor(disp->color);
 }
 
+/* Current number of rows reserved to the text display (not includig stat bar) */
 static inline
 int display_nrows(Display *disp)
 {
 	return NRIGHE - 1 - disp->pos;
+}
+
+/* Maximum vertical size the text display can grow to */
+static inline
+int display_max_nrows(Display *disp)
+{
+        return NRIGHE - 1 - MSG_WIN_SIZE;
 }
 
 /* This is the would be line number of the last display row if the text does
@@ -1494,11 +1501,24 @@ void display_update(Editor_Text *t, Display *disp)
 
 	disp->top_line_num = disp->top_line->num;
 
-	/* TODO maybe we can have the init function do the first draw and
-	   avoid this */
+	/* TODO maybe move setup in display_init()? */
 	if (disp->last_pos == -1) {
 		DEB("Display update: setup");
-		display_draw(t, disp);
+                if (t->text->lines_count > 1) {
+                        int disp_nrows = MIN(t->text->lines_count,
+                                             display_max_nrows(disp));
+                        t->curr = t->text->last;
+                        disp->top_line = t->curr;
+
+                        display_grow_n(disp, disp_nrows - 1);
+
+                        for (int i = 0; i != disp_nrows - 1; ++i) {
+                                assert(disp->top_line->prev);
+                                disp->top_line = disp->top_line->prev;
+                        }
+                        disp->top_line_num = disp->top_line->num;
+                }
+                display_draw(t, disp);
 		goto DISPLAY_UPDATE_DONE;
 	}
 
@@ -1891,11 +1911,6 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	textbuf_init(t.text);
 	t.curr = t.text->first;
 
-	/* Initialize display data */
-#define EDITOR_DISPLAY_INITIAL_SIZE 1
-	display = display_init(t.term_nrows, EDITOR_DISPLAY_INITIAL_SIZE,
-			       t.text->first);
-
 	/* Initialize an empty kill buffer */
 	t.killbuf = textbuf_new();
 	assert(t.killbuf->first == NULL && t.killbuf->last == NULL);
@@ -1926,49 +1941,38 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
 	display_refresh(&t, 0);
 	*/
 
+	/* Initialize display data */
+#define EDITOR_DISPLAY_INITIAL_SIZE 1
+	display = display_init(t.term_nrows, EDITOR_DISPLAY_INITIAL_SIZE,
+			       t.text->first);
+
 #ifdef EDITOR_DEBUG
 	console_init();
 	DEB("t.max = %d", t.max);
 #endif
 
-	bool fine = false;
-	do {
-		ret = get_line_wrap(&t, true);
-		pull_color();
+        ret = get_line_wrap(&t, true);
 
-		switch(ret) {
-		case EDIT_ABORT:
-			cti_ll();
-			printf(ERASE_TO_EOL "\rAbort.\n");
-			fine = true;
-			break;
+        pull_color();
+        cti_ll();
 
-		case EDIT_TIMEOUT:
-			cti_ll();
-			printf(ERASE_TO_EOL "\rPost timeout.\n");
-			fine = true;
-			break;
+        switch(ret) {
+        case EDIT_ABORT:
+                printf(ERASE_TO_EOL "\rAbort.\n");
+                break;
 
-		case EDIT_DONE:
-			cti_ll();
-			putchar('\n');
-			fine = true;
-			break;
-		}
-		/* TODO what is this while for? */
-	} while ((t.text->lines_count < max_linee) && (!fine));
+        case EDIT_TIMEOUT:
+                printf(ERASE_TO_EOL "\rPost timeout.\n");
+                break;
 
-	/* TODO: how can ret be EDIT_NEWLINE? it can't... what's the point
-         	 of the next block?      */
-	if (ret == EDIT_NEWLINE) {
-		refresh_line_curs(t.curr->str, t.curr->str + t.curr->pos);
+        case EDIT_DONE:
+                putchar('\n');
+                break;
 
-		ret = get_line_wrap(&t, false);
-		if (ret == EDIT_DONE) {
-			cti_ll();
-			putchar('\n');
-		}
-	}
+        default:
+                assert(false);
+                break;
+        }
 
 	textbuf_to_cml(t.text, txt, color, t.mdlist);
 	Editor_Free(&t);
@@ -1995,6 +1999,11 @@ int get_text_full(struct text *txt, long max_linee, int max_col, bool abortp,
  * Prende un testo dallo stdinput, lungo 'max'.
  * Il testo viene editato su una singola riga, e se e' piu' lungo dello
  * schermo scrolla.
+ *
+ * Returns
+ * - EDIT_TIMEOUT if the server timed out the command
+ * - EDIT_ABORT if the user aborted the editing (C-c)
+ * - EDIT_DONE if the user is done editing (C-x)
  */
 static int get_line_wrap(Editor_Text *t, bool wrap)
 /* TODO why is arg wrap not used here? the two calls to this function have
